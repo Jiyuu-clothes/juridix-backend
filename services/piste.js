@@ -17,13 +17,18 @@ async function getAccessToken() {
 
   const params = new URLSearchParams({
     grant_type: 'client_credentials',
-    client_id: process.env.PISTE_CLIENT_ID,
-    client_secret: process.env.PISTE_CLIENT_SECRET,
     scope: 'openid'
   });
 
+  const basicAuth = Buffer.from(
+    `${process.env.PISTE_CLIENT_ID}:${process.env.PISTE_CLIENT_SECRET}`
+  ).toString('base64');
+
   const response = await axios.post(OAUTH_URL, params.toString(), {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${basicAuth}`
+    }
   });
 
   tokenCache = response.data.access_token;
