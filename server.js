@@ -6,10 +6,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-const { setup } = require('./db/setup');
-const authRoutes = require('./routes/auth');
 const searchRoutes = require('./routes/search');
-const notesRoutes = require('./routes/notes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -53,9 +50,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
 // ─── API Routes ───────────────────────────────────────────
-app.use('/api/auth', authRoutes);
 app.use('/api/search', searchRoutes);
-app.use('/api/notes', notesRoutes);
 
 // ─── Health Check ─────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -86,7 +81,6 @@ app.use((err, req, res, next) => {
 // ─── Start ────────────────────────────────────────────────
 async function start() {
   try {
-    await setup();
     app.listen(PORT, () => {
       console.log(`\n🏛️  JuriDix API démarrée sur le port ${PORT}`);
       console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
