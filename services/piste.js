@@ -5,8 +5,8 @@
  */
 const axios = require('axios');
 
-const PISTE_BASE = process.env.PISTE_BASE_URL || 'https://api.piste.gouv.fr/dila/legifrance/lf-engine-app';
-const OAUTH_URL = 'https://oauth.piste.gouv.fr/api/oauth/token';
+const PISTE_BASE = process.env.PISTE_BASE_URL || 'https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app';
+const OAUTH_URL = process.env.PISTE_OAUTH_URL || 'https://sandbox-oauth.piste.gouv.fr/api/oauth/token';
 
 let tokenCache = null;
 let tokenExpiry = 0;
