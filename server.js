@@ -55,11 +55,19 @@ app.use('/api/search', searchRoutes);
 // ─── PISTE Debug ──────────────────────────────────────────
 app.get('/api/debug/piste', async (req, res) => {
   const pisteService = require('./services/piste');
+  const id = process.env.PISTE_CLIENT_ID || '';
+  const secret = process.env.PISTE_CLIENT_SECRET || '';
+  const envInfo = {
+    client_id_loaded: id ? id.substring(0, 8) + '…' : 'MANQUANT',
+    client_secret_loaded: secret ? secret.substring(0, 8) + '…' : 'MANQUANT',
+    oauth_url: process.env.PISTE_OAUTH_URL || 'https://oauth.piste.gouv.fr/api/oauth/token (défaut)',
+    api_url: process.env.PISTE_BASE_URL || 'https://sandbox-api.piste.gouv.fr/… (défaut)'
+  };
   try {
     const token = await pisteService.getAccessToken();
-    res.json({ ok: true, token_preview: token ? token.substring(0, 20) + '…' : null });
+    res.json({ ok: true, env: envInfo, token_preview: token ? token.substring(0, 20) + '…' : null });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message, details: err.response?.data || null });
+    res.status(500).json({ ok: false, env: envInfo, error: err.message, details: err.response?.data || null });
   }
 });
 
