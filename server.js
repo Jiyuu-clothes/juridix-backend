@@ -52,6 +52,17 @@ app.use('/api/auth/', authLimiter);
 // ─── API Routes ───────────────────────────────────────────
 app.use('/api/search', searchRoutes);
 
+// ─── PISTE Debug ──────────────────────────────────────────
+app.get('/api/debug/piste', async (req, res) => {
+  const pisteService = require('./services/piste');
+  try {
+    const token = await pisteService.getAccessToken();
+    res.json({ ok: true, token_preview: token ? token.substring(0, 20) + '…' : null });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message, details: err.response?.data || null });
+  }
+});
+
 // ─── Health Check ─────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({ 
