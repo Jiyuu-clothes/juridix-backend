@@ -5,8 +5,8 @@
  */
 const axios = require('axios');
 
-const PISTE_BASE = process.env.PISTE_BASE_URL || 'https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app';
-const OAUTH_URL = process.env.PISTE_OAUTH_URL || 'https://oauth.piste.gouv.fr/api/oauth/token';
+const PISTE_BASE = process.env.PISTE_BASE_URL || 'https://sandbox-api.aife.economie.gouv.fr/dila/legifrance/lf-engine-app';
+const OAUTH_URL = process.env.PISTE_OAUTH_URL || 'https://sandbox-oauth.aife.economie.gouv.fr/api/oauth/token';
 
 let tokenCache = null;
 let tokenExpiry = 0;
@@ -27,14 +27,10 @@ async function getAccessToken() {
   });
 
   tokenCache = response.data.access_token;
-  tokenExpiry = now + (response.data.expires_in - 60) * 1000; // refresh 1 min early
+  tokenExpiry = now + (response.data.expires_in - 60) * 1000;
   return tokenCache;
 }
 
-/**
- * Search Légifrance for articles matching query.
- * Returns array of { id, title, code, article, content, url }
- */
 async function search(query, filters = {}) {
   const token = await getAccessToken();
 
@@ -51,11 +47,7 @@ async function search(query, filters = {}) {
   };
 
   const response = await axios.post(`${PISTE_BASE}/search`, body, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
     timeout: 8000
   });
 
@@ -78,9 +70,6 @@ function buildFilters(filters) {
   return result;
 }
 
-/**
- * Fetch a single article by CID
- */
 async function getArticle(cid) {
   const token = await getAccessToken();
   const response = await axios.get(`${PISTE_BASE}/consult/legi/article`, {
