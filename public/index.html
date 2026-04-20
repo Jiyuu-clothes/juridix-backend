@@ -133,6 +133,26 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .nbtn-new:hover{background:rgba(255,255,255,0.07)}
 .nbtn-del{background:transparent;border-color:rgba(248,113,113,0.2);color:var(--red)}
 .nbtn-del:hover{background:rgba(248,113,113,0.1)}
+.nbtn-expand{background:transparent;border-color:rgba(124,107,255,0.2);color:var(--acc2)}
+.nbtn-expand:hover{background:rgba(124,107,255,0.1)}
+
+/* NOTE MODAL */
+#note-modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px}
+#note-modal.show{display:flex}
+.nm-box{background:var(--bg2);border:1px solid var(--gb);border-radius:var(--r);width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.6)}
+.nm-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--gb)}
+#nm-title{flex:1;background:transparent;border:none;color:var(--t1);font-size:16px;font-weight:700;outline:none;font-family:-apple-system,sans-serif}
+#nm-title:focus{border-bottom:1px solid var(--acc)}
+.nm-date{font-size:11px;color:var(--t3);white-space:nowrap}
+#nm-body{flex:1;background:transparent;border:none;color:var(--t1);font-size:14px;font-family:Georgia,serif;line-height:1.8;padding:18px;resize:none;outline:none;overflow-y:auto;min-height:300px}
+.nm-footer{padding:12px 18px;border-top:1px solid var(--gb);display:flex;gap:8px;justify-content:flex-end}
+.nm-btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid;transition:all .2s}
+.nm-btn-save{background:var(--acc);border-color:var(--acc);color:#fff}
+.nm-btn-save:hover{background:#6958e8}
+.nm-btn-close{background:transparent;border-color:rgba(255,255,255,0.15);color:var(--t2)}
+.nm-btn-close:hover{background:rgba(255,255,255,0.07)}
+.nm-btn-del{background:transparent;border-color:rgba(248,113,113,0.2);color:var(--red)}
+.nm-btn-del:hover{background:rgba(248,113,113,0.08)}
 
 /* FICHES PAGE */
 #page-fiches{padding:0}
@@ -409,6 +429,7 @@ body.focus-mode #topbar #tabs{display:none}
             <div class="note-btns">
               <button class="nbtn nbtn-new" onclick="newNote()">Nouvelle</button>
               <button class="nbtn nbtn-save" onclick="saveNote()">Enregistrer</button>
+              <button class="nbtn nbtn-expand" onclick="if(_noteIdx>=0)openNoteModal(_noteIdx)">↗</button>
               <button class="nbtn nbtn-del" onclick="deleteCurrentNote()">Supprimer</button>
             </div>
           </div>
@@ -441,6 +462,23 @@ body.focus-mode #topbar #tabs{display:none}
 
 <!-- CITATION TOAST -->
 <div class="cite-toast" id="cite-toast">✅ Référence copiée !</div>
+
+<!-- NOTE MODAL -->
+<div id="note-modal">
+  <div class="nm-box">
+    <div class="nm-header">
+      <span style="font-size:16px">✏️</span>
+      <input type="text" id="nm-title" placeholder="Titre de la note…">
+      <span class="nm-date" id="nm-date"></span>
+    </div>
+    <textarea id="nm-body" placeholder="Contenu de la note…"></textarea>
+    <div class="nm-footer">
+      <button class="nm-btn nm-btn-del" onclick="deleteNoteFromModal()">🗑️ Supprimer</button>
+      <button class="nm-btn nm-btn-close" onclick="closeNoteModal()">Fermer</button>
+      <button class="nm-btn nm-btn-save" onclick="saveNoteFromModal()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ===== CORPUS ===== */
@@ -1224,7 +1262,11 @@ function toggleFocus(){
 /* ===== NOTES ===== */
 function renderNotes(){
   var html=_notes.map(function(n,i){
-    return '<div class="note-chip'+(i===_noteIdx?' on':'')+'" onclick="selectNote('+i+')"><div class="nc-title">'+n.title+'</div><div class="nc-date">'+n.date+'</div></div>';
+    return '<div class="note-chip'+(i===_noteIdx?' on':'')+'" onclick="selectNote('+i+')" style="position:relative;padding-right:32px">'
+      +'<div class="nc-title">'+escHtml(n.title)+'</div>'
+      +'<div class="nc-date">'+escHtml(n.date)+'</div>'
+      +'<span onclick="event.stopPropagation();openNoteModal('+i+')" title="Ouvrir en grand" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--acc2);cursor:pointer;padding:2px 4px;border-radius:4px;background:rgba(124,107,255,0.1)">↗</span>'
+      +'</div>';
   }).join('');
   document.getElementById('notes-list').innerHTML=html||'<div style="padding:12px 8px;font-size:12px;color:var(--t3)">Aucune note. Clique sur un article et "Ajouter aux notes".</div>';
 }
@@ -1258,6 +1300,53 @@ function deleteCurrentNote(){
   document.getElementById('note-body-in').value='';
   saveStorage();renderNotes();
 }
+
+/* ===== NOTE MODAL ===== */
+var _modalIdx=-1;
+function openNoteModal(i){
+  var n=_notes[i];if(!n)return;
+  _modalIdx=i;
+  document.getElementById('nm-title').value=n.title;
+  document.getElementById('nm-body').value=n.body;
+  document.getElementById('nm-date').textContent=n.date;
+  document.getElementById('note-modal').classList.add('show');
+  setTimeout(function(){document.getElementById('nm-body').focus();},100);
+}
+function closeNoteModal(){
+  document.getElementById('note-modal').classList.remove('show');
+  _modalIdx=-1;
+}
+function saveNoteFromModal(){
+  if(_modalIdx<0)return;
+  var title=document.getElementById('nm-title').value.trim();
+  var body=document.getElementById('nm-body').value.trim();
+  if(!title)return;
+  var now=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
+  _notes[_modalIdx]={title:title,body:body,date:now};
+  /* Sync l'éditeur latéral aussi */
+  if(_noteIdx===_modalIdx){
+    document.getElementById('note-title-in').value=title;
+    document.getElementById('note-body-in').value=body;
+  }
+  saveStorage();renderNotes();
+  /* Feedback */
+  var btn=document.querySelector('.nm-btn-save');
+  var orig=btn.innerHTML;
+  btn.innerHTML='✅ Sauvegardé !';
+  setTimeout(function(){btn.innerHTML=orig;},1500);
+}
+function deleteNoteFromModal(){
+  if(_modalIdx<0)return;
+  if(!confirm('Supprimer cette note ?'))return;
+  _notes.splice(_modalIdx,1);
+  if(_noteIdx===_modalIdx){_noteIdx=-1;document.getElementById('note-title-in').value='';document.getElementById('note-body-in').value='';}
+  saveStorage();renderNotes();
+  closeNoteModal();
+}
+/* Fermer en cliquant sur le fond */
+document.getElementById('note-modal').addEventListener('click',function(e){
+  if(e.target===this)closeNoteModal();
+});
 
 /* ===== FICHES ===== */
 var FICHES=[
