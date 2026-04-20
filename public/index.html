@@ -307,15 +307,17 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .pw-feats li::before{content:'✦';color:var(--acc2)}
 .pw-btns{display:flex;gap:8px;justify-content:center}
 
-/* FOCUS MODE — lecture */
-body.focus-mode:not(.redac-mode) #panel-l{display:none}
-body.focus-mode:not(.redac-mode) #notes-pane{display:none}
-body.focus-mode:not(.redac-mode) #reader-pane{padding:40px 15%;font-size:18px}
+/* FOCUS MODE — masque les onglets dans tous les cas */
 body.focus-mode #topbar #tabs{display:none}
-/* FOCUS MODE — rédaction : plein écran éditeur */
-body.focus-mode.redac-mode #panel-r{display:none}
-body.focus-mode.redac-mode #panel-l{width:100%;max-width:100%}
-body.focus-mode.redac-mode #redac-sidebar{display:none}
+body.focus-mode .resizer{display:none}
+/* FOCUS droite : Recherche & Codes → article en plein écran */
+body.focus-mode.focus-right #panel-l{display:none}
+body.focus-mode.focus-right #notes-pane{display:none}
+body.focus-mode.focus-right #reader-pane{padding:40px 15%;font-size:18px}
+/* FOCUS gauche : Rédaction, Fiches, Quiz → section en plein écran */
+body.focus-mode.focus-left #panel-r{display:none}
+body.focus-mode.focus-left #panel-l{width:100%!important;max-width:100%!important}
+body.focus-mode.focus-left #redac-sidebar{display:none}
 /* REDAC MODE — cache le panneau notes de droite */
 body.redac-mode #notes-pane{display:none}
 
@@ -1415,6 +1417,8 @@ function switchTab(tab){
   document.body.classList.toggle('redac-mode', tab==='redac');
   // Adapter la largeur du panneau gauche selon l'onglet
   if(typeof applyPanelWidth === 'function') applyPanelWidth(tab);
+  // Recalculer le focus si actif
+  if(_focusOn) applyFocusClass();
   if(tab==='codes' && !_codesInited){initCodes();}
   if(tab==='redac' && !_redacInited){initRedac();}
   if(tab!=='fiches'){
@@ -1426,6 +1430,19 @@ function toggleFocus(){
   _focusOn=!_focusOn;
   document.body.classList.toggle('focus-mode',_focusOn);
   document.getElementById('focus-btn').classList.toggle('on',_focusOn);
+  applyFocusClass();
+}
+
+function applyFocusClass(){
+  document.body.classList.remove('focus-left','focus-right');
+  if(!_focusOn) return;
+  // Gauche = contenu principal dans panel-l (Rédaction, Fiches, Quiz)
+  if(_tab==='redac'||_tab==='fiches'||_tab==='quiz'){
+    document.body.classList.add('focus-left');
+  } else {
+    // Droite = article reader (Recherche, Codes)
+    document.body.classList.add('focus-right');
+  }
 }
 
 /* ===== NOTES ===== */
@@ -2248,7 +2265,7 @@ function makeResizer(resizerEl, getTarget, getSize, setSize, opts){
 
 // Séparateur principal panel-l / panel-r
 // Largeurs par défaut par onglet (% de la fenêtre)
-var TAB_DEFAULT_PCT = { search:40, codes:34, redac:58, fiches:38, quiz:38 };
+var TAB_DEFAULT_PCT = { search:40, codes:34, redac:65, fiches:38, quiz:38 };
 
 function applyPanelWidth(tab, forceDefault){
   var panelL  = document.getElementById('panel-l');
