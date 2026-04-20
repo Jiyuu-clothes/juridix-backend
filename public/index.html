@@ -226,6 +226,27 @@ body.focus-mode #topbar #tabs{display:none}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .result-item{transition:background .15s,border-color .15s}
 
+/* ANALYSE PÉDAGOGIQUE */
+.art-analyse{margin:20px 0 8px;padding-top:20px;border-top:1px solid var(--gb)}
+.analyse-hdr{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.analyse-hdr span{background:rgba(124,107,255,0.15);border:1px solid rgba(124,107,255,0.25);border-radius:4px;padding:1px 7px;font-size:9px;color:var(--acc2)}
+.analyse-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.acard{border-radius:var(--r2);padding:11px 13px;border:1px solid var(--gb);background:rgba(255,255,255,0.025);font-family:sans-serif}
+.acard.full{grid-column:1/-1}
+.acard.green{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.05)}
+.acard.warn{border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.05)}
+.acard.purple{border-color:rgba(124,107,255,.3);background:rgba(124,107,255,.07)}
+.acard.blue{border-color:rgba(96,165,250,.3);background:rgba(96,165,250,.05)}
+.acard-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;color:var(--t3)}
+.acard.green .acard-lbl{color:var(--green)}
+.acard.warn .acard-lbl{color:var(--gold)}
+.acard.purple .acard-lbl{color:var(--acc2)}
+.acard.blue .acard-lbl{color:var(--blue)}
+.acard-text{font-size:12px;color:var(--t2);line-height:1.5}
+.acard-list{list-style:none;padding:0;margin:0}
+.acard-list li{font-size:12px;color:var(--t2);line-height:1.4;padding:2px 0 2px 14px;position:relative}
+.acard-list li::before{content:'▸';position:absolute;left:0;color:var(--acc2);font-size:9px;top:4px}
+
 /* RELATED JURISPRUDENCE */
 .art-related{margin:24px 0 20px;padding-top:20px;border-top:1px solid var(--gb);font-family:sans-serif}
 .art-related-title{font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
@@ -361,6 +382,7 @@ body.focus-mode #topbar #tabs{display:none}
             </div>
           </div>
           <div class="art-texte" id="ac-texte"></div>
+          <div id="ac-pedagogy"></div>
           <div id="ac-related"></div>
           <div class="art-voir" id="ac-voir"></div>
           <div class="art-actions">
@@ -564,11 +586,229 @@ var CORPUS=[
 {id:'def-lien-caus',type:'definition',code:'Doctrine',ref:'Définition',title:'Lien de causalité — Théories',
  texte:"Le lien de causalité est le rapport entre le fait générateur et le dommage. Deux théories s'affrontent :\n\n1° Théorie de l'équivalence des conditions : toute condition sine qua non du dommage est une cause (in dubio pro victima).\n2° Théorie de la causalité adéquate : seule la cause qui, selon le cours normal des choses, était de nature à produire le dommage est retenue.\n\nLa jurisprudence française oscille entre les deux.",
  themes:['causalité','équivalence des conditions','causalité adéquate','dommage','fait générateur'],voir:['Art. 1240','Art. 1231-1'],vigeur:''},
+/* ── DROIT DES CONTRATS (suite) ── */
+{id:'cc-1113',type:'code',code:'Code civil',ref:'Art. 1113',title:'Formation du contrat — Offre et acceptation',
+ texte:"Le contrat est formé par la rencontre d'une offre et d'une acceptation par lesquelles les parties manifestent leur volonté de s'engager.",
+ themes:['offre','acceptation','formation du contrat','rencontre des volontés','pollicitation'],voir:['Art. 1114','Art. 1118'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-1114',type:'code',code:'Code civil',ref:'Art. 1114',title:"Conditions de l'offre",
+ texte:"L'offre, faite à personne déterminée ou indéterminée, comprend les éléments essentiels du contrat envisagé et exprime la volonté de son auteur d'être lié en cas d'acceptation. À défaut, il y a seulement invitation à entrer en négociation.",
+ themes:['offre','éléments essentiels','ferme','précise','pollicitation','invitation négocier'],voir:['Art. 1113','Art. 1115'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-1131',type:'code',code:'Code civil',ref:'Art. 1131',title:'Erreur — Vice du consentement',
+ texte:"L'erreur de droit ou de fait, à moins qu'elle ne soit inexcusable, est une cause de nullité du contrat lorsqu'elle porte sur les qualités essentielles de la prestation due ou sur celles du cocontractant.",
+ themes:['erreur','qualités essentielles','vice du consentement','inexcusable','nullité relative'],voir:['Art. 1130','Art. 1132','Art. 1133'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-1162',type:'code',code:'Code civil',ref:'Art. 1162',title:"Contenu du contrat conforme à l'ordre public",
+ texte:"Le contrat ne peut déroger à l'ordre public ni par ses stipulations, ni par son but, que ce dernier ait été connu ou non par toutes les parties.",
+ themes:["ordre public","contenu","illicite","but","stipulations","nullité absolue"],voir:['Art. 1128','Art. 6'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-6',type:'code',code:'Code civil',ref:'Art. 6',title:'Ordre public et bonnes mœurs',
+ texte:"On ne peut déroger, par des conventions particulières, aux lois qui intéressent l'ordre public et les bonnes mœurs.",
+ themes:["ordre public","bonnes mœurs","lois impératives","dérogation","nullité"],voir:['Art. 1162','Art. 1102'],vigeur:'En vigueur'},
+{id:'cc-1231-3',type:'code',code:'Code civil',ref:'Art. 1231-3',title:'Responsabilité contractuelle — Dommages prévisibles',
+ texte:"Le débiteur n'est tenu que des dommages et intérêts qui ont été prévus ou qui pouvaient être prévus lors de la conclusion du contrat, sauf lorsque l'inexécution est due à une faute lourde ou dolosive.",
+ themes:['dommages prévisibles','responsabilité contractuelle','faute lourde','faute dolosive','réparation'],voir:['Art. 1231-1','Art. 1240'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-1344',type:'code',code:'Code civil',ref:'Art. 1344',title:'Mise en demeure',
+ texte:"Le débiteur est mis en demeure de payer soit par une sommation ou un acte portant interpellation suffisante, soit, si le contrat le prévoit, par la seule exigibilité de l'obligation.",
+ themes:['mise en demeure','sommation','interpellation','demeure','débiteur'],voir:['Art. 1231-1','Art. 1345'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-1109',type:'code',code:'Code civil',ref:'Art. 1109',title:'Contrat synallagmatique et contrat unilatéral',
+ texte:"Le contrat est synallagmatique lorsque les contractants s'obligent réciproquement les uns envers les autres. Il est unilatéral lorsqu'une ou plusieurs personnes s'obligent envers une ou plusieurs autres sans que de la part de ces dernières il y ait d'engagement.",
+ themes:['synallagmatique','unilatéral','obligations réciproques','bilatéral'],voir:['Art. 1101','Art. 1110'],vigeur:'En vigueur depuis oct. 2016'},
+{id:'cc-1179',type:'code',code:'Code civil',ref:'Art. 1179',title:'Nullité relative et nullité absolue',
+ texte:"La nullité est absolue lorsque la règle violée a pour objet la sauvegarde de l'intérêt général. Elle est relative lorsque la règle violée a pour seul objet la sauvegarde d'un intérêt privé.",
+ themes:['nullité absolue','nullité relative','intérêt général','intérêt privé','sanction','contrat'],voir:['Art. 1128','Art. 1181'],vigeur:'En vigueur depuis oct. 2016'},
+/* ── DROIT DES PERSONNES ── */
+{id:'cc-414-1',type:'code',code:'Code civil',ref:'Art. 414-1',title:'Insanité de raison — Actes nuls',
+ texte:"Pour faire un acte valable, il faut être sain d'esprit. C'est à ceux qui agissent en nullité pour cette cause de prouver l'existence d'un trouble mental au moment de l'acte.",
+ themes:["insanité d'esprit","trouble mental","nullité","capacité","sain d'esprit"],voir:['Art. 425','Art. 901'],vigeur:'En vigueur'},
+{id:'cc-16-1',type:'code',code:'Code civil',ref:'Art. 16-1',title:'Respect du corps humain',
+ texte:"Chacun a droit au respect de son corps. Le corps humain est inviolable. Le corps humain, ses éléments et ses produits ne peuvent faire l'objet d'un droit patrimonial.",
+ themes:['corps humain','inviolabilité','extra-patrimonialité','dignité','bioéthique'],voir:['Art. 16','Art. 16-3'],vigeur:'En vigueur'},
+/* ── CODE PÉNAL (suite) ── */
+{id:'cp-122-1',type:'code',code:'Code pénal',ref:'Art. 122-1',title:"Irresponsabilité pénale pour trouble mental",
+ texte:"N'est pas pénalement responsable la personne qui était atteinte, au moment des faits, d'un trouble mental ayant aboli son discernement ou le contrôle de ses actes. La personne qui était atteinte, au moment des faits, d'un trouble mental ayant altéré son discernement ou entravé le contrôle de ses actes demeure punissable ; toutefois, la juridiction tient compte de cette circonstance lorsqu'elle détermine la peine.",
+ themes:['trouble mental','irresponsabilité','discernement','abolition','altération','cause subjective'],voir:['Art. 121-1','Art. 122-2'],vigeur:'En vigueur'},
+{id:'cp-131-1',type:'code',code:'Code pénal',ref:'Art. 131-1',title:'Peines criminelles',
+ texte:"Les peines criminelles encourues par les personnes physiques sont : la réclusion criminelle à perpétuité ; la réclusion criminelle de dix à trente ans ; la réclusion criminelle de cinq à dix ans.",
+ themes:['peine','crime','réclusion criminelle','perpétuité','quantum'],voir:['Art. 111-1','Art. 131-3'],vigeur:'En vigueur'},
+{id:'cp-225-1',type:'code',code:'Code pénal',ref:'Art. 225-1',title:'Discrimination',
+ texte:"Constitue une discrimination toute distinction opérée entre les personnes physiques à raison de leur origine, de leur sexe, de leur situation de famille, de leur grossesse, de leur apparence physique, de la particulière vulnérabilité résultant de leur situation économique, de leur patronyme, de leur lieu de résidence, de leur état de santé, de leur perte d'autonomie, de leur handicap, de leurs caractéristiques génétiques, de leurs mœurs, de leur orientation sexuelle, de leur identité de genre, de leur âge, de leurs opinions politiques, de leurs activités syndicales, de leur capacité à s'exprimer dans une langue autre que le français, de leur appartenance ou de leur non-appartenance, vraie ou supposée, à une ethnie, une nation, une prétendue race ou une religion déterminée.",
+ themes:['discrimination','égalité','distinction','critères','race','sexe','religion','handicap'],voir:['Art. 225-2','Art. 132-77'],vigeur:'En vigueur'},
+/* ── CODE DU TRAVAIL ── */
+{id:'ct-L1221-1',type:'code',code:'Code du travail',ref:'Art. L.1221-1',title:'Contrat de travail — Définition',
+ texte:"Le contrat de travail est soumis aux règles du droit commun. Il peut être établi selon les formes que les parties contractantes décident d'adopter.",
+ themes:['contrat de travail','droit commun','forme','subordination','lien'],voir:['Art. L.1221-2','Art. L.1237-19'],vigeur:'En vigueur'},
+{id:'ct-L1231-1',type:'code',code:'Code du travail',ref:'Art. L.1231-1',title:'Rupture du CDI',
+ texte:"Le contrat de travail à durée indéterminée peut être rompu à l'initiative de l'employeur ou du salarié, ou d'un commun accord, dans les conditions prévues par les dispositions du présent titre.",
+ themes:['CDI','rupture','licenciement','démission','résiliation','rupture conventionnelle'],voir:['Art. L.1232-1','Art. L.1237-19'],vigeur:'En vigueur'},
+{id:'ct-L1237-19',type:'code',code:'Code du travail',ref:'Art. L.1237-19',title:'Rupture conventionnelle — Principe',
+ texte:"L'employeur et le salarié peuvent convenir en commun des conditions de la rupture du contrat de travail qui les lie. La rupture conventionnelle, exclusive du licenciement ou de la démission, ne peut être imposée par l'une ou l'autre des parties.",
+ themes:['rupture conventionnelle','commun accord','CDI','homologation','indemnité','DREETS'],voir:['Art. L.1237-14','Art. L.1231-1'],vigeur:'En vigueur'},
+{id:'ct-L4121-1',type:'code',code:'Code du travail',ref:'Art. L.4121-1',title:"Obligation de sécurité de l'employeur",
+ texte:"L'employeur prend les mesures nécessaires pour assurer la sécurité et protéger la santé physique et mentale des travailleurs. Ces mesures comprennent des actions de prévention des risques professionnels, des actions d'information et de formation, la mise en place d'une organisation et de moyens adaptés.",
+ themes:["obligation de sécurité","employeur","risques professionnels","santé","prévention","résultat"],voir:['Art. L.4121-2'],vigeur:'En vigueur'},
+{id:'ct-L1232-1',type:'code',code:'Code du travail',ref:'Art. L.1232-1',title:'Licenciement pour cause réelle et sérieuse',
+ texte:"Tout licenciement pour motif personnel est motivé dans les conditions définies par le présent chapitre. Il est justifié par une cause réelle et sérieuse.",
+ themes:['licenciement','cause réelle','sérieuse','motif personnel','motivation'],voir:['Art. L.1232-6','Art. L.1235-1'],vigeur:'En vigueur'},
+/* ── DROIT CONSTITUTIONNEL ── */
+{id:'const-art34',type:'code',code:'Constitution 1958',ref:'Art. 34',title:'Domaine de la loi',
+ texte:"La loi fixe les règles concernant : les droits civiques et les garanties fondamentales accordées aux citoyens pour l'exercice des libertés publiques ; la liberté, le pluralisme et l'indépendance des médias ; les sujétions imposées par la Défense nationale aux citoyens en leur personne et en leurs biens.\nLa loi fixe également les règles concernant [...] la nationalité, l'état et la capacité des personnes, les régimes matrimoniaux, les successions et libéralités.",
+ themes:['domaine loi','législatif','règlement','répartition compétences','Art. 34','Art. 37'],voir:['Art. 37 Const.','Art. 41 Const.'],vigeur:'En vigueur'},
+{id:'const-art55',type:'code',code:'Constitution 1958',ref:'Art. 55',title:'Supériorité des traités sur la loi',
+ texte:"Les traités ou accords régulièrement ratifiés ou approuvés ont, dès leur publication, une autorité supérieure à celle des lois, sous réserve, pour chaque accord ou traité, de son application par l'autre partie.",
+ themes:['traité','supériorité','loi','hiérarchie des normes','droit international','réciprocité'],voir:['Art. 54 Const.','Art. 88-1 Const.'],vigeur:'En vigueur'},
+{id:'const-art61-1',type:'code',code:'Constitution 1958',ref:'Art. 61-1',title:'Question prioritaire de constitutionnalité (QPC)',
+ texte:"Lorsque, à l'occasion d'une instance en cours devant une juridiction, il est soutenu qu'une disposition législative porte atteinte aux droits et libertés que la Constitution garantit, le Conseil constitutionnel peut être saisi de cette question sur renvoi du Conseil d'État ou de la Cour de cassation.",
+ themes:['QPC','constitutionnalité','droits fondamentaux','Conseil constitutionnel','renvoi','filtre'],voir:['Art. 62 Const.'],vigeur:'En vigueur depuis 2008'},
+/* ── JURISPRUDENCE COMPLÉMENTAIRE ── */
+{id:'jp-nicolo',type:'jurisprudence',code:'Conseil d\'État',ref:'CE, 20 oct. 1989',title:"Nicolo — Supériorité des traités sur la loi",
+ texte:"Le Conseil d'État admet pour la première fois de contrôler la compatibilité d'une loi avec un traité international ratifié (ici le Traité de Rome). Il abandonne la jurisprudence des Semoules (1968) et applique l'article 55 de la Constitution.",
+ themes:["supériorité traités","loi","contrôle de conventionnalité","Art. 55","CE","revirement"],voir:['Art. 55 Constitution'],vigeur:"Arrêt de principe — toujours applicable"},
+{id:'jp-costedoat',type:'jurisprudence',code:'Cour de cassation',ref:'Ass. plén., 25 fév. 2000',title:"Costedoat — Immunité du préposé",
+ texte:"N'engage pas sa responsabilité à l'égard des tiers le préposé qui agit sans excéder les limites de la mission qui lui a été impartie par son commettant.",
+ themes:['préposé','commettant','immunité','limites de la mission','responsabilité','art. 1242'],voir:['Art. 1242 Code civil'],vigeur:"Arrêt de principe — confirmé par l'arrêt Cousin (2001)"},
+{id:'jp-perruche',type:'jurisprudence',code:'Cour de cassation',ref:'Ass. plén., 17 nov. 2000',title:"Perruche — Préjudice de naissance (controversé)",
+ texte:"Dès lors que les fautes commises par le médecin et le laboratoire dans l'exécution des contrats formés avec Mme Perruche avaient empêché celle-ci d'exercer son choix d'interrompre sa grossesse, l'enfant peut demander la réparation du préjudice résultant de son handicap.",
+ themes:["préjudice de naissance","handicap","faute médicale","IVG","causalité","indemnisation"],voir:['Art. 1231-1 Code civil'],vigeur:"Solution législativement écartée par la loi Kouchner 2002 (art. L114-5 CASF)"},
+{id:'jp-dame-lamotte',type:'jurisprudence',code:'Conseil d\'État',ref:'CE, 17 fév. 1950',title:"Dame Lamotte — Recours pour excès de pouvoir",
+ texte:"Le recours pour excès de pouvoir est ouvert, même sans texte, contre tout acte administratif ; et les règlements ou lois qui suppriment ce recours seraient elles-mêmes inconstitutionnelles.",
+ themes:['recours pour excès de pouvoir','REP','acte administratif','principe général','sans texte','annulation'],voir:['Art. L521-1 CJA'],vigeur:"Arrêt fondateur du REP — principe général du droit"},
+{id:'jp-71-44',type:'jurisprudence',code:'Conseil constitutionnel',ref:'CC, 71-44 DC, 16 juil. 1971',title:"Liberté d'association — Bloc de constitutionnalité",
+ texte:"Le Conseil constitutionnel se reconnaît compétent pour contrôler la constitutionnalité des lois par rapport au Préambule de la Constitution de 1958, qui renvoie à la Déclaration des droits de 1789 et au Préambule de 1946. Cette décision fonde le bloc de constitutionnalité.",
+ themes:["bloc de constitutionnalité","DDHC","Préambule 1946","contrôle de constitutionnalité","liberté association"],voir:['Art. 61 Constitution'],vigeur:"Décision fondatrice — toujours en vigueur"},
+{id:'jp-ass-planchon',type:'jurisprudence',code:'Conseil d\'État',ref:'CE Ass., 28 mai 1971',title:"Ville Nouvelle Est — Bilan coût-avantages",
+ texte:"Le Conseil d'État adopte la théorie du bilan : une opération d'utilité publique ne peut être légalement déclarée d'utilité publique que si les atteintes à la propriété privée, le coût financier et les inconvénients sociaux qu'elle comporte ne sont pas excessifs par rapport à l'intérêt qu'elle présente.",
+ themes:['expropriation','utilité publique','théorie du bilan','coût avantages','droit administratif'],voir:['Art. 17 DDHC'],vigeur:"Toujours applicable"},
+/* ── DÉFINITIONS COMPLÉMENTAIRES ── */
+{id:'def-preuve',type:'definition',code:'Doctrine',ref:'Définition',title:'La preuve en droit civil — Principes',
+ texte:"Principes fondamentaux :\n• Actori incumbit probatio : la charge de la preuve pèse sur celui qui allègue (art. 1353 C. civ.)\n• Liberté de la preuve en matière commerciale\n• Preuve légale en matière civile (modes limitatifs)\n\nModes de preuve civile (art. 1341 et s.) :\n1° L'écrit (acte authentique, acte sous signature privée)\n2° Le témoignage (limité en matière civile)\n3° La présomption (légale ou judiciaire)\n4° L'aveu judiciaire\n5° Le serment décisoire",
+ themes:['preuve','charge','actori','modes de preuve','écrit','témoignage','présomption','aveu'],voir:['Art. 1353','Art. 1358'],vigeur:''},
+{id:'def-contrat-adh',type:'definition',code:'Doctrine',ref:'Définition',title:"Contrat d'adhésion vs contrat de gré à gré",
+ texte:"Contrat de gré à gré (art. 1110 al. 1) : ses stipulations sont librement négociées entre les parties.\n\nContrat d'adhésion (art. 1110 al. 2) : ses conditions générales, déterminées à l'avance par l'une des parties, ne sont pas négociables — l'autre partie y adhère en bloc ou ne contracte pas.\n\nImportance : les clauses abusives dans les contrats d'adhésion sont réputées non écrites (art. 1171 C. civ.).",
+ themes:["contrat d'adhésion","gré à gré","clauses générales","non négociable","art. 1110","clauses abusives"],voir:["Art. 1110","Art. 1171"],vigeur:''},
+{id:'def-subrogation',type:'definition',code:'Doctrine',ref:'Définition',title:'Subrogation personnelle',
+ texte:"La subrogation personnelle est la substitution d'une personne (le subrogé) à une autre (le subrogeant) dans un rapport d'obligation, de sorte que le subrogé recueille la créance avec tous ses accessoires.\n\nSubrogation légale (art. 1346 C. civ.) : automatique dans les cas prévus par la loi (ex : paiement par un codébiteur solidaire)\nSubrogation conventionnelle (art. 1346-1 C. civ.) : résulte d'un accord.\n\nÀ distinguer de la cession de créance.",
+ themes:['subrogation','créance','cession','paiement','accessoires','légale','conventionnelle'],voir:['Art. 1346','Art. 1321'],vigeur:''},
 ];
 
 /* build index */
 var CIDX={};
 CORPUS.forEach(function(a){CIDX[a.id]=a;});
+
+/* ===== PÉDAGOGIE — Analyse par article ===== */
+var PEDAGOGY={
+'cc-1240':{
+  claire:"Toute personne qui cause un dommage à une autre en dehors d'un contrat doit le réparer, à condition d'avoir commis une faute. C'est le fondement de toute la responsabilité civile délictuelle.",
+  conditions:["Une faute : tout comportement illicite ou anormal, même léger","Un dommage : certain, direct, personnel et légitime","Un lien de causalité directe entre la faute et le dommage"],
+  retenir:"Anciennement art. 1382 C. civ. (avant réforme 2016). Les 3 conditions sont CUMULATIVES. S'applique hors contrat. Si contrat → art. 1231-1.",
+  exam:"Piège classique : oublier le lien de causalité. Méthode cas pratique : 1° Identifier hors contrat → responsabilité délictuelle, 2° Vérifier les 3 conditions séparément, 3° Ne pas confondre avec art. 1242 (responsabilité du fait des choses ou d'autrui)."
+},
+'cc-1241':{
+  claire:"Art. 1240 s'applique aux fautes intentionnelles ; art. 1241 étend la responsabilité aux fautes d'imprudence et de négligence — même involontaires.",
+  conditions:["Une faute d'imprudence OU de négligence (non intentionnelle)","Un dommage","Un lien de causalité"],
+  retenir:"Art. 1241 complète art. 1240 : toute faute engage la responsabilité, qu'elle soit intentionnelle ou non. La moindre négligence suffit.",
+  exam:"Lire l'art. 1240 et 1241 ensemble. Si les faits évoquent une maladresse, une inattention, citer les deux."
+},
+'cc-1242':{
+  claire:"On peut être responsable non seulement pour sa propre faute (art. 1240), mais aussi pour les dommages causés par des personnes sous sa responsabilité ou des choses sous sa garde.",
+  conditions:["Al. 1 : avoir la garde d'une chose (usage, direction, contrôle)","Parents : exercer l'autorité parentale sur un enfant mineur habitant avec eux","Commettants : lien de préposition dans les fonctions"],
+  retenir:"Trois régimes distincts : 1° Fait des choses (al.1, arrêt Jand'heur 1930) — 2° Fait d'autrui principe général (arrêt Blieck 1991) — 3° Parents (présomption irréfragable, arrêt Bertrand 1997). Présomption renversable sauf pour les parents.",
+  exam:"Identifier qui est 'gardien'. Pour les parents : seule force majeure ou faute de la victime les exonère (Bertrand). Ne pas confondre garde de la structure/comportement (pour les animaux/choses)."
+},
+'cc-1101':{
+  claire:"Le contrat, c'est simplement un accord entre deux personnes qui veulent créer, modifier ou éteindre une obligation. Toute la théorie des contrats repose sur cette définition.",
+  conditions:["Accord de volontés (au moins deux personnes)","But : créer, modifier, transmettre ou éteindre des obligations","Distinguer du contrat unilatéral, de l'acte juridique unilatéral, du quasi-contrat"],
+  retenir:"Réforme 2016 : le mot 'cause' a disparu. Les 3 conditions de validité sont désormais à l'art. 1128 : consentement + capacité + contenu licite.",
+  exam:"Question classique : 'Qu'est-ce qu'un contrat ?' → Citer art. 1101 intégralement. Ne pas confondre avec 'convention' (terme générique)."
+},
+'cc-1128':{
+  claire:"Pour qu'un contrat soit valable, il faut trois conditions : que les parties aient bien voulu s'engager (consentement), qu'elles en aient le droit (capacité), et que ce qu'elles font ne soit pas interdit (contenu licite).",
+  conditions:["1° Consentement libre et éclairé des parties (art. 1130 s.)","2° Capacité de contracter (art. 414-1 s.)","3° Contenu licite et certain (art. 1162 s.)"],
+  retenir:"Avant 2016 : consentement + capacité + objet + cause. Après 2016 : la cause a disparu, l'objet est remplacé par 'contenu'. Mémoriser les 3 nouvelles conditions.",
+  exam:"Attention : la nullité varie selon la condition violée. Consentement/capacité → nullité RELATIVE. Contenu illicite → nullité ABSOLUE (art. 1179)."
+},
+'cc-1130':{
+  claire:"Ton consentement est vicié si tu as signé à cause d'une erreur, d'une tromperie (dol) ou d'une menace (violence). Dans ces cas, le contrat peut être annulé.",
+  conditions:["Le vice doit avoir été déterminant : sans lui, on n'aurait pas contracté ou l'on aurait contracté à des conditions différentes","Erreur (art. 1131) : porte sur les qualités essentielles","Dol (art. 1137) : manœuvres, mensonges, réticence intentionnelle","Violence (art. 1140) : contrainte inspirant la crainte d'un mal considérable"],
+  retenir:"Sanction : nullité RELATIVE (art. 1181) — seule la partie victime peut l'invoquer. Prescription : 5 ans à compter de la découverte du vice ou de la cessation de la violence.",
+  exam:"Identifier d'abord quel vice : erreur / dol / violence. Vérifier le caractère déterminant. Conclure nullité relative + possibilité de dommages-intérêts en cas de dol ou violence."
+},
+'cc-1137':{
+  claire:"Le dol, c'est la tromperie : obtenir la signature de quelqu'un en lui mentant, en le manipulant, ou en lui cachant intentionnellement une information essentielle.",
+  conditions:["Un élément intentionnel : les manœuvres doivent être délibérées","Un élément matériel : mensonge, manœuvres, ou réticence dolosive (silence intentionnel)","Caractère déterminant : sans le dol, le contrat n'aurait pas été conclu"],
+  retenir:"Depuis 2016 : la réticence dolosive est expressément consacrée (al. 2). Ne pas confondre dol incident (n'entraîne que des DI) et dol principal (entraîne nullité + DI).",
+  exam:"Question piège : 'le silence peut-il constituer un dol ?' → OUI depuis art. 1137 al. 2 (réticence dolosive). Mais distinction : devoir d'information ≠ devoir de conseil."
+},
+'cc-1195':{
+  claire:"Si un événement imprévisible survient après la signature et rend l'exécution du contrat beaucoup trop lourde pour l'une des parties, celle-ci peut demander une renégociation. C'est la révolution de la réforme 2016.",
+  conditions:["Changement de circonstances imprévisible lors de la conclusion","Exécution excessivement onéreuse (pas seulement difficile)","La partie n'avait pas accepté d'assumer ce risque"],
+  retenir:"Renverse la jurisprudence Canal de Craponne (1876). Procédure en 3 temps : 1° Renégociation amiable (obligatoire), 2° Résolution ou adaptation judiciaire en cas d'échec, 3° Juge peut réviser ou résilier.",
+  exam:"Mettre en parallèle avec l'art. 1218 (force majeure) : imprévision ≠ force majeure (pas d'impossibilité absolue, juste surcoût excessif). Bien retenir les 3 étapes procédurales."
+},
+'cc-1218':{
+  claire:"La force majeure libère le débiteur s'il est dans l'impossibilité absolue d'exécuter à cause d'un événement qu'il ne contrôle pas, ne pouvait pas prévoir et ne peut pas surmonter.",
+  conditions:["Extériorité : l'événement échappe au contrôle du débiteur","Imprévisibilité : non raisonnablement prévisible à la conclusion","Irrésistibilité : ses effets ne peuvent être évités par des mesures appropriées"],
+  retenir:"Les 3 critères sont CUMULATIFS. Effets : empêchement temporaire → suspension ; empêchement définitif → résolution de plein droit. À distinguer de l'imprévision (art. 1195).",
+  exam:"Méthode : vérifier les 3 critères un par un. COVID-19 : qualification au cas par cas selon la jurisprudence. Ne pas confondre avec la clause contractuelle de force majeure."
+},
+'cc-1103':{
+  claire:"Un contrat valablement formé s'impose aux parties comme une loi. Elles ne peuvent pas s'en défaire unilatéralement — c'est le principe 'pacta sunt servanda'.",
+  conditions:["Le contrat doit avoir été légalement formé (art. 1128)","La force obligatoire s'impose aux deux parties","Le juge ne peut en principe pas réviser le contrat (sauf art. 1195 depuis 2016)"],
+  retenir:"Principe fondamental du droit des contrats. Atténué depuis 2016 par l'imprévision (art. 1195) et les clauses abusives (art. 1171). La bonne foi (art. 1104) est d'ordre public.",
+  exam:"Souvent mis en opposition avec art. 1195 (imprévision). La force obligatoire s'impose aussi au juge — il ne peut pas modifier le contrat sauf texte l'y autorisant."
+},
+'cc-1231-1':{
+  claire:"Si le débiteur n'exécute pas son contrat, il doit payer des dommages-intérêts pour réparer le préjudice subi par le créancier — sauf si la force majeure l'en empêche.",
+  conditions:["Inexécution ou exécution tardive de l'obligation contractuelle","Mise en demeure préalable (art. 1344) sauf exception","Absence de force majeure (art. 1218)"],
+  retenir:"Ne répare que les dommages PRÉVISIBLES lors de la conclusion (art. 1231-3) — différence fondamentale avec responsabilité délictuelle (art. 1240 : réparation intégrale).",
+  exam:"Distinguer responsabilité contractuelle (art. 1231-1) et délictuelle (art. 1240). En contractuel : on ne répare que le prévisible, sauf faute lourde ou dolosive."
+},
+'cc-2224':{
+  claire:"Passé 5 ans sans agir, on perd son droit d'action en justice. La prescription extinctive est le délai passé lequel une action en justice n'est plus recevable.",
+  conditions:["5 ans à compter du jour où le titulaire a connu (ou aurait dû connaître) les faits","Actions personnelles et mobilières (droit commun)","Délai suspendu ou interrompu dans les cas prévus par la loi"],
+  retenir:"Point de départ : connaissance réelle ou supposée. Causes d'interruption (art. 2240 s.) : acte de reconnaissance, demande en justice. Causes de suspension (art. 2233 s.) : minorité, impossibilité.",
+  exam:"Bien distinguer : prescription extinctive (5 ans, art. 2224) vs prescription acquisitive (10 ou 30 ans, art. 2261) vs délais spéciaux (prescription pénale, garantie des vices cachés)."
+},
+'cp-111-3':{
+  claire:"On ne peut être puni que pour un comportement prévu à l'avance par un texte. C'est la garantie fondamentale des citoyens contre l'arbitraire de l'État en matière pénale.",
+  conditions:["Un texte légal (loi pour crime/délit) ou réglementaire (règlement pour contravention) préexistant","Définissant les éléments constitutifs de l'infraction","Et prévoyant la peine applicable"],
+  retenir:"'Nullum crimen, nulla poena sine lege' — pas d'infraction, pas de peine sans loi. Corollaires : interprétation stricte de la loi pénale (art. 111-4), non-rétroactivité (art. 112-1).",
+  exam:"Art. 111-3 fonde le principe de légalité CRIMINELLE (pas civile). Citer les deux formules latines. Rappeler que pour les contraventions, le texte peut être un règlement."
+},
+'cp-121-3':{
+  claire:"Pour qu'il y ait crime ou délit, il faut non seulement un acte matériel, mais aussi un élément moral : soit l'intention (dol général), soit dans certains cas une faute d'imprudence.",
+  conditions:["Crime ou délit intentionnel : dol général (conscience de violer la loi) suffisant, sauf si la loi exige un dol spécial","Délit non intentionnel (art. 121-3 al. 3) : faute de mise en danger délibérée, imprudence, négligence","Contraventions : élément moral non requis"],
+  retenir:"Hiérarchie de la faute pénale non intentionnelle : mise en danger délibérée > faute caractérisée > faute simple. La faute simple ne suffit plus pour les personnes physiques depuis 2000 (loi Fauchon).",
+  exam:"Identifier : 1° Crime/délit intentionnel → chercher dol général (+ spécial si requis), 2° Délit non intentionnel → identifier type de faute, 3° Contravention → pas d'élément moral à prouver."
+},
+'cp-122-5':{
+  claire:"La légitime défense supprime l'infraction elle-même : il n'y a pas de crime si on se défend contre une agression injuste, à condition que la riposte soit proportionnée.",
+  conditions:["Une atteinte injustifiée envers soi-même ou autrui","Simultanéité : la défense doit être concomitante à l'atteinte","Nécessité : la défense doit être nécessaire pour repousser l'agression","Proportionnalité : pas de disproportion entre la défense et l'attaque"],
+  retenir:"Fait JUSTIFICATIF (pas d'infraction du tout) ≠ cause d'irresponsabilité subjective. Légitimité de la défense présumée dans les cas de l'art. 122-6 (nuit, introduction par effraction).",
+  exam:"Distinguer : fait justificatif (art. 122-4, 122-5, 122-7) = infraction objective effacée ≠ causes subjectives (art. 122-1, 122-2) = pas d'imputabilité. Vérifier chaque condition cumulativement."
+},
+'cp-121-1':{
+  claire:"En droit pénal, on n'est responsable QUE de ce qu'on a fait soi-même. On ne peut pas être puni pour le comportement d'un autre (contrairement au droit civil).",
+  conditions:["Un fait personnel (pas de responsabilité pénale du fait d'autrui)","Commis par la personne poursuivie","Imputabilité : discernement + liberté (capacité d'agir autrement)"],
+  retenir:"Principe de personnalité des peines. Exception : la complicité (art. 121-7) — mais le complice répond de SA participation, pas du fait du complice. Personne morale : art. 121-2.",
+  exam:"Souvent en contraste avec la responsabilité civile (art. 1242 — responsabilité du fait d'autrui). Souligner que c'est un principe fondamental qui ne souffre pas d'exception directe."
+},
+'cc-544':{
+  claire:"La propriété donne à son titulaire trois prérogatives : l'usus (utiliser), le fructus (profiter des fruits), et l'abusus (aliéner, transformer ou détruire). C'est le droit réel par excellence.",
+  conditions:["Un droit sur une chose (droit réel, opposable à tous — erga omnes)","Réunion des 3 attributs : usus + fructus + abusus","Limites : l'usage ne doit pas être prohibé par la loi ou les règlements"],
+  retenir:"Art. 544 : définition classique. La propriété est le plus complet des droits réels. Démembrement possible : usufruit (usus + fructus) vs nue-propriété (abusus). Caractère perpétuel et exclusif.",
+  exam:"Citer la trilogie usus/fructus/abusus. Distinguer la propriété de la possession (situation de fait). Art. 17 DDHC : caractère inviolable et sacré de la propriété."
+},
+'ct-L4121-1':{
+  claire:"L'employeur a une obligation de sécurité envers ses salariés : il doit prendre toutes les mesures nécessaires pour protéger leur santé physique et mentale.",
+  conditions:["Obligation de moyens renforcée (presque obligation de résultat selon jurisprudence)","Mesures de prévention, information et formation","Mise en place d'une organisation adaptée"],
+  retenir:"Jurisprudence : Cass. soc., 28 fév. 2002 (arrêt amiante) → obligation de sécurité de résultat. Atténué depuis 2015 (Cass. soc., 25 nov. 2015) → obligation de moyens renforcée si l'employeur a pris toutes les mesures.",
+  exam:"Identifier si c'est une obligation de moyens ou de résultat (débat jurisprudentiel). Le manquement peut justifier la prise d'acte de rupture aux torts de l'employeur."
+},
+'const-art55':{
+  claire:"Les traités internationaux régulièrement ratifiés ont une valeur supérieure aux lois ordinaires. Mais ils restent en dessous de la Constitution.",
+  conditions:["Traité régulièrement ratifié ou approuvé (contrôle préventif art. 54)","Publié au Journal officiel","Sous réserve de réciprocité de l'autre État partie"],
+  retenir:"Hiérarchie : Constitution > traités > loi > règlement. Arrêt Nicolo (CE 1989) : le juge ordinaire peut écarter une loi contraire à un traité. Distinction contrôle de constitutionnalité / conventionnalité.",
+  exam:"Ne pas confondre supériorité des traités SUR la loi (art. 55) avec la supériorité de la Constitution SUR les traités (art. 54). La QPC ne porte que sur la Constitution, pas sur les traités."
+}
+};
 
 /* ===== STATE ===== */
 var MAX_CRED=9999,_cred=MAX_CRED,_filter='all',_art=null,_tab='search';
@@ -600,15 +840,53 @@ function updateCreditsUI(){
 function closePaywall(){document.getElementById('paywall').classList.remove('show');}
 
 /* ===== SEARCH ENGINE ===== */
+/* Correspondances langage naturel → mots-clés juridiques */
+var NL_MAP={
+  'blessé':'responsabilité dommage faute','blessure':'responsabilité dommage faute',
+  'accident':'responsabilité dommage faute force majeure','victime':'responsabilité dommage réparation',
+  'voisin':'responsabilité trouble anormal voisinage','animal':'responsabilité animaux garde',
+  'employeur':'travail licenciement sécurité obligation','salarié':'travail licenciement CDI rupture',
+  'licencié':'licenciement cause réelle sérieuse CDI','licenciement':'licenciement cause réelle motif',
+  'licencie':'licenciement cause réelle sérieuse CDI',
+  'contrat':'contrat formation validité consentement','signé':'contrat formation consentement',
+  'trompé':'dol vice consentement manœuvres','mensonge':'dol vice consentement',
+  'forcé':'violence vice consentement contrainte','menacé':'violence vice consentement',
+  'annuler':'nullité vice consentement formation','nullité':'nullité relative absolue',
+  'impayé':'inexécution dommages-intérêts responsabilité','dette':'obligation créance prescription',
+  'prescription':'prescription délai extinction action',
+  'propriété':'propriété droit réel usus fructus abusus',
+  'voler':'vol soustraction frauduleuse pénal','volé':'vol soustraction frauduleuse pénal',
+  'arnaque':'escroquerie manœuvres frauduleuses tromperie','escroqué':'escroquerie tromperie',
+  'meurtre':'meurtre homicide volontaire crime pénal','tué':'meurtre homicide crime pénal',
+  'prison':'peine emprisonnement crime délit',
+  'constitution':'constitution bloc constitutionnalité loi',
+  'inconstitutionnel':'QPC constitutionnalité Conseil constitutionnel',
+  'traité':'traité supériorité loi hiérarchie Art. 55'
+};
+
+function expandQuery(q){
+  var expanded=q.toLowerCase();
+  Object.keys(NL_MAP).forEach(function(k){
+    if(expanded.includes(k))expanded+=' '+NL_MAP[k];
+  });
+  return expanded;
+}
+
 function score(art,q){
-  var words=q.toLowerCase().split(/\s+/).filter(Boolean);
+  var expanded=expandQuery(q);
+  var words=expanded.split(/\s+/).filter(Boolean);
   var s=0;
   var ref=art.ref.toLowerCase(),title=art.title.toLowerCase(),texte=art.texte.toLowerCase(),themes=(art.themes||[]).join(' ').toLowerCase();
+  /* Bonus pédagogie */
+  var ped=PEDAGOGY[art.id];
+  var pedText=ped?(ped.claire+' '+ped.retenir+' '+ped.exam).toLowerCase():'';
   words.forEach(function(w){
+    if(w.length<3)return;
     if(ref.includes(w))s+=10;
     if(title.includes(w))s+=6;
     if(themes.includes(w))s+=4;
     if(texte.includes(w))s+=2;
+    if(pedText.includes(w))s+=1;
   });
   return s;
 }
@@ -745,6 +1023,24 @@ function openArticle(id){
   document.getElementById('ac-vigeur').textContent=a.vigeur||'En vigueur';
   document.getElementById('ac-type').textContent=a.type==='jurisprudence'?'Jurisprudence':a.type==='definition'?'Doctrine':'Article de code';
   document.getElementById('ac-texte').textContent=a.texte;
+
+  /* ── Section Analyse pédagogique ── */
+  var ped=PEDAGOGY[a.id];
+  var pedEl=document.getElementById('ac-pedagogy');
+  if(ped && pedEl){
+    var condHtml='<ul class="acard-list">'+(ped.conditions||[]).map(function(c){return '<li>'+escHtml(c)+'</li>';}).join('')+'</ul>';
+    pedEl.innerHTML='<div class="art-analyse">'
+      +'<div class="analyse-hdr">🎓 Analyse <span>JuriDix</span></div>'
+      +'<div class="analyse-grid">'
+      +'<div class="acard blue full"><div class="acard-lbl">💡 En clair</div><div class="acard-text">'+escHtml(ped.claire)+'</div></div>'
+      +'<div class="acard green"><div class="acard-lbl">✅ Conditions à prouver</div>'+condHtml+'</div>'
+      +'<div class="acard warn"><div class="acard-lbl">⚠️ Piège d\'examen</div><div class="acard-text">'+escHtml(ped.exam)+'</div></div>'
+      +'<div class="acard purple full"><div class="acard-lbl">📌 À retenir absolument</div><div class="acard-text">'+escHtml(ped.retenir)+'</div></div>'
+      +'</div></div>';
+  } else if(pedEl){
+    pedEl.innerHTML='';
+  }
+
   var voir=(a.voir||[]).map(function(v){return '<span class="voir-chip" onclick="searchVoir(\''+v+'\')">'+v+'</span>';}).join('');
   document.getElementById('ac-voir').innerHTML=voir?'<div class="art-voir-title">Voir aussi</div><div class="art-voir-chips">'+voir+'</div>':'';
   document.getElementById('ac-related').innerHTML='';
@@ -851,6 +1147,15 @@ function generateFiche(){
   }
 
   body+='\n[Généré par JuriDix — '+new Date().toLocaleDateString('fr-FR')+']';
+
+  /* Enrichir avec la pédagogie si disponible */
+  var ped=PEDAGOGY[a.id];
+  if(ped){
+    body+='\n💡 EN CLAIR :\n'+ped.claire+'\n\n';
+    body+='✅ CONDITIONS :\n'+(ped.conditions||[]).map(function(c,i){return (i+1)+'. '+c;}).join('\n')+'\n\n';
+    body+='📌 À RETENIR :\n'+ped.retenir+'\n\n';
+    body+='⚠️ PIÈGE D\'EXAMEN :\n'+ped.exam+'\n\n';
+  }
 
   /* Sauvegarder directement dans les notes */
   var now=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
