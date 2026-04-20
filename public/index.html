@@ -2140,17 +2140,17 @@ async function doRedacSearch(){
   container.innerHTML = merged.map(function(item, i){
     var ref   = item.ref||item.article||'';
     var title = item.title||'Article';
-    var code  = item.code||item.source||'';
+    var code  = item.code||'';
+    if(code==='LEGI'||code.startsWith('LEGIT')) code='Légifrance';
     var texte = (item.texte||item.content||'').replace(/<[^>]*>/g,' ').substring(0,100);
-    return '<div class="rsr-item">'
-      +'<button class="rsr-insert-btn" onclick="event.stopPropagation();redacInsertResult('+i+')">📎 Insérer</button>'
+    return '<div class="rsr-item" onclick="openRedacResult('+i+')">'
+      +'<button class="rsr-insert-btn" onclick="event.stopPropagation();insertRedacResult('+i+')">📎 Insérer</button>'
       +'<div class="rsr-ref">'+escHtml(ref+(code?' — '+code:''))+'</div>'
       +'<div class="rsr-title">'+escHtml(title)+'</div>'
       +(texte?'<div class="rsr-excerpt">'+escHtml(texte)+'…</div>':'')
       +'</div>';
   }).join('');
 
-  // Stocker les résultats pour l'insertion
   window._rdacResults = merged;
 }
 
@@ -2164,18 +2164,40 @@ function corpus_search(q){
   }).slice(0,8);
 }
 
-function redacInsertResult(i){
+// Ouvrir un résultat dans le lecteur droit (sans insérer)
+function openRedacResult(i){
   var item = window._rdacResults && window._rdacResults[i];
   if(!item) return;
-  // Ouvrir dans le lecteur de droite
-  if(item.id && (CORPUS.find(function(a){return a.id===item.id;}))){
-    openArticle(item.id);
-  }
-  // Aussi insérer directement dans l'éditeur
+  // Corpus local → openArticle
+  var local = CIDX && CIDX[item.id];
+  if(local){ openArticle(item.id); return; }
+  // PISTE avec CID → openNavArticle
+  var cid = item.id||'';
+  if(cid.startsWith('LEGIARTI')){ openNavArticle(cid, null); return; }
+  // Sinon afficher directement dans le lecteur
+  document.getElementById('art-empty').style.display='none';
+  var ac = document.getElementById('art-content');
+  ac.style.display='block';
+  _art = item;
+  document.getElementById('ac-code').textContent = item.code||'Légifrance';
+  document.getElementById('ac-ref').textContent  = item.ref||item.article||'';
+  document.getElementById('ac-title').textContent= item.title||'Article';
+  document.getElementById('ac-vigeur').textContent='En vigueur';
+  document.getElementById('ac-type').textContent = item.type==='jurisprudence'?'Jurisprudence':'Article de code';
+  var texte = (item.texte||item.content||'').replace(/<[^>]*>/g,' ');
+  document.getElementById('ac-texte').textContent = texte || '(Texte non disponible)';
+  document.getElementById('ac-pedagogy').innerHTML='';
+  document.getElementById('ac-related').innerHTML='';
+  if(item.url) document.getElementById('ac-voir').innerHTML='<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+item.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
+  else document.getElementById('ac-voir').innerHTML='';
+}
+
+// Insérer dans l'éditeur (via bouton 📎)
+function insertRedacResult(i){
+  var item = window._rdacResults && window._rdacResults[i];
+  if(!item) return;
   _art = item;
   insertArticle();
-  // Fermer le panneau
-  toggleRedacSearch();
 }
 
 function copyDoc(){
