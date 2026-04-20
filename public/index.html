@@ -13,6 +13,27 @@
   --green:#34d399;--red:#f87171;--gold:#fbbf24;--blue:#60a5fa;
   --r:12px;--r2:8px;--shadow:0 8px 32px rgba(0,0,30,0.5);
 }
+/* MODE CLAIR */
+body.light{
+  --bg:#f4f4f8;--bg2:#ffffff;--bg3:#eeeef6;
+  --glass:rgba(240,240,248,0.9);--gb:rgba(110,90,255,0.15);
+  --acc:#6958e8;--acc2:#5548cc;--acc3:rgba(105,88,232,0.12);
+  --t1:#1a1a2e;--t2:#4a4a6a;--t3:#9090aa;
+  --shadow:0 8px 32px rgba(100,100,180,0.12);
+}
+body.light #topbar{background:rgba(244,244,248,0.97);border-bottom-color:rgba(110,90,255,0.12)}
+body.light .result-item{background:rgba(0,0,0,0.03)}
+body.light .result-item:hover{background:rgba(105,88,232,0.07)}
+body.light #search-input{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);color:var(--t1)}
+body.light #search-input:focus{background:#fff;border-color:var(--acc)}
+body.light #art-content,body.light #reader-pane{background:var(--bg2)}
+body.light .note-chip{background:rgba(0,0,0,0.04)}
+body.light .fiche-card{background:rgba(0,0,0,0.03)}
+body.light #redac-editor{color:var(--t1)}
+body.light .nav-section-hdr:hover{background:rgba(0,0,0,0.04)}
+body.light .rdoc-chip:hover{background:rgba(0,0,0,0.05)}
+body.light .code-btn{background:rgba(0,0,0,0.04)}
+body.light #note-modal .nm-box{background:#ffffff}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
@@ -399,6 +420,7 @@ body.redac-mode #notes-pane{display:none}
       <div id="cred-bar-bg"><div id="cred-bar" style="width:100%"></div></div>
       <span id="cred-txt">20/20</span>
     </div>
+    <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
     <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
     <div class="btn-icon" id="print-btn" onclick="printArticle()" title="Exporter PDF">📄</div>
   </div>
@@ -2321,6 +2343,22 @@ function applyPanelWidth(tab, forceDefault){
     function(w){ sidebar.style.width = w + 'px'; sidebar.style.minWidth = w + 'px'; },
     { min: 120, max: 340, key: 'juridix_redac_sb_w' }
   );
+})();
+
+/* ===== THÈME CLAIR / SOMBRE ===== */
+function toggleTheme(){
+  var isLight = document.body.classList.toggle('light');
+  document.getElementById('theme-btn').textContent = isLight ? '🌙' : '☀️';
+  localStorage.setItem('juridix_theme', isLight ? 'light' : 'dark');
+}
+// Appliquer le thème sauvegardé au boot
+(function(){
+  var saved = localStorage.getItem('juridix_theme');
+  if(saved === 'light'){
+    document.body.classList.add('light');
+    var btn = document.getElementById('theme-btn');
+    if(btn) btn.textContent = '🌙';
+  }
 })();
 
 /* ===== BOOT ===== */
