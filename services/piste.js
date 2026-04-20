@@ -59,24 +59,26 @@ async function search(query, filters = {}) {
     ...(apiKey ? { 'X-Gravitee-Api-Key': apiKey } : {})
   };
 
-  // Fonds à essayer dans l'ordre — LEGI retourne des articles (LEGIARTI) avec texte
+  // Fonds qui fonctionnent avec motsCles :
+  // - CETAT  : jurisprudence Conseil d'État — retourne du texte ✅
+  // - CASS   : jurisprudence Cour de Cassation — probablement du texte
+  // - CONSTIT: Conseil Constitutionnel
+  // - CODE_DATE : codes en vigueur — retourne des refs sans texte inline
+  // - JORF   : Journal Officiel — textes officiels
+  // LEGI et champs/* retournent 400 → exclus
   const fonds = filters.fond
     ? [filters.fond]
-    : ['LEGI', 'CODE_DATE', 'JORF'];
+    : ['CETAT', 'CASS', 'CONSTIT', 'CODE_DATE', 'JORF'];
 
-  let results = [];
+  let allResults = [];
 
   for (const fond of fonds) {
     const body = {
       recherche: {
-        champs: [{
-          typeChamp: 'ALL',
-          criteres: [{ typeRecherche: 'TOUS_LES_MOTS', valeur: query }],
-          operateur: 'ET'
-        }],
+        motsCles: query,
         filtres: buildFilters(filters),
         pageNumber: 1,
-        pageSize: 20,
+        pageSize: fond === 'CODE_DATE' ? 10 : 5,
         operateur: 'ET',
         typePagination: 'ARTICLE'
       },
@@ -85,46 +87,40 @@ async function search(query, filters = {}) {
 
     try {
       const r = await axios.post(`${PISTE_BASE}/search`, body, { headers, timeout: 10000 });
-      const items = r.data?.results || [];
-      if (items.length > 0) {
-        results = items;
-        break;
-      }
+      const items = (r.data?.results || []).map(i => ({ ...i, _fond: fond }));
+      allResults = allResults.concat(items);
     } catch (e) {
-      // essayer le fond suivant
+      // fond non supporté, continuer
     }
   }
 
-  // Fallback motsCles si champs n'a rien donné
-  if (results.length === 0) {
-    try {
-      const body = {
-        recherche: {
-          motsCles: query,
-          filtres: buildFilters(filters),
-          pageNumber: 1,
-          pageSize: 20,
-          operateur: 'ET',
-          typePagination: 'ARTICLE'
-        },
-        fond: filters.fond || 'CODE_DATE'
-      };
-      const r = await axios.post(`${PISTE_BASE}/search`, body, { headers, timeout: 10000 });
-      results = r.data?.results || [];
-    } catch (e) { /* ignore */ }
-  }
+  // Trier : résultats avec texte en premier
+  allResults.sort((a, b) => {
+    const aHasText = !!(a.text || (a.resumePrincipal?.length));
+    const bHasText = !!(b.text || (b.resumePrincipal?.length));
+    return (bHasText ? 1 : 0) - (aHasText ? 1 : 0);
+  });
+
+  const results = allResults.slice(0, 20);
 
   return results.map(item => {
     const mainTitle = item.titles?.[0];
     const cid  = mainTitle?.cid || mainTitle?.id || item.id || item.cid || '';
+    const fond = item._fond || '';
     const nature = (item.nature || '').toLowerCase();
 
-    // Construire l'URL selon la nature du résultat
+    // URL selon la source
     let url;
-    if (nature === 'article' || cid.startsWith('LEGIARTI')) {
+    if (cid.startsWith('CETATEXT') || cid.startsWith('CETACOMP')) {
+      url = `https://www.legifrance.gouv.fr/ceta/id/${cid}`;
+    } else if (cid.startsWith('JURITEXT') || nature.includes('jurisprudence')) {
+      url = `https://www.legifrance.gouv.fr/juri/id/${cid}`;
+    } else if (cid.startsWith('LEGIARTI')) {
       url = `https://www.legifrance.gouv.fr/codes/article_lc/${cid}`;
-    } else if (nature === 'code' || cid.startsWith('LEGITEXT')) {
+    } else if (cid.startsWith('LEGITEXT')) {
       url = `https://www.legifrance.gouv.fr/codes/id/${cid}`;
+    } else if (cid.startsWith('JORFTEXT')) {
+      url = `https://www.legifrance.gouv.fr/jorf/id/${cid}`;
     } else {
       url = `https://www.legifrance.gouv.fr/search?query=${encodeURIComponent(query)}`;
     }
@@ -136,15 +132,23 @@ async function search(query, filters = {}) {
       || (item.autreResume || []).join(' ')
       || '';
 
+    // Label source lisible
+    const sourceLabel = {
+      CETAT: 'Conseil d\'État',
+      CASS: 'Cour de cassation',
+      CONSTIT: 'Conseil constitutionnel',
+      CODE_DATE: 'Code en vigueur',
+      JORF: 'Journal Officiel'
+    }[fond] || fond || 'Légifrance';
+
     return {
       id:      cid,
       title:   mainTitle?.title || item.titre || item.title || 'Document Légifrance',
-      code:    item.nature || item.origin || 'Légifrance',
+      code:    sourceLabel,
       article: item.num || '',
       content,
       url,
-      source:  'piste',
-      needsFetch: !content && cid.startsWith('LEGIARTI')
+      source:  'piste'
     };
   });
 }
