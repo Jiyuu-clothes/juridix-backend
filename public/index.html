@@ -765,7 +765,12 @@ async function loadRelatedJurisprudence(ref, codeName){
   container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée</div><div class="rel-loading"><div class="spinner"></div><span>Recherche en cours…</span></div></div>';
 
   try {
-    var query=ref+' '+codeName;
+    /* Utiliser les mots-clés du titre plutôt que la référence brute */
+    var titleWords=(_art&&_art.title?_art.title:'').toLowerCase()
+      .replace(/[^a-zàâäéèêëîïôöùûüç\s]/gi,' ')
+      .split(/\s+/).filter(function(w){return w.length>4&&!['article','alinea','titre','chapitre','livre','partie','selon','toute','toutes','celui'].includes(w);})
+      .slice(0,4).join(' ');
+    var query=titleWords||ref;
     var resp=await fetch('/api/search',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -774,7 +779,7 @@ async function loadRelatedJurisprudence(ref, codeName){
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     var data=await resp.json();
     var items=(data.results||[]).filter(function(r){
-      return r.content&&r.content.length>30;
+      return r.content&&r.content.length>10;
     }).slice(0,5);
 
     if(items.length===0){container.innerHTML='';return;}
@@ -847,21 +852,25 @@ function generateFiche(){
 
   body+='\n[Généré par JuriDix — '+new Date().toLocaleDateString('fr-FR')+']';
 
-  /* Injecter dans l'éditeur de notes */
+  /* Sauvegarder directement dans les notes */
+  var now=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
+  _notes.unshift({title:titre,body:body,date:now});
+  _noteIdx=0;
+  saveStorage();
+  renderNotes();
+
+  /* Mettre aussi dans l'éditeur pour lecture immédiate */
   document.getElementById('note-title-in').value=titre;
   document.getElementById('note-body-in').value=body;
-  _noteIdx=-1;
 
-  /* Feedback visuel */
+  /* Feedback visuel sur le bouton */
   var btn=document.querySelector('.btn-gold');
-  var orig=btn.innerHTML;
-  btn.innerHTML='✅ Fiche créée !';
-  btn.style.opacity='0.7';
-  setTimeout(function(){btn.innerHTML=orig;btn.style.opacity='';},2000);
-
-  /* Petit toast ou scroll vers notes */
-  var t=document.getElementById('cite-toast');
-  if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+  if(btn){
+    var orig=btn.innerHTML;
+    btn.innerHTML='✅ Fiche sauvegardée !';
+    btn.style.opacity='0.7';
+    setTimeout(function(){btn.innerHTML=orig;btn.style.opacity='';},2000);
+  }
 }
 function searchVoir(q){
   document.getElementById('search-input').value=q;
