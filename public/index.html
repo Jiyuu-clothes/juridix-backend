@@ -85,7 +85,7 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #art-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);text-align:center;gap:12px}
 #art-empty .ico{font-size:48px;opacity:.4}
 #art-empty p{font-size:13px;max-width:220px;line-height:1.6}
-#art-content{display:none}
+#art-content{display:none;animation:fadeUp .25s ease forwards}
 .art-header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--gb)}
 .art-code{font-size:11px;font-weight:700;color:var(--acc2);letter-spacing:1px;text-transform:uppercase;font-family:sans-serif;margin-bottom:4px}
 .art-ref{font-size:22px;font-weight:700;color:var(--t1);font-family:sans-serif;margin-bottom:6px}
@@ -224,7 +224,7 @@ body.focus-mode #topbar #tabs{display:none}
 
 /* SCROLL ANIMATIONS */
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.result-item{animation:fadeUp .2s ease forwards}
+.result-item{transition:background .15s,border-color .15s}
 </style>
 </head>
 <body>
@@ -590,6 +590,7 @@ function score(art,q){
   });
   return s;
 }
+var _searchResults={};
 function doSearch(){
   var q=document.getElementById('search-input').value.trim();
   if(!q){document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">⚖️</span><p>Tapez un mot-clé ou un numéro d\'article.</p></div>';return;}
@@ -601,12 +602,21 @@ function doSearch(){
     document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+q+' » dans JuriDix.</p><br><a href="'+lurl+'" target="_blank" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
     return;
   }
-  var html=res.map(function(x,i){
+  _searchResults={};
+  var list=document.getElementById('results-list');
+  list.innerHTML='';
+  res.forEach(function(x,i){
     var a=x.a;
+    _searchResults[a.id]=a;
     var exc=a.texte.replace(/\n/g,' ').slice(0,120)+'…';
-    return '<div class="result-item" onclick="openArticle(\''+a.id+'\')" style="animation-delay:'+i*0.04+'s"><div class="ri-ref">'+a.ref+' · '+a.code+'</div><div class="ri-title">'+a.title+'</div><div class="ri-excerpt">'+exc+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+'</div></div>';
-  }).join('');
-  document.getElementById('results-list').innerHTML=html;
+    var div=document.createElement('div');
+    div.className='result-item';
+    div.setAttribute('data-id',a.id);
+    div.style.animationDelay=(i*0.04)+'s';
+    div.innerHTML='<div class="ri-ref">'+a.ref+' · '+a.code+'</div><div class="ri-title">'+a.title+'</div><div class="ri-excerpt">'+exc+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+'</div>';
+    div.addEventListener('click',function(){openArticle(a.id);});
+    list.appendChild(div);
+  });
 }
 function setFilter(f,el){
   _filter=f;
@@ -617,11 +627,15 @@ function setFilter(f,el){
 
 /* ===== ARTICLE READER ===== */
 function openArticle(id){
-  var a=CIDX[id];if(!a)return;
+  var a=_searchResults[id]||CIDX[id];
+  if(!a)return;
   _art=a;
   document.getElementById('fiche-detail').classList.remove('show');
   document.getElementById('art-empty').style.display='none';
-  document.getElementById('art-content').style.display='block';
+  var ac=document.getElementById('art-content');
+  ac.style.display='block';
+  ac.style.animation='none';
+  setTimeout(function(){ac.style.animation='';},10);
   document.getElementById('ac-code').textContent=a.code;
   document.getElementById('ac-ref').textContent=a.ref;
   document.getElementById('ac-title').textContent=a.title;
@@ -631,8 +645,7 @@ function openArticle(id){
   var voir=(a.voir||[]).map(function(v){return '<span class="voir-chip" onclick="searchVoir(\''+v+'\')">'+v+'</span>';}).join('');
   document.getElementById('ac-voir').innerHTML=voir?'<div class="art-voir-title">Voir aussi</div><div class="art-voir-chips">'+voir+'</div>':'';
   document.querySelectorAll('.result-item').forEach(function(el){el.classList.remove('on');});
-  var els=document.querySelectorAll('.result-item');
-  els.forEach(function(el){if(el.getAttribute('onclick')&&el.getAttribute('onclick').includes(id))el.classList.add('on');});
+  document.querySelectorAll('.result-item[data-id="'+id+'"]').forEach(function(el){el.classList.add('on');});
   document.getElementById('reader-pane').scrollTop=0;
 }
 function searchVoir(q){
