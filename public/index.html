@@ -1411,8 +1411,10 @@ function switchTab(tab){
   var tabs={'search':0,'codes':1,'redac':2,'fiches':3,'quiz':4};
   document.querySelectorAll('.tab')[tabs[tab]].classList.add('on');
   document.getElementById('page-'+tab).classList.add('active');
-  // Rédaction : mode plein écran (cache panel-r)
+  // Rédaction : mode (cache panneau notes droite)
   document.body.classList.toggle('redac-mode', tab==='redac');
+  // Adapter la largeur du panneau gauche selon l'onglet
+  if(typeof applyPanelWidth === 'function') applyPanelWidth(tab);
   if(tab==='codes' && !_codesInited){initCodes();}
   if(tab==='redac' && !_redacInited){initRedac();}
   if(tab!=='fiches'){
@@ -2245,17 +2247,41 @@ function makeResizer(resizerEl, getTarget, getSize, setSize, opts){
 }
 
 // Séparateur principal panel-l / panel-r
+// Largeurs par défaut par onglet (% de la fenêtre)
+var TAB_DEFAULT_PCT = { search:40, codes:34, redac:58, fiches:38, quiz:38 };
+
+function applyPanelWidth(tab, forceDefault){
+  var panelL  = document.getElementById('panel-l');
+  var winW    = window.innerWidth;
+  var key     = 'juridix_pw_' + tab;
+  var saved   = localStorage.getItem(key);
+  var pct     = TAB_DEFAULT_PCT[tab] || 40;
+  var w;
+  if(saved && !forceDefault){
+    w = Math.max(240, Math.min(winW * 0.78, parseFloat(saved)));
+  } else {
+    w = Math.round(winW * pct / 100);
+  }
+  panelL.style.width    = w + 'px';
+  panelL.style.maxWidth = w + 'px';
+}
+
 (function(){
   var panelL = document.getElementById('panel-l');
-  var saved  = localStorage.getItem('juridix_panel_l_w');
-  if(saved) panelL.style.width = saved + 'px';
+  // Appliquer la largeur de l'onglet actif au boot
+  applyPanelWidth('search');
 
   makeResizer(
     document.getElementById('main-resizer'),
     function(){ return panelL; },
     function(){ return panelL.getBoundingClientRect().width; },
-    function(w){ panelL.style.width = w + 'px'; panelL.style.maxWidth = w + 'px'; },
-    { min: 240, max: window.innerWidth * 0.75, key: 'juridix_panel_l_w' }
+    function(w){
+      panelL.style.width = w + 'px';
+      panelL.style.maxWidth = w + 'px';
+      // Sauvegarder par onglet
+      localStorage.setItem('juridix_pw_' + _tab, w);
+    },
+    { min: 240, max: window.innerWidth * 0.78 }
   );
 })();
 
