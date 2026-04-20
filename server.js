@@ -13,14 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Security & Middleware ────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-    }
-  }
+  contentSecurityPolicy: false
 }));
 
 app.use(cors({
