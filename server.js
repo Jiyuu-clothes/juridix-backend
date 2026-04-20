@@ -95,18 +95,14 @@ app.get('/api/debug/piste', async (req, res) => {
   };
 
   const variants = [
-    // Format 1 : avec sort PERTINENCE
-    { name:'sort PERTINENCE', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', sort:'PERTINENCE', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
-    // Format 2 : sans sort, sans typePagination
-    { name:'minimal sans sort/typePagination', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET' }, fond:'CODE_DATE' } },
-    // Format 3 : typeRecherche UN_DES_MOTS
-    { name:'UN_DES_MOTS', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'UN_DES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
-    // Format 4 : LEGI sans filtres
-    { name:'LEGI minimal', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'LEGI' } },
-    // Format 5 : sans champs, avec motsCles
-    { name:'motsCles direct', body: { recherche:{ motsCles:'contrat', filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
-    // Format 6 : JORF
-    { name:'JORF fond', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'JORF' } },
+    // ── motsCles + différents fonds (priorité) ──
+    { name:'motsCles + LEGI',      body: { recherche:{ motsCles:'contrat', filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'LEGI' } },
+    { name:'motsCles + CODE_DATE', body: { recherche:{ motsCles:'contrat', filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
+    { name:'motsCles + JORF',      body: { recherche:{ motsCles:'contrat', filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'JORF' } },
+    { name:'motsCles + CETAT',     body: { recherche:{ motsCles:'contrat', filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CETAT' } },
+    // ── champs format ──
+    { name:'champs + CODE_DATE',   body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
+    { name:'champs + LEGI',        body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'LEGI' } },
   ];
 
   const headerSets = [
@@ -114,21 +110,29 @@ app.get('/api/debug/piste', async (req, res) => {
     ...(apiKey ? [{ label:'Bearer + X-Gravitee-Api-Key', headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json', Accept:'application/json', 'X-Gravitee-Api-Key': apiKey } }] : []),
   ];
 
-  for (const hset of headerSets) {
-    for (const v of variants) {
-      try {
-        const r = await axios.post(`${apiBase}/search`, v.body, { headers: hset.headers, timeout:10000 });
-        out.search = { ok:true, variant:v.name, headers:hset.label, status:r.status, total:r.data?.results?.length };
-        // Montrer la structure brute du premier résultat pour identifier les bons champs
-        out.search_results = (r.data?.results || []).slice(0,2);
-        out.raw_keys = r.data?.results?.[0] ? Object.keys(r.data.results[0]) : [];
-        return res.json(out);
-      } catch(e) {
-        out.search_results.push({ variant:v.name, headers:hset.label, status:e.response?.status, err: e.response?.data || e.message });
-      }
+  // Tester tous les variants et collecter les résultats pour comparaison
+  const hset = headerSets[0]; // Bearer seul suffit
+  out.variants_results = [];
+  for (const v of variants) {
+    try {
+      const r = await axios.post(`${apiBase}/search`, v.body, { headers: hset.headers, timeout:10000 });
+      const results = r.data?.results || [];
+      const first = results[0];
+      out.variants_results.push({
+        variant: v.name,
+        ok: true,
+        total: results.length,
+        first_nature: first?.nature || null,
+        first_cid: first?.titles?.[0]?.cid || null,
+        first_title: first?.titles?.[0]?.title || null,
+        has_text: !!(first?.text || (first?.resumePrincipal?.length > 0)),
+        text_preview: first?.text?.substring(0,100) || (first?.resumePrincipal || []).join(' ').substring(0,100) || null
+      });
+    } catch(e) {
+      out.variants_results.push({ variant: v.name, ok: false, status: e.response?.status, err: e.response?.data || e.message });
     }
   }
-  out.search = { ok:false, message:'Tous les formats ont échoué — voir search_results pour détails' };
+  out.search = { message: 'Voir variants_results pour comparaison complète' };
   res.json(out);
 });
 
