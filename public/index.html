@@ -2123,7 +2123,11 @@ function buildTree(articles){
   return root;
 }
 
+// Registre numérique des sections — évite les bugs avec apostrophes dans les titres
+var _navSectionRegistry = [];
+
 function renderCodeNav(container, tree, codeName, total){
+  _navSectionRegistry = []; // reset à chaque chargement
   var html = '<div class="code-nav-info">'+codeName+' — '+total+' articles en vigueur</div>';
   html += renderNode(tree, 0);
   container.innerHTML = html;
@@ -2133,18 +2137,20 @@ function renderNode(node, depth){
   var html = '';
   // Articles à ce niveau
   node.articles.forEach(function(art){
-    html += '<div class="nav-article" onclick="openNavArticle(\''+escHtml(art.cid||art.id)+'\',this)">'
+    var cid = art.cid||art.id||'';
+    html += '<div class="nav-article" onclick="openNavArticle(\''+cid+'\',this)">'
       + (art.num ? '<span class="nav-art-num">Art. '+escHtml(art.num)+'</span>' : '')
       + escHtml((art.path&&art.path.length ? art.path[art.path.length-1] : '') || 'Article')
       + '</div>';
   });
-  // Sections enfants
-  Object.values(node.children).forEach(function(child, idx){
-    var key = depth+'_'+idx+'_'+child.title;
-    var isOpen = !!_openSections[key];
+  // Sections enfants — clé = index numérique, sans caractères spéciaux
+  Object.values(node.children).forEach(function(child){
+    var sIdx   = _navSectionRegistry.length;
+    _navSectionRegistry.push(child.title);
+    var isOpen = !!_openSections[sIdx];
     var count  = countArticles(child);
     html += '<div class="nav-section">'
-      + '<div class="nav-section-hdr'+(isOpen?' open':'')+'" onclick="toggleSection(this,\''+escHtml(key)+'\')">'
+      + '<div class="nav-section-hdr'+(isOpen?' open':'')+'" onclick="toggleSection(this,'+sIdx+')">'
       + '<span class="nav-arrow'+(isOpen?' open':'')+'">▶</span>'
       + escHtml(child.title)
       + '<span style="margin-left:auto;font-size:10px;color:var(--t3);font-weight:400">'+count+'</span>'
@@ -2161,14 +2167,14 @@ function countArticles(node){
   return c;
 }
 
-function toggleSection(hdr, key){
+function toggleSection(hdr, sIdx){
   var isOpen = hdr.classList.contains('open');
   hdr.classList.toggle('open', !isOpen);
   var arrow = hdr.querySelector('.nav-arrow');
   if(arrow) arrow.classList.toggle('open', !isOpen);
   var body = hdr.nextElementSibling;
   if(body) body.classList.toggle('open', !isOpen);
-  _openSections[key] = !isOpen;
+  _openSections[sIdx] = !isOpen;
 }
 
 async function openNavArticle(cid, el){
