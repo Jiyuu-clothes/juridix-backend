@@ -225,6 +225,26 @@ body.focus-mode #topbar #tabs{display:none}
 /* SCROLL ANIMATIONS */
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .result-item{transition:background .15s,border-color .15s}
+
+/* RELATED JURISPRUDENCE */
+.art-related{margin:24px 0 20px;padding-top:20px;border-top:1px solid var(--gb);font-family:sans-serif}
+.art-related-title{font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.related-item{padding:10px 12px;border-radius:var(--r2);background:rgba(255,255,255,0.03);border:1px solid transparent;margin-bottom:6px;cursor:pointer;transition:all .2s}
+.related-item:hover{background:rgba(124,107,255,0.08);border-color:var(--gb)}
+.ri2-ref{font-size:11px;color:var(--acc2);font-weight:600;margin-bottom:2px}
+.ri2-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.ri2-exc{font-size:11px;color:var(--t2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rel-loading{font-size:12px;color:var(--t3);display:flex;align-items:center;gap:8px;padding:4px 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+/* GENERATE FICHE */
+.btn-gold{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.25);color:var(--gold)}
+.btn-gold:hover{background:rgba(251,191,36,0.22)}
+/* SEARCH LOADING */
+.search-loading{padding:40px;text-align:center;color:var(--t3);display:flex;flex-direction:column;align-items:center;gap:14px;font-size:13px}
+.search-loading .spinner{width:22px;height:22px}
+/* API BADGE */
+.api-badge{font-size:9px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);color:var(--green);padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle;font-family:sans-serif}
 </style>
 </head>
 <body>
@@ -341,9 +361,11 @@ body.focus-mode #topbar #tabs{display:none}
             </div>
           </div>
           <div class="art-texte" id="ac-texte"></div>
+          <div id="ac-related"></div>
           <div class="art-voir" id="ac-voir"></div>
           <div class="art-actions">
             <button class="btn btn-green" onclick="citeArticle()">📋 Citer</button>
+            <button class="btn btn-gold" onclick="generateFiche()">⭐ Générer fiche</button>
             <button class="btn btn-outline" onclick="saveToNote()">✏️ Ajouter aux notes</button>
             <button class="btn btn-outline" onclick="printArticle()">📄 PDF</button>
             <button class="btn btn-outline" onclick="openLegifrance()">🔗 Légifrance</button>
@@ -590,34 +612,113 @@ function score(art,q){
   });
   return s;
 }
-var _searchResults={};
-function doSearch(){
-  var q=document.getElementById('search-input').value.trim();
-  if(!q){document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">⚖️</span><p>Tapez un mot-clé ou un numéro d\'article.</p></div>';return;}
-  if(!useCredit())return;
-  var pool=CORPUS.filter(function(a){return _filter==='all'||a.type===_filter;});
-  var res=pool.map(function(a){return{a:a,s:score(a,q)};}).filter(function(x){return x.s>0;}).sort(function(a,b){return b.s-a.s;}).slice(0,15);
-  if(res.length===0){
-    var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
-    document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+q+' » dans JuriDix.</p><br><a href="'+lurl+'" target="_blank" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
-    return;
-  }
+
+/* Convert backend API result → frontend article format */
+function normalizeAPIResult(item){
+  var text=item.content||item.text||'';
+  // Strip basic HTML tags for display
+  text=text.replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim();
+  var isJuris=(item.source==='piste')&&(item.code==='Conseil d\'État'||item.code==='Cour de cassation'||item.code==='Conseil constitutionnel'||(item.id||'').startsWith('CETA')||(item.id||'').startsWith('JURI'));
+  return {
+    id: 'api_'+(item.id||Math.random().toString(36).slice(2)),
+    ref: item.article?(item.code+' art. '+item.article):(item.title||'Document'),
+    title: item.title||'Document Légifrance',
+    code: item.code||'Légifrance',
+    texte: text||'(texte non disponible)',
+    themes: [],
+    voir: [],
+    vigeur: 'En vigueur',
+    type: isJuris?'jurisprudence':'code',
+    url: item.url||null,
+    _fromAPI: true
+  };
+}
+
+/* Render a list of article objects into #results-list */
+function renderResults(items, q){
   _searchResults={};
   var list=document.getElementById('results-list');
   list.innerHTML='';
-  res.forEach(function(x,i){
-    var a=x.a;
+  items.forEach(function(a,i){
     _searchResults[a.id]=a;
-    var exc=a.texte.replace(/\n/g,' ').slice(0,120)+'…';
+    var exc=(a.texte||'').replace(/\n/g,' ').slice(0,120)+'…';
     var div=document.createElement('div');
     div.className='result-item';
     div.setAttribute('data-id',a.id);
     div.style.animationDelay=(i*0.04)+'s';
-    div.innerHTML='<div class="ri-ref">'+a.ref+' · '+a.code+'</div><div class="ri-title">'+a.title+'</div><div class="ri-excerpt">'+exc+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+'</div>';
+    var badge=a._fromAPI?'<span class="api-badge">PISTE</span>':'';
+    div.innerHTML='<div class="ri-ref">'+a.ref+' · '+a.code+badge+'</div><div class="ri-title">'+a.title+'</div><div class="ri-excerpt">'+exc+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+'</div>';
     div.addEventListener('click',function(){openArticle(a.id);});
     list.appendChild(div);
   });
 }
+
+var _searchResults={};
+var _searchVersion=0;
+
+async function doSearch(){
+  var q=document.getElementById('search-input').value.trim();
+  if(!q){document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">⚖️</span><p>Tapez un mot-clé ou un numéro d\'article.</p></div>';return;}
+  if(!useCredit())return;
+
+  var version=++_searchVersion;
+
+  /* ── 1. Résultats corpus immédiats ── */
+  var pool=CORPUS.filter(function(a){return _filter==='all'||a.type===_filter;});
+  var localRes=pool.map(function(a){return{a:a,s:score(a,q)};}).filter(function(x){return x.s>0;}).sort(function(a,b){return b.s-a.s;}).slice(0,12);
+
+  if(localRes.length>0){
+    renderResults(localRes.map(function(x){return x.a;}), q);
+  } else {
+    /* Afficher spinner pendant recherche API */
+    document.getElementById('results-list').innerHTML='<div class="search-loading"><div class="spinner"></div><span>Recherche dans Légifrance…</span></div>';
+  }
+
+  /* ── 2. Appel API backend ── */
+  try {
+    var filterType='ALL';
+    if(_filter==='code')filterType='CODE';
+    else if(_filter==='jurisprudence')filterType='JURIS';
+
+    var resp=await fetch('/api/search',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q,filters:{type:filterType}})
+    });
+
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    var data=await resp.json();
+
+    /* Annuler si une nouvelle recherche a démarré */
+    if(version!==_searchVersion)return;
+
+    var apiItems=(data.results||[]).map(normalizeAPIResult).filter(function(a){return a.texte&&a.texte.length>10;});
+
+    /* Fusionner : dédupliquer par ref+code */
+    var seen=new Set(localRes.map(function(x){return x.a.ref+'|'+x.a.code;}));
+    var merged=localRes.map(function(x){return x.a;});
+    apiItems.forEach(function(a){
+      var key=a.ref+'|'+a.code;
+      if(!seen.has(key)){seen.add(key);merged.push(a);}
+    });
+
+    if(merged.length===0){
+      var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
+      document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+q+' ».</p><br><a href="'+lurl+'" target="_blank" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
+      return;
+    }
+    renderResults(merged, q);
+
+  } catch(e){
+    /* Si l'API échoue, garder les résultats corpus */
+    if(version!==_searchVersion)return;
+    if(localRes.length===0){
+      var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
+      document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+q+' ».</p><br><a href="'+lurl+'" target="_blank" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
+    }
+  }
+}
+
 function setFilter(f,el){
   _filter=f;
   document.querySelectorAll('.filter-bar .fbtn').forEach(function(b){b.classList.remove('on');});
@@ -626,6 +727,8 @@ function setFilter(f,el){
 }
 
 /* ===== ARTICLE READER ===== */
+var _relatedJuris=[];
+
 function openArticle(id){
   var a=_searchResults[id]||CIDX[id];
   if(!a)return;
@@ -644,9 +747,121 @@ function openArticle(id){
   document.getElementById('ac-texte').textContent=a.texte;
   var voir=(a.voir||[]).map(function(v){return '<span class="voir-chip" onclick="searchVoir(\''+v+'\')">'+v+'</span>';}).join('');
   document.getElementById('ac-voir').innerHTML=voir?'<div class="art-voir-title">Voir aussi</div><div class="art-voir-chips">'+voir+'</div>':'';
+  document.getElementById('ac-related').innerHTML='';
+  _relatedJuris=[];
   document.querySelectorAll('.result-item').forEach(function(el){el.classList.remove('on');});
   document.querySelectorAll('.result-item[data-id="'+id+'"]').forEach(function(el){el.classList.add('on');});
   document.getElementById('reader-pane').scrollTop=0;
+  /* Charger la jurisprudence liée si c'est un article de code */
+  if(a.type!=='jurisprudence'&&a.type!=='definition'){
+    loadRelatedJurisprudence(a.ref, a.code);
+  }
+}
+
+/* Cherche la jurisprudence liée à un article via le backend */
+async function loadRelatedJurisprudence(ref, codeName){
+  var container=document.getElementById('ac-related');
+  if(!container)return;
+  container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée</div><div class="rel-loading"><div class="spinner"></div><span>Recherche en cours…</span></div></div>';
+
+  try {
+    var query=ref+' '+codeName;
+    var resp=await fetch('/api/search',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:query,filters:{type:'JURIS'}})
+    });
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    var data=await resp.json();
+    var items=(data.results||[]).filter(function(r){
+      return r.content&&r.content.length>30;
+    }).slice(0,5);
+
+    if(items.length===0){container.innerHTML='';return;}
+
+    _relatedJuris=items;
+    var html='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>';
+    items.forEach(function(item){
+      var excerpt=(item.content||'').replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim().slice(0,150)+'…';
+      var safe=function(s){return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');};
+      html+='<div class="related-item" onclick="openRelatedJuris(\''+safe(item.url||'')+'\',\''+safe(item.title||'')+'\',\''+safe(item.content||'')+'\',\''+safe(item.code||'')+'\')"><div class="ri2-ref">'+escHtml(item.code||'Légifrance')+'</div><div class="ri2-title">'+escHtml(item.title||'Décision')+'</div><div class="ri2-exc">'+escHtml(excerpt)+'</div></div>';
+    });
+    html+='</div>';
+    container.innerHTML=html;
+  } catch(e){
+    container.innerHTML='';
+  }
+}
+
+function escHtml(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* Ouvre une décision de jurisprudence depuis le panneau lié */
+function openRelatedJuris(url, title, content, source){
+  /* Créer un pseudo-article temporaire */
+  var text=content.replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim();
+  var fakeId='rel_'+Math.random().toString(36).slice(2);
+  var fakeArt={
+    id:fakeId,ref:title.slice(0,60),title:title,
+    code:source||'Légifrance',texte:text,themes:[],voir:[],
+    vigeur:'En vigueur',type:'jurisprudence',url:url,_fromAPI:true
+  };
+  _searchResults[fakeId]=fakeArt;
+  _art=fakeArt;
+  document.getElementById('ac-code').textContent=fakeArt.code;
+  document.getElementById('ac-ref').textContent=fakeArt.ref;
+  document.getElementById('ac-title').textContent=fakeArt.title;
+  document.getElementById('ac-vigeur').textContent='En vigueur';
+  document.getElementById('ac-type').textContent='Jurisprudence';
+  document.getElementById('ac-texte').textContent=fakeArt.texte;
+  document.getElementById('ac-related').innerHTML='';
+  document.getElementById('ac-voir').innerHTML=url?'<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>':'';
+  document.getElementById('reader-pane').scrollTop=0;
+}
+
+/* ===== GÉNÉRER FICHE ===== */
+function generateFiche(){
+  if(!_art)return;
+  var a=_art;
+  /* Construire le contenu de la fiche */
+  var titre=a.ref+' — '+a.title.slice(0,60);
+  var body='═══════════════════════════════\n';
+  body+='📚 FICHE : '+titre+'\n';
+  body+='═══════════════════════════════\n\n';
+  body+='📌 SOURCE : '+a.code+'\n';
+  body+='🔖 RÉFÉRENCE : '+a.ref+'\n\n';
+  body+='📝 TEXTE :\n'+a.texte+'\n\n';
+
+  if(_relatedJuris&&_relatedJuris.length>0){
+    body+='⚖️ JURISPRUDENCE LIÉE :\n';
+    _relatedJuris.forEach(function(j,i){
+      var text=(j.content||'').replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim().slice(0,250);
+      body+=(i+1)+'. '+j.title+' ('+j.code+')\n   '+text+'…\n\n';
+    });
+  }
+
+  if(a.voir&&a.voir.length>0){
+    body+='👁️ VOIR AUSSI : '+a.voir.join(', ')+'\n';
+  }
+
+  body+='\n[Généré par JuriDix — '+new Date().toLocaleDateString('fr-FR')+']';
+
+  /* Injecter dans l'éditeur de notes */
+  document.getElementById('note-title-in').value=titre;
+  document.getElementById('note-body-in').value=body;
+  _noteIdx=-1;
+
+  /* Feedback visuel */
+  var btn=document.querySelector('.btn-gold');
+  var orig=btn.innerHTML;
+  btn.innerHTML='✅ Fiche créée !';
+  btn.style.opacity='0.7';
+  setTimeout(function(){btn.innerHTML=orig;btn.style.opacity='';},2000);
+
+  /* Petit toast ou scroll vers notes */
+  var t=document.getElementById('cite-toast');
+  if(t){t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
 }
 function searchVoir(q){
   document.getElementById('search-input').value=q;
