@@ -72,42 +72,51 @@ app.get('/api/debug/piste', async (req, res) => {
     return res.json(out);
   }
 
-  // Étape 2 — tester plusieurs endpoints consult pour trouver lequel fonctionne
-  const h = { Authorization:`Bearer ${token}`, Accept:'application/json', ...(apiKey ? {'X-Gravitee-Api-Key': apiKey} : {}) };
-  // Art. 1240 Code civil (responsabilité civile) — CID connu
-  const TEST_CID = 'LEGIARTI000006419302';
+  // Étape 2 — chercher comment obtenir des LEGIARTI depuis un LEGITEXT
+  const h = { Authorization:`Bearer ${token}`, Accept:'application/json', 'Content-Type':'application/json', ...(apiKey ? {'X-Gravitee-Api-Key': apiKey} : {}) };
+  const CODE_CIVIL = 'LEGITEXT000006070721';
   out.consult_tests = [];
 
-  // Test A : GET consult/legi/article
+  // Test A : POST consult/code/tableMatieres (POST au lieu de GET)
   try {
-    const r = await axios.get(`${apiBase}/consult/legi/article`, { params:{ id: TEST_CID }, headers:h, timeout:8000 });
-    out.consult_tests.push({ endpoint:'GET consult/legi/article', ok:true, status:r.status, keys: Object.keys(r.data||{}), preview: JSON.stringify(r.data).substring(0,200) });
+    const r = await axios.post(`${apiBase}/consult/code/tableMatieres`, { textId: CODE_CIVIL, date:'2024-01-01' }, { headers:h, timeout:8000 });
+    out.consult_tests.push({ endpoint:'POST consult/code/tableMatieres', ok:true, status:r.status, preview: JSON.stringify(r.data).substring(0,300) });
   } catch(e) {
-    out.consult_tests.push({ endpoint:'GET consult/legi/article', ok:false, status:e.response?.status, err:e.response?.data||e.message });
+    out.consult_tests.push({ endpoint:'POST consult/code/tableMatieres', ok:false, status:e.response?.status, err:e.response?.data||e.message });
   }
 
-  // Test B : POST consult/getArticle
+  // Test B : POST consult/legi/tableMatieres
   try {
-    const r = await axios.post(`${apiBase}/consult/getArticle`, { id: TEST_CID }, { headers:{...h,'Content-Type':'application/json'}, timeout:8000 });
-    out.consult_tests.push({ endpoint:'POST consult/getArticle', ok:true, status:r.status, keys: Object.keys(r.data||{}), preview: JSON.stringify(r.data).substring(0,200) });
+    const r = await axios.post(`${apiBase}/consult/legi/tableMatieres`, { textId: CODE_CIVIL, date:'2024-01-01' }, { headers:h, timeout:8000 });
+    out.consult_tests.push({ endpoint:'POST consult/legi/tableMatieres', ok:true, status:r.status, preview: JSON.stringify(r.data).substring(0,300) });
   } catch(e) {
-    out.consult_tests.push({ endpoint:'POST consult/getArticle', ok:false, status:e.response?.status, err:e.response?.data||e.message });
+    out.consult_tests.push({ endpoint:'POST consult/legi/tableMatieres', ok:false, status:e.response?.status, err:e.response?.data||e.message });
   }
 
-  // Test C : GET consult/code/tableMatieres (Code civil)
+  // Test C : POST search motsCles+LEGI sans filtres (filtres omis)
   try {
-    const r = await axios.get(`${apiBase}/consult/code/tableMatieres`, { params:{ textId:'LEGITEXT000006070721', date:'2024-01-01' }, headers:h, timeout:8000 });
-    out.consult_tests.push({ endpoint:'GET consult/code/tableMatieres', ok:true, status:r.status, preview: JSON.stringify(r.data).substring(0,200) });
+    const r = await axios.post(`${apiBase}/search`, { recherche:{ motsCles:'responsabilité', pageNumber:1, pageSize:3, operateur:'ET' }, fond:'LEGI' }, { headers:h, timeout:8000 });
+    const first = r.data?.results?.[0];
+    out.consult_tests.push({ endpoint:'POST search LEGI sans filtres', ok:true, total:r.data?.results?.length, first_nature:first?.nature, first_cid:first?.titles?.[0]?.cid });
   } catch(e) {
-    out.consult_tests.push({ endpoint:'GET consult/code/tableMatieres', ok:false, status:e.response?.status, err:e.response?.data||e.message });
+    out.consult_tests.push({ endpoint:'POST search LEGI sans filtres', ok:false, status:e.response?.status, err:e.response?.data||e.message });
   }
 
-  // Test D : POST consult/code/article (Code civil + numéro article)
+  // Test D : POST search CODE_DATE avec filtre textId Code civil
   try {
-    const r = await axios.post(`${apiBase}/consult/code/article`, { textId:'LEGITEXT000006070721', articleNum:'1240', date:'2024-01-01' }, { headers:{...h,'Content-Type':'application/json'}, timeout:8000 });
-    out.consult_tests.push({ endpoint:'POST consult/code/article', ok:true, status:r.status, preview: JSON.stringify(r.data).substring(0,200) });
+    const r = await axios.post(`${apiBase}/search`, { recherche:{ motsCles:'responsabilité', filtres:[{ facette:'CODE_DATE', valeur: CODE_CIVIL }], pageNumber:1, pageSize:3, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' }, { headers:h, timeout:8000 });
+    const first = r.data?.results?.[0];
+    out.consult_tests.push({ endpoint:'POST search CODE_DATE + filtre textId', ok:true, total:r.data?.results?.length, first_nature:first?.nature, first_cid:first?.titles?.[0]?.cid });
   } catch(e) {
-    out.consult_tests.push({ endpoint:'POST consult/code/article', ok:false, status:e.response?.status, err:e.response?.data||e.message });
+    out.consult_tests.push({ endpoint:'POST search CODE_DATE + filtre textId', ok:false, status:e.response?.status, err:e.response?.data||e.message });
+  }
+
+  // Test E : POST consult/code/getArticle par numéro
+  try {
+    const r = await axios.post(`${apiBase}/consult/code/getArticle`, { textId: CODE_CIVIL, num:'1240' }, { headers:h, timeout:8000 });
+    out.consult_tests.push({ endpoint:'POST consult/code/getArticle num=1240', ok:true, status:r.status, preview: JSON.stringify(r.data).substring(0,300) });
+  } catch(e) {
+    out.consult_tests.push({ endpoint:'POST consult/code/getArticle num=1240', ok:false, status:e.response?.status, err:e.response?.data||e.message });
   }
 
   out.consult = { see: 'consult_tests' };
