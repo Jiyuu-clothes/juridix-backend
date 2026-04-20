@@ -126,7 +126,9 @@ app.get('/api/debug/piste', async (req, res) => {
       try {
         const r = await axios.post(`${apiBase}/search`, v.body, { headers: hset.headers, timeout:10000 });
         out.search = { ok:true, variant:v.name, headers:hset.label, status:r.status, total:r.data?.results?.length };
-        out.search_results = (r.data?.results || []).slice(0,2).map(x => x.titre||x.title);
+        // Montrer la structure brute du premier résultat pour identifier les bons champs
+        out.search_results = (r.data?.results || []).slice(0,2);
+        out.raw_keys = r.data?.results?.[0] ? Object.keys(r.data.results[0]) : [];
         return res.json(out);
       } catch(e) {
         out.search_results.push({ variant:v.name, headers:hset.label, status:e.response?.status, err: e.response?.data || e.message });

@@ -52,11 +52,7 @@ async function search(query, filters = {}) {
 
   const body = {
     recherche: {
-      champs: [{
-        typeChamp: 'ALL',
-        criteres: [{ typeRecherche: 'TOUS_LES_MOTS', valeur: query }],
-        operateur: 'ET'
-      }],
+      motsCles: query,
       filtres: buildFilters(filters),
       pageNumber: 1,
       pageSize: 20,
