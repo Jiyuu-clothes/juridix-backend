@@ -3,6 +3,32 @@ const router  = express.Router();
 const piste   = require('../services/piste');
 const corpus  = require('../services/corpus');
 
+// Pré-charger le cache des codes principaux au démarrage (async, non bloquant)
+const WARMUP_CODES = [
+  'LEGITEXT000006070721', // Code civil
+  'LEGITEXT000006069414', // Code pénal
+];
+
+setTimeout(async () => {
+  if (!(process.env.PISTE_CLIENT_ID && process.env.PISTE_CLIENT_SECRET)) return;
+  for (const textId of WARMUP_CODES) {
+    try {
+      await piste.getCodeArticles(textId);
+      console.log(`[PISTE] Cache chargé: ${textId}`);
+    } catch (e) {
+      console.warn(`[PISTE] Warmup échoué pour ${textId}:`, e.message);
+    }
+  }
+}, 5000); // délai 5s après démarrage
+
+// Mapping filtre frontend → type piste
+function getType(filters) {
+  const f = (filters.fond || filters.type || '').toLowerCase();
+  if (f.includes('code') || f === 'code_date') return 'CODE';
+  if (f.includes('juris') || f === 'cetat' || f === 'cass') return 'JURIS';
+  return 'ALL';
+}
+
 // POST /api/search
 router.post('/', async (req, res) => {
   try {
@@ -18,7 +44,8 @@ router.post('/', async (req, res) => {
 
     if (hasCreds) {
       try {
-        results = await piste.search(query, filters);
+        const pisteFilters = { ...filters, type: getType(filters) };
+        results = await piste.search(query, pisteFilters);
         source  = 'piste';
       } catch (err) {
         pisteError = err.detail || err.message;
@@ -44,7 +71,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/search/article/:cid — récupère le texte complet d'un article par CID
+// GET /api/search/article/:cid — texte complet d'un article par CID
 router.get('/article/:cid', async (req, res) => {
   try {
     const { cid } = req.params;
@@ -52,9 +79,7 @@ router.get('/article/:cid', async (req, res) => {
       return res.status(400).json({ error: 'CID invalide (doit commencer par LEGIARTI).' });
     }
     const hasCreds = !!(process.env.PISTE_CLIENT_ID && process.env.PISTE_CLIENT_SECRET);
-    if (!hasCreds) {
-      return res.status(503).json({ error: 'PISTE non configuré.' });
-    }
+    if (!hasCreds) return res.status(503).json({ error: 'PISTE non configuré.' });
     const article = await piste.getArticle(cid);
     if (!article) return res.status(404).json({ error: 'Article non trouvé.' });
     return res.json(article);
