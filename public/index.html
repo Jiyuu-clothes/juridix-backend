@@ -46,7 +46,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #main{flex:1;display:flex;overflow:hidden;gap:0}
 
 /* LEFT PANEL — Search/Fiches/Quiz */
-#panel-l{width:42%;min-width:300px;max-width:520px;display:flex;flex-direction:column;border-right:1px solid var(--gb);overflow:hidden}
+#panel-l{width:42%;min-width:240px;max-width:72%;display:flex;flex-direction:column;overflow:hidden}
+.resizer{width:5px;background:transparent;cursor:col-resize;flex-shrink:0;position:relative;z-index:10;transition:background .2s}
+.resizer:hover,.resizer.dragging{background:var(--acc)}
+.resizer::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:40px;border-radius:2px;background:var(--gb);transition:background .2s}
+.resizer:hover::after,.resizer.dragging::after{background:var(--acc2)}
+/* Resizer interne redac sidebar */
+.resizer-inner{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;transition:background .2s}
+.resizer-inner:hover,.resizer-inner.dragging{background:var(--acc)}
 #page-search,#page-fiches,#page-quiz{display:none;flex-direction:column;height:100%;overflow:hidden}
 #page-search.active,#page-fiches.active,#page-quiz.active{display:flex}
 
@@ -472,6 +479,7 @@ body.redac-mode #notes-pane{display:none}
           </div>
         </div>
       </div>
+      <div class="resizer-inner" id="redac-resizer"></div>
       <div id="redac-main">
         <div id="redac-toolbar">
           <button class="rtb-btn" title="Gras (Ctrl+B)" onclick="fmt('bold')"><b>B</b></button>
@@ -523,6 +531,9 @@ body.redac-mode #notes-pane{display:none}
     </div>
 
   </div><!-- /panel-l -->
+
+  <!-- SÉPARATEUR REDIMENSIONNABLE -->
+  <div class="resizer" id="main-resizer"></div>
 
   <!-- RIGHT PANEL -->
   <div id="panel-r">
@@ -2179,6 +2190,67 @@ document.addEventListener('keydown',function(e){
 document.getElementById('search-input').addEventListener('keydown',function(e){
   if(e.key==='Enter')doSearch();
 });
+
+/* ===== RESIZERS ===== */
+function makeResizer(resizerEl, getTarget, getSize, setSize, opts){
+  opts = opts || {};
+  var startX, startSize;
+  resizerEl.addEventListener('mousedown', function(e){
+    e.preventDefault();
+    startX    = e.clientX;
+    startSize = getSize();
+    resizerEl.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    function onMove(e){
+      var delta = e.clientX - startX;
+      var newSize = Math.max(opts.min||120, Math.min(opts.max||900, startSize + delta));
+      setSize(newSize);
+    }
+    function onUp(){
+      resizerEl.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      // Persister la taille
+      if(opts.key) localStorage.setItem(opts.key, getSize());
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// Séparateur principal panel-l / panel-r
+(function(){
+  var panelL = document.getElementById('panel-l');
+  var saved  = localStorage.getItem('juridix_panel_l_w');
+  if(saved) panelL.style.width = saved + 'px';
+
+  makeResizer(
+    document.getElementById('main-resizer'),
+    function(){ return panelL; },
+    function(){ return panelL.getBoundingClientRect().width; },
+    function(w){ panelL.style.width = w + 'px'; panelL.style.maxWidth = w + 'px'; },
+    { min: 240, max: window.innerWidth * 0.75, key: 'juridix_panel_l_w' }
+  );
+})();
+
+// Séparateur sidebar / éditeur dans Rédaction
+(function(){
+  var sidebar = document.getElementById('redac-sidebar');
+  var savedSb = localStorage.getItem('juridix_redac_sb_w');
+  if(savedSb) sidebar.style.width = savedSb + 'px';
+
+  makeResizer(
+    document.getElementById('redac-resizer'),
+    function(){ return sidebar; },
+    function(){ return sidebar.getBoundingClientRect().width; },
+    function(w){ sidebar.style.width = w + 'px'; sidebar.style.minWidth = w + 'px'; },
+    { min: 120, max: 340, key: 'juridix_redac_sb_w' }
+  );
+})();
 
 /* ===== BOOT ===== */
 loadStorage();
