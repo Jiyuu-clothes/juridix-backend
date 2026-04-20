@@ -255,6 +255,22 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #redac-status{padding:4px 32px;font-size:11px;color:var(--t3);font-family:sans-serif;border-top:1px solid var(--gb);display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.01)}
 #redac-autosave{color:var(--green)}
 #redac-editor:empty:before{content:attr(data-placeholder);color:var(--t3);pointer-events:none;white-space:pre-wrap}
+/* RECHERCHE DANS RÉDACTION */
+#redac-search-panel{display:none;flex-direction:column;border-bottom:1px solid var(--gb);background:rgba(255,255,255,0.02);max-height:340px}
+#redac-search-panel.open{display:flex}
+#redac-search-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--gb)}
+#redac-search-in{flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:7px 12px;color:var(--t1);font-size:13px;outline:none}
+#redac-search-in:focus{border-color:var(--acc);background:rgba(124,107,255,0.08)}
+#redac-search-bar button{background:var(--acc);border:none;border-radius:7px;padding:6px 12px;color:#fff;cursor:pointer;font-size:13px;font-weight:600}
+#redac-search-results{flex:1;overflow-y:auto;padding:6px}
+#redac-search-results::-webkit-scrollbar{width:3px}
+#redac-search-results::-webkit-scrollbar-thumb{background:var(--gb)}
+.rsr-item{padding:9px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px;transition:all .2s;background:rgba(255,255,255,0.03)}
+.rsr-item:hover{background:rgba(124,107,255,0.1);border-color:var(--gb)}
+.rsr-ref{font-size:10px;color:var(--acc2);font-weight:700;letter-spacing:.3px;margin-bottom:2px}
+.rsr-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:3px}
+.rsr-excerpt{font-size:11px;color:var(--t2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rsr-insert-btn{float:right;margin-top:2px;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--acc3);border:1px solid var(--acc);color:var(--acc2);cursor:pointer}
 
 /* FICHES PAGE */
 #page-fiches{padding:0}
@@ -524,7 +540,18 @@ body.redac-mode #notes-pane{display:none}
           <div class="rtb-sep"></div>
           <button class="rtb-btn" title="Copier tout" onclick="copyDoc()" style="font-size:11px;padding:4px 10px">📋 Copier</button>
           <button class="rtb-btn" title="Supprimer ce document" onclick="deleteDoc()" style="font-size:11px;padding:4px 10px;color:var(--red)">🗑️</button>
+          <div class="rtb-sep"></div>
+          <button class="rtb-btn" id="rdac-srch-btn" title="Rechercher un article" onclick="toggleRedacSearch()" style="font-size:11px;padding:4px 12px;border-color:rgba(124,107,255,0.25);color:var(--acc2)">🔍 Rechercher</button>
           <span class="rtb-word-count" id="redac-wcount">0 mots</span>
+        </div>
+        <!-- PANNEAU RECHERCHE IN-REDAC -->
+        <div id="redac-search-panel">
+          <div id="redac-search-bar">
+            <input id="redac-search-in" placeholder="Chercher un article, une notion, un arrêt…" oninput="redacSearchDebounce()" onkeydown="if(event.key==='Enter')doRedacSearch()"/>
+            <button onclick="doRedacSearch()">→</button>
+            <button onclick="toggleRedacSearch()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+          </div>
+          <div id="redac-search-results"></div>
         </div>
         <div id="redac-title-wrap">
           <input id="redac-doc-title" placeholder="Titre du document…" oninput="onDocTitleChange()" />
@@ -2054,6 +2081,101 @@ function insertArticle(){
   onEditorInput();
   showToast('✓ Article inséré dans le document');
   if(_tab!=='redac') switchTab('redac');
+}
+
+/* ── Recherche dans Rédaction ── */
+var _rdacSrchTimer = null;
+function toggleRedacSearch(){
+  var panel = document.getElementById('redac-search-panel');
+  var isOpen = panel.classList.toggle('open');
+  var btn = document.getElementById('rdac-srch-btn');
+  if(btn) btn.classList.toggle('on', isOpen);
+  if(isOpen){
+    document.getElementById('redac-search-in').focus();
+  } else {
+    document.getElementById('redac-search-results').innerHTML='';
+  }
+}
+
+function redacSearchDebounce(){
+  clearTimeout(_rdacSrchTimer);
+  _rdacSrchTimer = setTimeout(doRedacSearch, 320);
+}
+
+async function doRedacSearch(){
+  var q = document.getElementById('redac-search-in').value.trim();
+  var container = document.getElementById('redac-search-results');
+  if(q.length < 2){ container.innerHTML=''; return; }
+
+  container.innerHTML='<div style="padding:10px;text-align:center;color:var(--t3);font-size:12px"><div class="spinner" style="margin:0 auto 6px"></div>Recherche…</div>';
+
+  // Corpus local d'abord
+  var localResults = corpus_search(q).slice(0,6);
+
+  // API si disponible
+  var apiResults = [];
+  try {
+    var r = await fetch('/api/search', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query:q, filters:{}})
+    });
+    if(r.ok){
+      var data = await r.json();
+      apiResults = (data.results||[]).slice(0,5);
+    }
+  } catch(e){}
+
+  // Fusionner sans doublons
+  var seen = new Set(localResults.map(function(a){return a.id;}));
+  var merged = localResults.concat(apiResults.filter(function(r){
+    return !seen.has(r.id);
+  })).slice(0,10);
+
+  if(merged.length===0){
+    container.innerHTML='<div style="padding:12px;text-align:center;color:var(--t3);font-size:12px">Aucun résultat pour "'+escHtml(q)+'"</div>';
+    return;
+  }
+
+  container.innerHTML = merged.map(function(item, i){
+    var ref   = item.ref||item.article||'';
+    var title = item.title||'Article';
+    var code  = item.code||item.source||'';
+    var texte = (item.texte||item.content||'').replace(/<[^>]*>/g,' ').substring(0,100);
+    return '<div class="rsr-item">'
+      +'<button class="rsr-insert-btn" onclick="event.stopPropagation();redacInsertResult('+i+')">📎 Insérer</button>'
+      +'<div class="rsr-ref">'+escHtml(ref+(code?' — '+code:''))+'</div>'
+      +'<div class="rsr-title">'+escHtml(title)+'</div>'
+      +(texte?'<div class="rsr-excerpt">'+escHtml(texte)+'…</div>':'')
+      +'</div>';
+  }).join('');
+
+  // Stocker les résultats pour l'insertion
+  window._rdacResults = merged;
+}
+
+// Recherche corpus local (version sans async)
+function corpus_search(q){
+  if(!q||q.length<2) return [];
+  var terms = q.toLowerCase().split(/\s+/).filter(function(t){return t.length>1;});
+  return CORPUS.filter(function(a){
+    var txt = ((a.title||'')+(a.ref||'')+(a.texte||'')+(a.code||'')+(a.themes||[]).join(' ')).toLowerCase();
+    return terms.some(function(t){return txt.includes(t);});
+  }).slice(0,8);
+}
+
+function redacInsertResult(i){
+  var item = window._rdacResults && window._rdacResults[i];
+  if(!item) return;
+  // Ouvrir dans le lecteur de droite
+  if(item.id && (CORPUS.find(function(a){return a.id===item.id;}))){
+    openArticle(item.id);
+  }
+  // Aussi insérer directement dans l'éditeur
+  _art = item;
+  insertArticle();
+  // Fermer le panneau
+  toggleRedacSearch();
 }
 
 function copyDoc(){
