@@ -1,7 +1,7 @@
 /**
  * PISTE API Service — Légifrance OAuth2
- * OAuth2 client_credentials → sandbox-oauth.piste.gouv.fr
- * API base → sandbox-api.piste.gouv.fr
+ * OAuth2 client_credentials → oauth.piste.gouv.fr (production)
+ * API base → api.piste.gouv.fr (production)
  */
 const axios = require('axios');
 
@@ -46,32 +46,75 @@ async function getAccessToken() {
 
 /**
  * Recherche Légifrance — retourne [{id, title, code, article, content, url, source}]
+ * Tente d'abord LEGI (articles), puis CODE_DATE en fallback.
  */
 async function search(query, filters = {}) {
   const token = await getAccessToken();
+  const apiKey = process.env.PISTE_API_KEY;
 
-  const body = {
-    recherche: {
-      motsCles: query,
-      filtres: buildFilters(filters),
-      pageNumber: 1,
-      pageSize: 20,
-      operateur: 'ET',
-      typePagination: 'ARTICLE'
-    },
-    fond: filters.fond || 'CODE_DATE'
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...(apiKey ? { 'X-Gravitee-Api-Key': apiKey } : {})
   };
 
-  const r = await axios.post(`${PISTE_BASE}/search`, body, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
-    timeout: 10000
-  });
+  // Fonds à essayer dans l'ordre — LEGI retourne des articles (LEGIARTI) avec texte
+  const fonds = filters.fond
+    ? [filters.fond]
+    : ['LEGI', 'CODE_DATE', 'JORF'];
 
-  return (r.data?.results || []).map(item => {
+  let results = [];
+
+  for (const fond of fonds) {
+    const body = {
+      recherche: {
+        champs: [{
+          typeChamp: 'ALL',
+          criteres: [{ typeRecherche: 'TOUS_LES_MOTS', valeur: query }],
+          operateur: 'ET'
+        }],
+        filtres: buildFilters(filters),
+        pageNumber: 1,
+        pageSize: 20,
+        operateur: 'ET',
+        typePagination: 'ARTICLE'
+      },
+      fond
+    };
+
+    try {
+      const r = await axios.post(`${PISTE_BASE}/search`, body, { headers, timeout: 10000 });
+      const items = r.data?.results || [];
+      if (items.length > 0) {
+        results = items;
+        break;
+      }
+    } catch (e) {
+      // essayer le fond suivant
+    }
+  }
+
+  // Fallback motsCles si champs n'a rien donné
+  if (results.length === 0) {
+    try {
+      const body = {
+        recherche: {
+          motsCles: query,
+          filtres: buildFilters(filters),
+          pageNumber: 1,
+          pageSize: 20,
+          operateur: 'ET',
+          typePagination: 'ARTICLE'
+        },
+        fond: filters.fond || 'CODE_DATE'
+      };
+      const r = await axios.post(`${PISTE_BASE}/search`, body, { headers, timeout: 10000 });
+      results = r.data?.results || [];
+    } catch (e) { /* ignore */ }
+  }
+
+  return results.map(item => {
     const mainTitle = item.titles?.[0];
     const cid  = mainTitle?.cid || mainTitle?.id || item.id || item.cid || '';
     const nature = (item.nature || '').toLowerCase();
@@ -83,10 +126,12 @@ async function search(query, filters = {}) {
     } else if (nature === 'code' || cid.startsWith('LEGITEXT')) {
       url = `https://www.legifrance.gouv.fr/codes/id/${cid}`;
     } else {
-      url = `https://www.legifrance.gouv.fr/search?query=${encodeURIComponent(cid)}`;
+      url = `https://www.legifrance.gouv.fr/search?query=${encodeURIComponent(query)}`;
     }
 
     const content = item.text
+      || item.texteHtml
+      || item.texte
       || (item.resumePrincipal || []).join(' ')
       || (item.autreResume || []).join(' ')
       || '';
@@ -94,11 +139,12 @@ async function search(query, filters = {}) {
     return {
       id:      cid,
       title:   mainTitle?.title || item.titre || item.title || 'Document Légifrance',
-      code:    item.nature || item.origin || filters.fond || 'Légifrance',
+      code:    item.nature || item.origin || 'Légifrance',
       article: item.num || '',
       content,
       url,
-      source:  'piste'
+      source:  'piste',
+      needsFetch: !content && cid.startsWith('LEGIARTI')
     };
   });
 }
@@ -111,26 +157,56 @@ function buildFilters(filters) {
 }
 
 /**
- * Récupère un article par CID
+ * Récupère un article par CID (LEGIARTI...)
  */
 async function getArticle(cid) {
   const token = await getAccessToken();
-  const r = await axios.get(`${PISTE_BASE}/consult/legi/article`, {
-    params: { id: cid },
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    timeout: 8000
-  });
-  const art = r.data?.article;
-  if (!art) return null;
-  return {
-    id:      art.id,
-    title:   art.titre,
-    code:    art.codeParte?.titreCode || '',
-    article: art.num,
-    content: art.texteHtml || art.texte,
-    url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id}`,
-    source:  'piste'
+  const apiKey = process.env.PISTE_API_KEY;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+    ...(apiKey ? { 'X-Gravitee-Api-Key': apiKey } : {})
   };
+
+  // Essai 1 — endpoint article direct
+  try {
+    const r = await axios.get(`${PISTE_BASE}/consult/legi/article`, {
+      params: { id: cid },
+      headers,
+      timeout: 8000
+    });
+    const art = r.data?.article;
+    if (art) {
+      return {
+        id:      art.id,
+        title:   art.titre,
+        code:    art.codeParte?.titreCode || art.codeTitle || '',
+        article: art.num,
+        content: art.texteHtml || art.texte || '',
+        url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id}`,
+        source:  'piste'
+      };
+    }
+  } catch (e) { /* essayer autre endpoint */ }
+
+  // Essai 2 — getArticle via POST (certaines versions de l'API)
+  try {
+    const r = await axios.post(`${PISTE_BASE}/consult/getArticle`, { id: cid }, { headers, timeout: 8000 });
+    const art = r.data?.article || r.data;
+    if (art && (art.texteHtml || art.texte)) {
+      return {
+        id:      art.id || cid,
+        title:   art.titre || '',
+        code:    art.codeTitle || '',
+        article: art.num || '',
+        content: art.texteHtml || art.texte || '',
+        url:     `https://www.legifrance.gouv.fr/codes/article_lc/${cid}`,
+        source:  'piste'
+      };
+    }
+  } catch (e) { /* ignore */ }
+
+  return null;
 }
 
 module.exports = { search, getArticle, getAccessToken };
