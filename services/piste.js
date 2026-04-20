@@ -172,39 +172,21 @@ async function getArticle(cid) {
     ...(apiKey ? { 'X-Gravitee-Api-Key': apiKey } : {})
   };
 
-  // Essai 1 — endpoint article direct
+  // Endpoint qui fonctionne : POST consult/getArticle
   try {
-    const r = await axios.get(`${PISTE_BASE}/consult/legi/article`, {
-      params: { id: cid },
-      headers,
-      timeout: 8000
-    });
+    const r = await axios.post(`${PISTE_BASE}/consult/getArticle`,
+      { id: cid },
+      { headers: { ...headers, 'Content-Type': 'application/json' }, timeout: 8000 }
+    );
     const art = r.data?.article;
     if (art) {
       return {
-        id:      art.id,
-        title:   art.titre,
-        code:    art.codeParte?.titreCode || art.codeTitle || '',
-        article: art.num,
-        content: art.texteHtml || art.texte || '',
-        url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id}`,
-        source:  'piste'
-      };
-    }
-  } catch (e) { /* essayer autre endpoint */ }
-
-  // Essai 2 — getArticle via POST (certaines versions de l'API)
-  try {
-    const r = await axios.post(`${PISTE_BASE}/consult/getArticle`, { id: cid }, { headers, timeout: 8000 });
-    const art = r.data?.article || r.data;
-    if (art && (art.texteHtml || art.texte)) {
-      return {
         id:      art.id || cid,
-        title:   art.titre || '',
-        code:    art.codeTitle || '',
+        title:   art.titre || art.num ? `Article ${art.num}` : 'Article',
+        code:    art.codeTitle || art.origine || '',
         article: art.num || '',
         content: art.texteHtml || art.texte || '',
-        url:     `https://www.legifrance.gouv.fr/codes/article_lc/${cid}`,
+        url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id || cid}`,
         source:  'piste'
       };
     }

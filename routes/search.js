@@ -44,6 +44,26 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/search/article/:cid — récupère le texte complet d'un article par CID
+router.get('/article/:cid', async (req, res) => {
+  try {
+    const { cid } = req.params;
+    if (!cid || !cid.startsWith('LEGIARTI')) {
+      return res.status(400).json({ error: 'CID invalide (doit commencer par LEGIARTI).' });
+    }
+    const hasCreds = !!(process.env.PISTE_CLIENT_ID && process.env.PISTE_CLIENT_SECRET);
+    if (!hasCreds) {
+      return res.status(503).json({ error: 'PISTE non configuré.' });
+    }
+    const article = await piste.getArticle(cid);
+    if (!article) return res.status(404).json({ error: 'Article non trouvé.' });
+    return res.json(article);
+  } catch (err) {
+    console.error('[Article] Erreur:', err);
+    return res.status(500).json({ error: 'Erreur lors de la récupération de l\'article.' });
+  }
+});
+
 // GET /api/search/credits
 router.get('/credits', (_req, res) => res.json({ credits: null, is_premium: true }));
 
