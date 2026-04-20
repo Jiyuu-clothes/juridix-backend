@@ -183,6 +183,51 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .nav-article.on{background:var(--acc3);color:var(--acc2);border-left-color:var(--acc);font-weight:600}
 .nav-art-num{font-weight:600;color:var(--acc2);margin-right:4px}
 
+/* RÉDACTION PAGE */
+#page-redac{display:none;flex-direction:row;height:100%;overflow:hidden}
+#page-redac.active{display:flex}
+body.redac-mode #panel-l{width:100%;max-width:100%}
+body.redac-mode #panel-r{display:none}
+#redac-sidebar{width:200px;min-width:160px;border-right:1px solid var(--gb);display:flex;flex-direction:column;background:rgba(255,255,255,0.02)}
+#redac-sidebar-hdr{padding:12px 10px;border-bottom:1px solid var(--gb);display:flex;align-items:center;justify-content:space-between;font-family:sans-serif}
+#redac-sidebar-hdr span{font-size:12px;font-weight:700;color:var(--t2)}
+.rdoc-new-btn{background:var(--acc3);border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.rdoc-new-btn:hover{background:rgba(124,107,255,0.3)}
+#redac-doc-list{flex:1;overflow-y:auto;padding:6px}
+.rdoc-chip{padding:9px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px;transition:all .2s;font-family:sans-serif}
+.rdoc-chip:hover{background:rgba(255,255,255,0.06)}
+.rdoc-chip.on{background:var(--acc3);border-color:rgba(124,107,255,0.3)}
+.rdoc-chip-title{font-size:12px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rdoc-chip-date{font-size:10px;color:var(--t3);margin-top:2px}
+#redac-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#redac-toolbar{padding:6px 10px;border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:3px;flex-wrap:wrap;background:rgba(255,255,255,0.02);font-family:sans-serif}
+.rtb-btn{background:transparent;border:1px solid transparent;border-radius:5px;padding:4px 8px;font-size:13px;color:var(--t2);cursor:pointer;transition:all .15s;font-family:-apple-system,sans-serif;font-weight:500;min-width:28px;display:flex;align-items:center;justify-content:center}
+.rtb-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1);border-color:rgba(255,255,255,0.1)}
+.rtb-btn.on{background:var(--acc3);border-color:var(--acc);color:var(--acc2)}
+.rtb-sep{width:1px;height:20px;background:var(--gb);margin:0 3px}
+.rtb-word-count{margin-left:auto;font-size:11px;color:var(--t3)}
+#redac-title-wrap{padding:12px 32px 0;font-family:sans-serif}
+#redac-doc-title{width:100%;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--t1);font-size:22px;font-weight:800;outline:none;padding:4px 0;transition:border-color .2s;font-family:-apple-system,sans-serif}
+#redac-doc-title:focus{border-bottom-color:var(--acc)}
+#redac-doc-title::placeholder{color:var(--t3)}
+#redac-editor-wrap{flex:1;overflow-y:auto;padding:8px 32px 40px}
+#redac-editor-wrap::-webkit-scrollbar{width:4px}
+#redac-editor-wrap::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px}
+#redac-editor{min-height:60vh;outline:none;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.9;color:var(--t1);caret-color:var(--acc2)}
+#redac-editor h1{font-size:22px;font-weight:800;color:var(--t1);margin:24px 0 10px;font-family:-apple-system,sans-serif;border-bottom:2px solid var(--gb);padding-bottom:8px}
+#redac-editor h2{font-size:17px;font-weight:700;color:var(--acc2);margin:20px 0 8px;font-family:-apple-system,sans-serif}
+#redac-editor h3{font-size:15px;font-weight:700;color:var(--t2);margin:16px 0 6px;font-family:-apple-system,sans-serif}
+#redac-editor p{margin-bottom:10px}
+#redac-editor ul,#redac-editor ol{margin:8px 0 12px 24px}
+#redac-editor li{margin-bottom:4px}
+#redac-editor blockquote{margin:12px 0;padding:10px 16px;border-left:3px solid var(--acc);background:rgba(124,107,255,0.08);border-radius:0 6px 6px 0;color:var(--t2);font-style:italic;font-size:14px}
+#redac-editor hr{border:none;border-top:1px solid var(--gb);margin:20px 0}
+#redac-editor strong{color:var(--t1);font-weight:700}
+#redac-editor em{color:var(--acc2)}
+#redac-status{padding:4px 32px;font-size:11px;color:var(--t3);font-family:sans-serif;border-top:1px solid var(--gb);display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.01)}
+#redac-autosave{color:var(--green)}
+#redac-editor:empty:before{content:attr(data-placeholder);color:var(--t3);pointer-events:none;white-space:pre-wrap}
+
 /* FICHES PAGE */
 #page-fiches{padding:0}
 .page-inner{padding:10px;overflow-y:auto;flex:1}
@@ -329,6 +374,7 @@ body.focus-mode #topbar #tabs{display:none}
   <div id="tabs">
     <div class="tab on" onclick="switchTab('search')">🔍 Recherche</div>
     <div class="tab" onclick="switchTab('codes')">📖 Codes</div>
+    <div class="tab" onclick="switchTab('redac')">✍️ Rédaction</div>
     <div class="tab" onclick="switchTab('fiches')">📋 Fiches</div>
     <div class="tab" onclick="switchTab('quiz')">⚡ Quiz</div>
   </div>
@@ -396,6 +442,52 @@ body.focus-mode #topbar #tabs{display:none}
         <div class="qe-btns">
           <button class="btn btn-primary" onclick="restartQuiz()">🔄 Rejouer</button>
           <button class="btn btn-outline" onclick="resetQuiz()">⚙️ Changer matière</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RÉDACTION PAGE -->
+    <div id="page-redac">
+      <div id="redac-sidebar">
+        <div id="redac-sidebar-hdr">
+          <span>📝 Documents</span>
+          <button class="rdoc-new-btn" onclick="newDoc()">+ Nouveau</button>
+        </div>
+        <div id="redac-doc-list"></div>
+      </div>
+      <div id="redac-main">
+        <div id="redac-toolbar">
+          <button class="rtb-btn" title="Gras (Ctrl+B)" onclick="fmt('bold')"><b>B</b></button>
+          <button class="rtb-btn" title="Italique (Ctrl+I)" onclick="fmt('italic')"><i>I</i></button>
+          <button class="rtb-btn" title="Souligné (Ctrl+U)" onclick="fmt('underline')"><u>U</u></button>
+          <div class="rtb-sep"></div>
+          <button class="rtb-btn" title="Titre 1" onclick="fmt('h1')">H1</button>
+          <button class="rtb-btn" title="Titre 2" onclick="fmt('h2')">H2</button>
+          <button class="rtb-btn" title="Titre 3" onclick="fmt('h3')">H3</button>
+          <button class="rtb-btn" title="Paragraphe" onclick="fmt('p')">¶</button>
+          <div class="rtb-sep"></div>
+          <button class="rtb-btn" title="Liste à puces" onclick="fmt('ul')">• —</button>
+          <button class="rtb-btn" title="Liste numérotée" onclick="fmt('ol')">1.</button>
+          <button class="rtb-btn" title="Citation / blockquote" onclick="fmt('quote')">" "</button>
+          <button class="rtb-btn" title="Séparateur" onclick="fmt('hr')">—</button>
+          <div class="rtb-sep"></div>
+          <button class="rtb-btn" title="Insérer l'article ouvert comme citation" onclick="insertArticle()" style="font-size:11px;padding:4px 10px;color:var(--acc2);border-color:rgba(124,107,255,0.2)">📎 Insérer article</button>
+          <div class="rtb-sep"></div>
+          <button class="rtb-btn" title="Copier tout" onclick="copyDoc()" style="font-size:11px;padding:4px 10px">📋 Copier</button>
+          <button class="rtb-btn" title="Supprimer ce document" onclick="deleteDoc()" style="font-size:11px;padding:4px 10px;color:var(--red)">🗑️</button>
+          <span class="rtb-word-count" id="redac-wcount">0 mots</span>
+        </div>
+        <div id="redac-title-wrap">
+          <input id="redac-doc-title" placeholder="Titre du document…" oninput="onDocTitleChange()" />
+        </div>
+        <div id="redac-editor-wrap">
+          <div id="redac-editor" contenteditable="true" spellcheck="true"
+               oninput="onEditorInput()" onkeydown="onEditorKey(event)"
+               data-placeholder="Commence à rédiger…&#10;&#10;Utilise la barre d'outils pour mettre en forme ton texte. Tu peux insérer n'importe quel article depuis la barre de recherche."></div>
+        </div>
+        <div id="redac-status">
+          <span id="redac-autosave">✓ Sauvegardé</span>
+          <span id="redac-charcount">0 caractères</span>
         </div>
       </div>
     </div>
@@ -1287,14 +1379,17 @@ function openLegifrance(){
 function switchTab(tab){
   _tab=tab;
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
-  document.querySelectorAll('#page-search,#page-codes,#page-fiches,#page-quiz').forEach(function(p){p.classList.remove('active');});
-  var tabs={'search':0,'codes':1,'fiches':2,'quiz':3};
+  document.querySelectorAll('#page-search,#page-codes,#page-redac,#page-fiches,#page-quiz').forEach(function(p){p.classList.remove('active');});
+  var tabs={'search':0,'codes':1,'redac':2,'fiches':3,'quiz':4};
   document.querySelectorAll('.tab')[tabs[tab]].classList.add('on');
   document.getElementById('page-'+tab).classList.add('active');
+  // Rédaction : mode plein écran (cache panel-r)
+  document.body.classList.toggle('redac-mode', tab==='redac');
   if(tab==='codes' && !_codesInited){initCodes();}
+  if(tab==='redac' && !_redacInited){initRedac();}
   if(tab!=='fiches'){
     document.getElementById('fiche-detail').classList.remove('show');
-    if(!_art){document.getElementById('art-empty').style.display='flex';}
+    if(!_art && tab!=='redac'){document.getElementById('art-empty').style.display='flex';}
   }
 }
 function toggleFocus(){
@@ -1660,6 +1755,190 @@ function resetQuiz(){
   document.getElementById('quiz-setup').style.display='block';
   document.getElementById('quiz-active').style.display='none';
   document.getElementById('quiz-end').style.display='none';
+}
+
+/* ===== RÉDACTION (éditeur Word-like) ===== */
+var _redacInited = false;
+var _docs = [];        // [{id, title, content, date}]
+var _docIdx = -1;
+var _autoSaveTimer = null;
+var _docDirty = false;
+
+var RDOC_KEY = 'juridix_docs_v1';
+
+function loadDocs(){
+  try{
+    var raw = localStorage.getItem(RDOC_KEY);
+    _docs = raw ? JSON.parse(raw) : [];
+  } catch(e){ _docs=[]; }
+  if(_docs.length===0) _docs=[{id:Date.now(),title:'Mon premier document',content:'<h1>Introduction</h1><p>Commence à rédiger ici…</p>',date:new Date().toLocaleDateString('fr-FR')}];
+}
+
+function saveDocs(){
+  try{ localStorage.setItem(RDOC_KEY, JSON.stringify(_docs)); } catch(e){}
+}
+
+function initRedac(){
+  _redacInited = true;
+  loadDocs();
+  _docIdx = 0;
+  renderDocList();
+  openDoc(0);
+}
+
+function renderDocList(){
+  var html = _docs.map(function(d,i){
+    return '<div class="rdoc-chip'+(i===_docIdx?' on':'')+'" onclick="openDoc('+i+')">'
+      +'<div class="rdoc-chip-title">'+escHtml(d.title||'Sans titre')+'</div>'
+      +'<div class="rdoc-chip-date">'+escHtml(d.date||'')+'</div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('redac-doc-list').innerHTML = html;
+}
+
+function openDoc(i){
+  // Sauvegarde doc courant avant de changer
+  if(_docIdx>=0 && _docDirty) flushDoc();
+  _docIdx = i;
+  var d = _docs[i];
+  document.getElementById('redac-doc-title').value = d.title||'';
+  document.getElementById('redac-editor').innerHTML = d.content||'';
+  _docDirty = false;
+  updateWordCount();
+  setAutoSaveStatus('✓ Sauvegardé');
+  renderDocList();
+  document.getElementById('redac-editor').focus();
+}
+
+function newDoc(){
+  if(_docIdx>=0 && _docDirty) flushDoc();
+  var d = {id:Date.now(), title:'Nouveau document', content:'', date:new Date().toLocaleDateString('fr-FR')};
+  _docs.unshift(d);
+  saveDocs();
+  _docIdx = 0;
+  renderDocList();
+  openDoc(0);
+  // Sélectionne le titre pour le renommer
+  var titleEl = document.getElementById('redac-doc-title');
+  titleEl.value='Nouveau document';
+  titleEl.select();
+}
+
+function deleteDoc(){
+  if(_docs.length<=1){ alert('Tu ne peux pas supprimer le dernier document.'); return; }
+  if(!confirm('Supprimer ce document définitivement ?')) return;
+  _docs.splice(_docIdx,1);
+  saveDocs();
+  _docIdx = Math.min(_docIdx, _docs.length-1);
+  renderDocList();
+  openDoc(_docIdx);
+}
+
+function flushDoc(){
+  if(_docIdx<0 || _docIdx>=_docs.length) return;
+  _docs[_docIdx].content = document.getElementById('redac-editor').innerHTML;
+  _docs[_docIdx].title   = document.getElementById('redac-doc-title').value || 'Sans titre';
+  _docs[_docIdx].date    = new Date().toLocaleDateString('fr-FR');
+  saveDocs();
+  _docDirty = false;
+}
+
+function onEditorInput(){
+  _docDirty = true;
+  updateWordCount();
+  setAutoSaveStatus('● Modification…');
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function(){
+    flushDoc();
+    setAutoSaveStatus('✓ Sauvegardé');
+  }, 1500);
+}
+
+function onDocTitleChange(){
+  _docDirty = true;
+  // Mise à jour temps réel dans la liste
+  if(_docIdx>=0) _docs[_docIdx].title = document.getElementById('redac-doc-title').value||'Sans titre';
+  renderDocList();
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function(){
+    flushDoc();
+    setAutoSaveStatus('✓ Sauvegardé');
+  }, 1500);
+}
+
+function setAutoSaveStatus(msg){
+  var el = document.getElementById('redac-autosave');
+  if(el) el.textContent = msg;
+}
+
+function updateWordCount(){
+  var editor = document.getElementById('redac-editor');
+  var text = editor ? editor.innerText : '';
+  var words = text.trim().split(/\s+/).filter(function(w){return w.length>0;}).length;
+  var chars = text.length;
+  var wc = document.getElementById('redac-wcount');
+  var cc = document.getElementById('redac-charcount');
+  if(wc) wc.textContent = words + ' mot'+(words>1?'s':'');
+  if(cc) cc.textContent = chars + ' caractère'+(chars>1?'s':'');
+}
+
+function fmt(type){
+  document.getElementById('redac-editor').focus();
+  switch(type){
+    case 'bold':      document.execCommand('bold');break;
+    case 'italic':    document.execCommand('italic');break;
+    case 'underline': document.execCommand('underline');break;
+    case 'h1':        document.execCommand('formatBlock',false,'h1');break;
+    case 'h2':        document.execCommand('formatBlock',false,'h2');break;
+    case 'h3':        document.execCommand('formatBlock',false,'h3');break;
+    case 'p':         document.execCommand('formatBlock',false,'p');break;
+    case 'ul':        document.execCommand('insertUnorderedList');break;
+    case 'ol':        document.execCommand('insertOrderedList');break;
+    case 'quote':     document.execCommand('formatBlock',false,'blockquote');break;
+    case 'hr':        document.execCommand('insertHorizontalRule');break;
+  }
+  onEditorInput();
+}
+
+function onEditorKey(e){
+  // Tab → indent
+  if(e.key==='Tab'){
+    e.preventDefault();
+    document.execCommand('insertHTML',false,'&nbsp;&nbsp;&nbsp;&nbsp;');
+  }
+}
+
+function insertArticle(){
+  if(!_art){ showToast('Ouvre d\'abord un article dans le lecteur'); return; }
+  document.getElementById('redac-editor').focus();
+  var citation = '<blockquote><strong>'+escHtml(_art.title||_art.ref||'Article')+'</strong>';
+  if(_art.code) citation += ' <em>('+escHtml(_art.code)+')</em>';
+  citation += '<br>';
+  var texte = (_art.texte||_art.content||'').substring(0,500);
+  if(texte) citation += escHtml(texte)+((_art.texte||_art.content||'').length>500?'…':'');
+  citation += '</blockquote><p></p>';
+  document.execCommand('insertHTML',false,citation);
+  onEditorInput();
+  // Revenir sur l'onglet rédac
+  if(_tab!=='redac') switchTab('redac');
+}
+
+function copyDoc(){
+  var editor = document.getElementById('redac-editor');
+  var text = editor ? editor.innerText : '';
+  navigator.clipboard.writeText(text).then(function(){
+    showToast('Document copié dans le presse-papier !');
+  }).catch(function(){
+    showToast('Erreur : copie non disponible');
+  });
+}
+
+function showToast(msg){
+  var t = document.getElementById('cite-toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
 }
 
 /* ===== CODE NAVIGATOR ===== */
