@@ -77,10 +77,26 @@ app.get('/api/debug/piste', async (req, res) => {
   const CODE_CIVIL = 'LEGITEXT000006070721';
   out.consult_tests = [];
 
-  // Test A : POST consult/code/tableMatieres (POST au lieu de GET)
+  // Test A : POST consult/code/tableMatieres — montrer la structure sections/articles
   try {
     const r = await axios.post(`${apiBase}/consult/code/tableMatieres`, { textId: CODE_CIVIL, date:'2024-01-01' }, { headers:h, timeout:8000 });
-    out.consult_tests.push({ endpoint:'POST consult/code/tableMatieres', ok:true, status:r.status, preview: JSON.stringify(r.data).substring(0,300) });
+    const d = r.data;
+    // Explorer la structure pour trouver les articles
+    const topKeys = Object.keys(d || {});
+    const firstSection = d?.sections?.[0] || d?.articles?.[0] || null;
+    const firstSectionKeys = firstSection ? Object.keys(firstSection) : [];
+    const deepArticle = d?.sections?.[0]?.sections?.[0]?.articles?.[0]
+                     || d?.sections?.[0]?.articles?.[0]
+                     || d?.articles?.[0] || null;
+    out.consult_tests.push({
+      endpoint: 'POST consult/code/tableMatieres',
+      ok: true, status: r.status,
+      top_keys: topKeys,
+      sections_count: d?.sections?.length,
+      first_section_keys: firstSectionKeys,
+      first_section_title: firstSection?.title || firstSection?.titre,
+      deep_article_sample: deepArticle ? JSON.stringify(deepArticle).substring(0,200) : null
+    });
   } catch(e) {
     out.consult_tests.push({ endpoint:'POST consult/code/tableMatieres', ok:false, status:e.response?.status, err:e.response?.data||e.message });
   }
