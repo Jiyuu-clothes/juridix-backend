@@ -102,11 +102,18 @@ app.get('/api/debug/piste', async (req, res) => {
   };
 
   const variants = [
-    { name:'CODE_DATE + filtres vides', body: { ...baseBody } },
-    { name:'LEGI + filtres vides',      body: { ...baseBody, fond:'LEGI' } },
-    { name:'CODE_DATE + ETAT VIGUEUR',  body: { ...baseBody, recherche:{ ...baseBody.recherche, filtres:[{facette:'ETAT',valeur:'VIGUEUR'}] } } },
-    { name:'CODE_DATE sans sort',       body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
-    { name:'JURI fond',                 body: { ...baseBody, fond:'JURI' } },
+    // Format 1 : avec sort PERTINENCE
+    { name:'sort PERTINENCE', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', sort:'PERTINENCE', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
+    // Format 2 : sans sort, sans typePagination
+    { name:'minimal sans sort/typePagination', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET' }, fond:'CODE_DATE' } },
+    // Format 3 : typeRecherche UN_DES_MOTS
+    { name:'UN_DES_MOTS', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'UN_DES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
+    // Format 4 : LEGI sans filtres
+    { name:'LEGI minimal', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'LEGI' } },
+    // Format 5 : sans champs, avec motsCles
+    { name:'motsCles direct', body: { recherche:{ motsCles:'contrat', filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
+    // Format 6 : JORF
+    { name:'JORF fond', body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'JORF' } },
   ];
 
   const headerSets = [
@@ -122,7 +129,7 @@ app.get('/api/debug/piste', async (req, res) => {
         out.search_results = (r.data?.results || []).slice(0,2).map(x => x.titre||x.title);
         return res.json(out);
       } catch(e) {
-        out.search_results.push({ variant:v.name, headers:hset.label, status:e.response?.status, err: JSON.stringify(e.response?.data||e.message).substring(0,120) });
+        out.search_results.push({ variant:v.name, headers:hset.label, status:e.response?.status, err: e.response?.data || e.message });
       }
     }
   }
