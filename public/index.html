@@ -303,9 +303,9 @@ body.focus-mode #topbar #tabs{display:none}
     <div id="page-search" class="active">
       <div class="filter-bar" id="filter-bar">
         <div class="fbtn on" onclick="setFilter('all',this)">Tout</div>
-        <div class="fbtn" onclick="setFilter('code',this)">Code civil / Pénal</div>
-        <div class="fbtn" onclick="setFilter('jurisprudence',this)">Jurisprudence</div>
-        <div class="fbtn" onclick="setFilter('definition',this)">Définitions</div>
+        <div class="fbtn" onclick="setFilter('code',this)">📚 Codes &amp; Lois</div>
+        <div class="fbtn" onclick="setFilter('jurisprudence',this)">⚖️ Jurisprudence</div>
+        <div class="fbtn" onclick="setFilter('definition',this)">📖 Définitions</div>
       </div>
       <div id="results-list">
         <div class="search-empty">
@@ -1321,6 +1321,51 @@ var FICHES=[
    eff:["Extinction de l'action en justice (pas nécessairement du droit substantiel)","Peut être invoquée en défense seulement (pas d'office par le juge en principe)","Cause de suspension (ex : minorité, art. 2235) ou d'interruption (ex : acte de poursuite)"],
    jur:["Cass. civ. 1ère, 22 mai 2008 : le délai de prescription ne court pas contre celui qui ne peut agir","Art. 2254 C. civ. : aménagement conventionnel possible (dans la limite de 1 à 10 ans)"],
    arts:['cc-2224','cc-1353']},
+/* ── FICHES DROIT DU TRAVAIL ── */
+  {id:'f-licenciement',mat:'Travail',ico:'💼',titre:'Licenciement pour motif personnel',
+   def:"Le licenciement pour motif personnel doit reposer sur une cause réelle et sérieuse (art. L.1232-1 C. trav.). La procédure est obligatoire sous peine de nullité ou d'irrégularité.",
+   cond:["Cause réelle : objective, existante et exacte","Cause sérieuse : suffisamment grave pour justifier la rupture","Procédure : convocation à entretien préalable → entretien → notification par LRAR (délai min. 2 jours ouvrables entre entretien et lettre)","Délai de prescription : 12 mois pour contester (art. L.1471-1)"],
+   eff:["Préavis (sauf faute grave ou lourde)","Indemnité légale de licenciement (si ancienneté ≥ 8 mois)","Barème Macron : indemnité prud'homale plafonnée selon l'ancienneté (art. L.1235-3)","Licenciement sans cause réelle et sérieuse : indemnité entre 0,5 et 20 mois de salaire"],
+   jur:["Cass. soc., 29 nov. 1990 : définition de la cause réelle et sérieuse","Cass. soc., 13 sept. 2017 : constitutionnalité du barème Macron (validé)"],
+   arts:['ct-L1232-1','ct-L1231-1']},
+  {id:'f-rupture-conv',mat:'Travail',ico:'🤝',titre:'Rupture conventionnelle',
+   def:"La rupture conventionnelle (art. L.1237-19 C. trav.) permet à l'employeur et au salarié de mettre fin d'un commun accord à un CDI, avec des droits spécifiques pour le salarié.",
+   cond:["CDI uniquement (pas de CDD, pas de rupture imposée)","Entretien(s) obligatoire(s) entre les parties","Convention de rupture signée + délai de rétractation de 15 jours calendaires","Homologation par la DREETS (ex-DIRECCTE) dans les 15 jours ouvrables"],
+   eff:["Indemnité spécifique de rupture conventionnelle (≥ indemnité légale de licenciement)","Droit aux allocations chômage (ARE)","Date de rupture fixée après l'homologation","Défaut d'homologation : rupture nulle"],
+   jur:["Cass. soc., 8 juil. 2009 : la rupture conventionnelle est une modalité autonome de rupture","Cass. soc., 23 mai 2013 : possible même en cas de harcèlement moral allégué"],
+   arts:['ct-L1237-19','ct-L1231-1']},
+  {id:'f-obligation-secu',mat:'Travail',ico:'🦺',titre:"Obligation de sécurité de l'employeur",
+   def:"L'employeur est tenu d'une obligation de sécurité envers ses salariés (art. L.4121-1 C. trav.). La jurisprudence a évolué d'une obligation de résultat vers une obligation de moyens renforcée.",
+   cond:["Prendre toutes les mesures de prévention nécessaires","Information et formation des salariés aux risques","Évaluation des risques (Document unique d'évaluation des risques — DUER)","Prévention des risques psychosociaux (RPS) incluse"],
+   eff:["Manquement → faute inexcusable si l'employeur avait ou aurait dû avoir conscience du danger","Réparation intégrale si faute inexcusable","Peut justifier une prise d'acte aux torts de l'employeur","Depuis 2015 : exonération si l'employeur prouve avoir pris toutes les mesures"],
+   jur:["Cass. soc., 28 fév. 2002 (arrêt amiante) : obligation de résultat","Cass. soc., 25 nov. 2015 : atténuation → obligation de moyens renforcée"],
+   arts:['ct-L4121-1','ct-L1231-1']},
+/* ── FICHES DROIT CONSTITUTIONNEL ── */
+  {id:'f-hierarchie',mat:'Constitutionnel',ico:'🏛️',titre:'Hiérarchie des normes',
+   def:"Les normes juridiques sont ordonnées hiérarchiquement. Une norme inférieure doit être conforme à la norme supérieure (théorie de Kelsen).",
+   cond:["Constitution (norme suprême) : modifiée par art. 89","Bloc de constitutionnalité : Constitution 1958 + DDHC 1789 + Préambule 1946 + Charte environnement 2004","Traités et accords internationaux > lois (art. 55)","Lois ordinaires > règlements (art. 34 vs art. 37)"],
+   eff:["Contrôle de constitutionnalité : CC (a priori art. 61, a posteriori QPC art. 61-1)","Contrôle de conventionnalité : juge ordinaire écarte la loi incompatible avec un traité (Nicolo 1989)","Contrôle de légalité : juge administratif annule les actes contraires à la loi"],
+   jur:["CC, 71-44 DC (1971) : naissance du bloc de constitutionnalité","CE, Nicolo (1989) : contrôle de conventionnalité par le juge ordinaire","CE, Arrighi (1936) : théorie de la loi-écran — le juge administratif ne contrôle pas la constitutionnalité des lois"],
+   arts:['const-art34','const-art55','const-art61-1','jp-nicolo','jp-71-44']},
+  {id:'f-qpc',mat:'Constitutionnel',ico:'⚖️',titre:'Question Prioritaire de Constitutionnalité (QPC)',
+   def:"La QPC (art. 61-1 Const., loi organique 2009) permet à tout justiciable de contester la constitutionnalité d'une disposition législative portant atteinte à ses droits et libertés.",
+   cond:["Disposition législative applicable au litige","N'ayant pas déjà été déclarée conforme (sauf changement de circonstances)","Question non dépourvue de caractère sérieux","Double filtre : Cour de cassation ou Conseil d'État renvoie au Conseil constitutionnel (3 mois)"],
+   eff:["Abrogation de la disposition inconstitutionnelle (effet erga omnes)","Effet différé possible pour éviter le vide juridique","Modulation des effets dans le temps par le CC","À distinguer du contrôle a priori (art. 61) et du contrôle de conventionnalité"],
+   jur:["CC, 16 juil. 1971 : fondement du bloc de constitutionnalité","CC, 2010-1 QPC (28 mai 2010) : première QPC en France (Crystal Park)"],
+   arts:['const-art61-1','const-art55','jp-71-44']},
+/* ── FICHES MÉTHODE ── */
+  {id:'f-methode-cas',mat:'Méthode',ico:'📐',titre:'Méthode du cas pratique',
+   def:"Le cas pratique est l'exercice phare des études de droit. Il s'agit d'appliquer des règles de droit à des faits concrets pour résoudre un problème juridique.",
+   cond:["1° Lire les faits attentivement et identifier les personnages, actes et faits importants","2° Identifier la ou les questions juridiques posées","3° Trouver la règle de droit applicable (article + jurisprudence)","4° Appliquer la règle aux faits (syllogisme : majeure → mineure → conclusion)","5° Conclure clairement"],
+   eff:["Structure type : 'En l'espèce, [rappel des faits]. Or, selon [article], [règle]. Il convient donc de [conclusion].'","Ne jamais raisonner dans l'abstrait : toujours relier aux faits","Citer les articles de loi ET les arrêts de principe","Ne pas donner de réponse tranchée sur des points débattus — exposer les deux thèses"],
+   jur:["Méthode du syllogisme juridique : Majeure (règle) + Mineure (faits) = Conclusion","Le juge motive ses décisions de la même façon — s'entraîner à cette logique"],
+   arts:['def-rsp-civ','def-nullite','def-fm']},
+  {id:'f-methode-dissert',mat:'Méthode',ico:'✍️',titre:'Méthode de la dissertation juridique',
+   def:"La dissertation juridique consiste à répondre à une question de droit de manière organisée, en développant une argumentation à partir des sources du droit.",
+   cond:["1° Analyser le sujet : définir les termes, délimiter le sujet (ce qu'il inclut et exclut)","2° Mobiliser les connaissances : textes + jurisprudence + doctrine","3° Dégager une problématique : la question juridique que pose le sujet","4° Construire un plan en 2 parties / 2 sous-parties (I. A. / I. B. / II. A. / II. B.)","5° Rédiger avec transitions, introduction (accrocher + définir + problématique + annonce du plan)"],
+   eff:["Introduction : 1/5 de la copie","Développement : pas de titre apparent dans la copie finale","Conclusion : optionnelle mais appréciée si elle ouvre sur une perspective","Bannir le plagiat d'articles de loi : analyser, ne pas recopier"],
+   jur:["Un bon plan doit découler du sujet, pas être plaqué artificiellement","Privilégier un plan analytique (causes/conséquences) ou dialectique (thèse/antithèse)"],
+   arts:['def-rsp-civ','def-nullite','def-lien-caus']},
 ];
 
 var _ficheCache={};
@@ -1402,6 +1447,23 @@ var QUIZ_QUESTIONS=[
   {mat:'Obligations',q:"La clause 'Chronopost' est réputée non écrite car elle :",opts:["Fixe un prix trop bas","Prive de sa substance l'obligation essentielle du débiteur (art. 1170)","Contient une erreur sur l'objet","Viole l'ordre public"],ans:1,exp:"Arrêt Chronopost (Com., 22 oct. 1996), consacré à art. 1170 C. civ. : toute clause qui prive de sa substance l'obligation essentielle est réputée non écrite."},
   {mat:'Responsabilité',q:"L'arrêt Mercier (Civ., 20 mai 1936) a qualifié la responsabilité médicale de :",opts:["Délictuelle","Contractuelle","Administrative","Pénale uniquement"],ans:1,exp:"Mercier : il se forme un véritable contrat entre médecin et patient — la responsabilité médicale est contractuelle (obligation de moyens) en droit privé. Régi par art. 1231-1 C. civ."},
   {mat:'Constitutionnel',q:"La hiérarchie des normes en droit français (du plus élevé au plus bas) est :",opts:["Constitution > loi > traités > règlement","Traités > Constitution > loi > règlement","Constitution > traités > loi > règlement","Loi > Constitution > règlement > traités"],ans:2,exp:"En droit français : Constitution (art. 89) > traités (art. 55, sous réserve de réciprocité) > loi > règlements. La Constitution prime — les traités ne peuvent être ratifiés s'ils lui sont contraires (art. 54)."},
+  /* ── TRAVAIL ── */
+  {mat:'Travail',q:"Qu'est-ce qu'une cause 'réelle et sérieuse' de licenciement (art. L.1232-1) ?",opts:["Tout motif invoqué par l'employeur","Un motif objectif, existant et suffisamment grave pour justifier la rupture","Un motif reconnu par les tribunaux uniquement","Un motif exclusivement disciplinaire"],ans:1,exp:"Art. L.1232-1 C. trav. : le licenciement doit être justifié par une cause réelle (objective, vérifiable, exacte) et sérieuse (suffisamment grave). Le juge contrôle la cause, et l'employeur en supporte la charge si contestée."},
+  {mat:'Travail',q:"La rupture conventionnelle (art. L.1237-19) est possible :",opts:["En cas de licenciement économique","En cas de démission forcée","D'un commun accord sur un CDI, sans qu'elle puisse être imposée","Pour tout type de contrat de travail"],ans:2,exp:"Art. L.1237-19 : rupture conventionnelle = accord des deux parties sur un CDI. Elle est exclusive du licenciement ou de la démission. Elle doit être homologuée par la DREETS. Elle ouvre droit aux allocations chômage."},
+  {mat:'Travail',q:"Depuis l'arrêt amiante (2002), l'obligation de sécurité de l'employeur est qualifiée de :",opts:["Simple obligation de moyens","Obligation de résultat absolue, puis atténuée en 2015","Obligation morale non sanctionnée","Obligation accessoire au contrat de travail"],ans:1,exp:"Cass. soc., 28 fév. 2002 : obligation de sécurité de résultat. Depuis Cass. soc., 25 nov. 2015 : l'employeur qui justifie avoir pris toutes les mesures nécessaires peut s'exonérer → obligation de moyens renforcée."},
+  {mat:'Travail',q:"Le barème Macron (art. L.1235-3) plafonne :",opts:["Les indemnités de préavis","L'indemnité prud'homale en cas de licenciement sans cause réelle et sérieuse","Les cotisations sociales patronales","Les dommages-intérêts pour harcèlement moral"],ans:1,exp:"Art. L.1235-3 : si le licenciement est sans cause réelle et sérieuse, l'indemnité est plafonnée selon un barème tenant à l'ancienneté (de 0,5 mois pour moins d'1 an à 20 mois pour 30 ans). Déclaré constitutionnel par le CC en 2018."},
+  /* ── CONSTITUTIONNEL (suite) ── */
+  {mat:'Constitutionnel',q:"Quel arrêt du Conseil d'État a admis le contrôle de conventionnalité des lois par rapport aux traités ?",opts:["CE, Dame Lamotte, 1950","CE, Arrighi, 1936","CE, Nicolo, 1989","CE, Ville Nouvelle Est, 1971"],ans:2,exp:"CE, 20 oct. 1989, Nicolo : le Conseil d'État accepte pour la première fois de contrôler la compatibilité d'une loi avec un traité international (art. 55 Const.), abandonnant la jurisprudence des Semoules (1968)."},
+  {mat:'Constitutionnel',q:"Quelles sont les conditions de recevabilité d'une QPC ?",opts:["Disposition constitutionnelle non appliquée","Disposition législative applicable au litige, non déjà déclarée conforme, question sérieuse","Tout acte administratif contraire à la Constitution","Disposition réglementaire portant atteinte à une liberté"],ans:1,exp:"Art. 61-1 Const. : la QPC porte sur une DISPOSITION LÉGISLATIVE (pas un règlement) applicable au litige, pas déjà déclarée conforme (sauf changement de circonstances), et dont la question n'est pas dépourvue de caractère sérieux."},
+  {mat:'Constitutionnel',q:"L'article 34 de la Constitution de 1958 délimite :",opts:["Les pouvoirs du Président de la République","Le domaine de la loi (matières réservées au Parlement)","Les attributions du Premier ministre","Le contrôle du Conseil constitutionnel"],ans:1,exp:"Art. 34 : liste les matières réservées à la loi (état civil, libertés publiques, droit pénal, fiscalité...). Art. 37 : tout ce qui n'est pas du domaine de la loi est règlementaire. Grande innovation de 1958 : le Parlement n'est plus souverain sur tout."},
+  /* ── OBLIGATIONS (suite) ── */
+  {mat:'Obligations',q:"L'erreur inexcusable sur les qualités essentielles de la prestation (art. 1131) :",opts:["Entraîne toujours la nullité absolue","N'est pas une cause de nullité","Est une cause de nullité relative sauf si elle est inexcusable","Ouvre droit à des dommages-intérêts uniquement"],ans:2,exp:"Art. 1131 : l'erreur sur les qualités essentielles est une cause de nullité relative. Mais si l'erreur est INEXCUSABLE (d'un professionnel par exemple), elle n'est pas une cause de nullité. La partie ne peut se prévaloir de sa propre négligence."},
+  {mat:'Obligations',q:"Quelle est la différence fondamentale entre responsabilité contractuelle et délictuelle en matière de réparation ?",opts:["Il n'y a aucune différence","La délictuelle répare tous les dommages ; la contractuelle ne répare que les dommages prévisibles","La contractuelle répare plus largement","Seule la délictuelle permet une réparation en nature"],ans:1,exp:"Art. 1231-3 : en matière contractuelle, le débiteur ne répond que des dommages PRÉVISIBLES lors de la conclusion (sauf faute lourde/dolosive). Art. 1240 : en délictuel, réparation INTÉGRALE du préjudice, prévisible ou non."},
+  {mat:'Obligations',q:"Qu'est-ce que la réticence dolosive (art. 1137 al. 2) ?",opts:["Une erreur involontaire sur les qualités essentielles","Le silence intentionnel d'un contractant sur une information déterminante pour l'autre","Une violence exercée par le silence","Un manquement à l'obligation de délivrance"],ans:1,exp:"Art. 1137 al. 2 (réforme 2016) : constitue un dol la dissimulation intentionnelle d'une information dont on sait le caractère déterminant pour l'autre partie. Le simple silence peut donc être un dol — à condition qu'il soit intentionnel."},
+  /* ── DROIT ADMINISTRATIF ── */
+  {mat:'Administratif',q:"Qu'est-ce que fonde l'arrêt Blanco (TC, 8 fév. 1873) ?",opts:["La responsabilité contractuelle de l'État","L'autonomie du droit administratif par rapport au droit civil","L'incompétence des juridictions administratives","Le principe de légalité administrative"],ans:1,exp:"Arrêt Blanco : la responsabilité de l'État pour dommages causés par ses services publics n'est pas régie par le Code civil mais par des règles spéciales. Il fonde l'autonomie du droit administratif et la compétence des juridictions administratives."},
+  {mat:'Administratif',q:"L'arrêt Dame Lamotte (CE, 1950) consacre quel principe ?",opts:["L'égalité devant les charges publiques","Le principe de légalité des actes administratifs","Le recours pour excès de pouvoir ouvert même sans texte contre tout acte administratif","La responsabilité sans faute de l'État"],ans:2,exp:"CE, 17 fév. 1950, Dame Lamotte : le REP (recours pour excès de pouvoir) est ouvert même sans texte contre tout acte administratif. C'est un principe général du droit. Même une loi ne pourrait le supprimer sans être inconstitutionnelle."},
+  {mat:'Administratif',q:"La théorie du bilan (CE Ass., Ville Nouvelle Est, 1971) impose que :",opts:["Tout projet d'utilité publique est automatiquement légal","Les atteintes aux droits ne doivent pas être excessives par rapport à l'intérêt du projet","Le bilan financier des expropriations soit positif","L'État indemnise toujours au double de la valeur marchande"],ans:1,exp:"CE Ass., 28 mai 1971 : une expropriation pour utilité publique est légale seulement si les atteintes à la propriété, le coût financier et les inconvénients sociaux ne sont pas excessifs par rapport à l'intérêt qu'elle présente. C'est le contrôle de proportionnalité du juge administratif."},
 ];
 
 var _quiz={mat:'all',idx:0,score:0,ans:-1,questions:[]};
