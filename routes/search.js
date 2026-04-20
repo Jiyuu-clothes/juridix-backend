@@ -92,4 +92,25 @@ router.get('/article/:cid', async (req, res) => {
 // GET /api/search/credits
 router.get('/credits', (_req, res) => res.json({ credits: null, is_premium: true }));
 
+// GET /api/search/codes — liste des codes disponibles
+router.get('/codes', (_req, res) => {
+  const codes = Object.entries(piste.KEY_CODES).map(([id, name]) => ({ id, name }));
+  res.json({ codes });
+});
+
+// GET /api/search/codes/:textId/nav — structure de navigation d'un code
+router.get('/codes/:textId/nav', async (req, res) => {
+  try {
+    const { textId } = req.params;
+    if (!piste.KEY_CODES[textId]) return res.status(404).json({ error: 'Code non trouvé.' });
+    const hasCreds = !!(process.env.PISTE_CLIENT_ID && process.env.PISTE_CLIENT_SECRET);
+    if (!hasCreds) return res.status(503).json({ error: 'PISTE non configuré.' });
+    const articles = await piste.getCodeArticles(textId);
+    res.json({ textId, name: piste.KEY_CODES[textId], articles, total: articles.length });
+  } catch (err) {
+    console.error('[Nav] Erreur:', err);
+    res.status(500).json({ error: 'Erreur lors du chargement de la structure.' });
+  }
+});
+
 module.exports = router;

@@ -154,6 +154,35 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .nm-btn-del{background:transparent;border-color:rgba(248,113,113,0.2);color:var(--red)}
 .nm-btn-del:hover{background:rgba(248,113,113,0.08)}
 
+/* CODES PAGE */
+#page-codes{display:none;flex-direction:column;height:100%;overflow:hidden}
+#page-codes.active{display:flex}
+.code-selector{padding:10px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--gb)}
+.code-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--gb);background:rgba(255,255,255,0.04);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.code-btn:hover{background:rgba(124,107,255,0.1);color:var(--t1)}
+.code-btn.on{background:var(--acc3);border-color:var(--acc);color:var(--acc2);font-weight:600}
+#code-nav{flex:1;overflow-y:auto;padding:8px 6px}
+.code-nav-loading{padding:30px;text-align:center;color:var(--t3);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.code-nav-info{padding:8px 10px;font-size:11px;color:var(--t3);border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:4px}
+.nav-section{margin-bottom:2px}
+.nav-section-hdr{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:6px;cursor:pointer;transition:background .15s;font-size:12px;font-weight:600;color:var(--t2);user-select:none}
+.nav-section-hdr:hover{background:rgba(255,255,255,0.05);color:var(--t1)}
+.nav-section-hdr.open{color:var(--acc2)}
+.nav-arrow{font-size:9px;transition:transform .2s;display:inline-block;color:var(--t3)}
+.nav-arrow.open{transform:rotate(90deg)}
+.nav-section-body{display:none;padding-left:14px}
+.nav-section-body.open{display:block}
+.nav-sub-section{margin-bottom:1px}
+.nav-sub-hdr{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:500;color:var(--t3);transition:all .15s;user-select:none}
+.nav-sub-hdr:hover{background:rgba(255,255,255,0.04);color:var(--t2)}
+.nav-sub-hdr.open{color:var(--t2)}
+.nav-sub-body{display:none;padding-left:12px}
+.nav-sub-body.open{display:block}
+.nav-article{padding:4px 8px 4px 10px;font-size:11.5px;color:var(--t3);cursor:pointer;border-radius:4px;transition:all .15s;border-left:2px solid transparent;margin-bottom:1px}
+.nav-article:hover{background:rgba(124,107,255,0.08);color:var(--t1);border-left-color:var(--acc)}
+.nav-article.on{background:var(--acc3);color:var(--acc2);border-left-color:var(--acc);font-weight:600}
+.nav-art-num{font-weight:600;color:var(--acc2);margin-right:4px}
+
 /* FICHES PAGE */
 #page-fiches{padding:0}
 .page-inner{padding:10px;overflow-y:auto;flex:1}
@@ -299,6 +328,7 @@ body.focus-mode #topbar #tabs{display:none}
   </div>
   <div id="tabs">
     <div class="tab on" onclick="switchTab('search')">🔍 Recherche</div>
+    <div class="tab" onclick="switchTab('codes')">📖 Codes</div>
     <div class="tab" onclick="switchTab('fiches')">📋 Fiches</div>
     <div class="tab" onclick="switchTab('quiz')">⚡ Quiz</div>
   </div>
@@ -366,6 +396,19 @@ body.focus-mode #topbar #tabs{display:none}
         <div class="qe-btns">
           <button class="btn btn-primary" onclick="restartQuiz()">🔄 Rejouer</button>
           <button class="btn btn-outline" onclick="resetQuiz()">⚙️ Changer matière</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODES PAGE -->
+    <div id="page-codes">
+      <div class="code-selector" id="code-selector">
+        <div style="width:100%;padding:2px 4px 6px;font-size:11px;color:var(--t3)">Sélectionne un code pour parcourir ses articles :</div>
+      </div>
+      <div id="code-nav">
+        <div class="code-nav-loading" id="code-nav-placeholder">
+          <span style="font-size:2rem">📚</span>
+          <span>Sélectionne un code ci-dessus pour naviguer dans ses articles</span>
         </div>
       </div>
     </div>
@@ -1244,10 +1287,11 @@ function openLegifrance(){
 function switchTab(tab){
   _tab=tab;
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
-  document.querySelectorAll('#page-search,#page-fiches,#page-quiz').forEach(function(p){p.classList.remove('active');});
-  var tabs={'search':0,'fiches':1,'quiz':2};
+  document.querySelectorAll('#page-search,#page-codes,#page-fiches,#page-quiz').forEach(function(p){p.classList.remove('active');});
+  var tabs={'search':0,'codes':1,'fiches':2,'quiz':3};
   document.querySelectorAll('.tab')[tabs[tab]].classList.add('on');
   document.getElementById('page-'+tab).classList.add('active');
+  if(tab==='codes' && !_codesInited){initCodes();}
   if(tab!=='fiches'){
     document.getElementById('fiche-detail').classList.remove('show');
     if(!_art){document.getElementById('art-empty').style.display='flex';}
@@ -1618,7 +1662,170 @@ function resetQuiz(){
   document.getElementById('quiz-end').style.display='none';
 }
 
-/* ===== KEYBOARD SHORTCUTS ===== */
+/* ===== CODE NAVIGATOR ===== */
+var _codesInited = false;
+var _codeLoading = false;
+var _activeCode  = null;
+var _openSections = {};
+
+async function initCodes(){
+  _codesInited = true;
+  var sel = document.getElementById('code-selector');
+  // Affiche les codes définis en dur côté client (mêmes que le backend KEY_CODES)
+  var KEY_CODES = {
+    'LEGITEXT000006070721': 'Code civil',
+    'LEGITEXT000006069414': 'Code pénal',
+    'LEGITEXT000005634379': 'Code de commerce',
+    'LEGITEXT000006072050': 'Code du travail',
+    'LEGITEXT000006074233': 'Code de procédure civile',
+    'LEGITEXT000006071154': 'Code de procédure pénale'
+  };
+  var html = '<div style="width:100%;padding:2px 4px 6px;font-size:11px;color:var(--t3)">Sélectionne un code pour parcourir ses articles :</div>';
+  Object.entries(KEY_CODES).forEach(function(e){
+    html += '<div class="code-btn" id="cbtn-'+e[0]+'" onclick="loadCode(\''+e[0]+'\',\''+e[1]+'\')">'
+      + e[1].replace('Code de ','').replace('Code du ','').replace('Code ','') + '</div>';
+  });
+  sel.innerHTML = html;
+}
+
+async function loadCode(textId, codeName){
+  if(_codeLoading) return;
+  _codeLoading = true;
+  _activeCode  = textId;
+  _openSections = {};
+
+  // Mise à jour UI boutons
+  document.querySelectorAll('.code-btn').forEach(function(b){b.classList.remove('on');});
+  var btn = document.getElementById('cbtn-'+textId);
+  if(btn) btn.classList.add('on');
+
+  var nav = document.getElementById('code-nav');
+  nav.innerHTML = '<div class="code-nav-loading"><div class="spinner" style="width:24px;height:24px;border-width:3px"></div><span>Chargement du '+codeName+' …</span></div>';
+
+  try {
+    var r = await fetch('/api/search/codes/'+textId+'/nav');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var data = await r.json();
+    var tree = buildTree(data.articles || []);
+    renderCodeNav(nav, tree, codeName, data.total);
+  } catch(err) {
+    nav.innerHTML = '<div class="code-nav-loading"><span style="color:#f87171">⚠ Impossible de charger le code. Vérifie ta connexion.</span></div>';
+    console.error('[CodeNav]', err);
+  }
+  _codeLoading = false;
+}
+
+/**
+ * Convertit la liste plate [{id,cid,num,path:[...]}] en arbre imbriqué
+ * Chaque nœud : {title, children:[], articles:[]}
+ */
+function buildTree(articles){
+  var root = {children:{}, articles:[]};
+  articles.forEach(function(art){
+    var path = art.path || [];
+    var node = root;
+    path.forEach(function(seg){
+      if(!node.children[seg]) node.children[seg] = {title:seg, children:{}, articles:[]};
+      node = node.children[seg];
+    });
+    node.articles.push(art);
+  });
+  return root;
+}
+
+function renderCodeNav(container, tree, codeName, total){
+  var html = '<div class="code-nav-info">'+codeName+' — '+total+' articles en vigueur</div>';
+  html += renderNode(tree, 0);
+  container.innerHTML = html;
+}
+
+function renderNode(node, depth){
+  var html = '';
+  // Articles à ce niveau
+  node.articles.forEach(function(art){
+    html += '<div class="nav-article" onclick="openNavArticle(\''+escHtml(art.cid||art.id)+'\',this)">'
+      + (art.num ? '<span class="nav-art-num">Art. '+escHtml(art.num)+'</span>' : '')
+      + escHtml((art.path&&art.path.length ? art.path[art.path.length-1] : '') || 'Article')
+      + '</div>';
+  });
+  // Sections enfants
+  Object.values(node.children).forEach(function(child, idx){
+    var key = depth+'_'+idx+'_'+child.title;
+    var isOpen = !!_openSections[key];
+    var count  = countArticles(child);
+    html += '<div class="nav-section">'
+      + '<div class="nav-section-hdr'+(isOpen?' open':'')+'" onclick="toggleSection(this,\''+escHtml(key)+'\')">'
+      + '<span class="nav-arrow'+(isOpen?' open':'')+'">▶</span>'
+      + escHtml(child.title)
+      + '<span style="margin-left:auto;font-size:10px;color:var(--t3);font-weight:400">'+count+'</span>'
+      + '</div>'
+      + '<div class="nav-section-body'+(isOpen?' open':'')+'">'+renderNode(child, depth+1)+'</div>'
+      + '</div>';
+  });
+  return html;
+}
+
+function countArticles(node){
+  var c = node.articles.length;
+  Object.values(node.children).forEach(function(ch){ c += countArticles(ch); });
+  return c;
+}
+
+function toggleSection(hdr, key){
+  var isOpen = hdr.classList.contains('open');
+  hdr.classList.toggle('open', !isOpen);
+  var arrow = hdr.querySelector('.nav-arrow');
+  if(arrow) arrow.classList.toggle('open', !isOpen);
+  var body = hdr.nextElementSibling;
+  if(body) body.classList.toggle('open', !isOpen);
+  _openSections[key] = !isOpen;
+}
+
+async function openNavArticle(cid, el){
+  // Highlight actif
+  document.querySelectorAll('.nav-article').forEach(function(a){a.classList.remove('on');});
+  if(el) el.classList.add('on');
+
+  // Afficher dans le lecteur — cherche d'abord dans le corpus local
+  var local = CORPUS.find(function(a){return a.id===cid||a.ref===cid;});
+  if(local){ openArticle(local.id); return; }
+
+  // Sinon appeler l'API PISTE
+  document.getElementById('art-empty').style.display='none';
+  var ac = document.getElementById('art-content');
+  ac.style.display='block';
+  document.getElementById('ac-code').textContent = 'Chargement…';
+  document.getElementById('ac-ref').textContent = cid;
+  document.getElementById('ac-title').textContent = 'Article';
+  document.getElementById('ac-vigeur').textContent = 'En vigueur';
+  document.getElementById('ac-type').textContent = 'Article de code';
+  document.getElementById('ac-texte').innerHTML = '<div class="spinner" style="margin:20px auto;display:block"></div>';
+  document.getElementById('ac-pedagogy').innerHTML = '';
+  document.getElementById('ac-related').innerHTML = '';
+  document.getElementById('ac-voir').innerHTML = '';
+  _art = null;
+
+  try {
+    var r = await fetch('/api/search/article/'+cid);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var art = await r.json();
+    _art = art;
+    document.getElementById('ac-code').textContent = art.code || 'Légifrance';
+    document.getElementById('ac-ref').textContent = art.article ? 'Art. '+art.article : cid;
+    document.getElementById('ac-title').textContent = art.title || ('Article '+cid);
+    document.getElementById('ac-texte').innerHTML = art.content || '<em style="color:var(--t3)">Contenu non disponible.</em>';
+    // Lien Légifrance dans ac-voir
+    if(art.url){
+      document.getElementById('ac-voir').innerHTML = '<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+art.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
+    }
+    // Jurisprudence liée
+    loadRelatedJurisprudence(art.title||art.article||'', art.code||'');
+  } catch(err){
+    document.getElementById('ac-texte').innerHTML = '<em style="color:#f87171">⚠ Impossible de charger cet article.</em>';
+  }
+}
+
+
 document.addEventListener('keydown',function(e){
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){
     e.preventDefault();

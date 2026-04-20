@@ -341,4 +341,4 @@ async function getArticle(cid) {
   return null;
 }
 
-module.exports = { search, getArticle, getAccessToken, searchCodeArticles, getCodeArticles };
+module.exports = { search, getArticle, getAccessToken, searchCodeArticles, getCodeArticles, KEY_CODES };
