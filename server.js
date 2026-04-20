@@ -55,12 +55,17 @@ app.use('/api/search', searchRoutes);
 // ─── PISTE Debug complet ───────────────────────────────────
 app.get('/api/debug/piste', async (req, res) => {
   const axios = require('axios');
-  const id     = process.env.PISTE_CLIENT_ID || '';
-  const secret = process.env.PISTE_CLIENT_SECRET || '';
+  const id      = process.env.PISTE_CLIENT_ID || '';
+  const secret  = process.env.PISTE_CLIENT_SECRET || '';
+  const apiKey  = process.env.PISTE_API_KEY || '';
   const oauthUrl = process.env.PISTE_OAUTH_URL || 'https://sandbox-oauth.piste.gouv.fr/api/oauth/token';
   const apiBase  = process.env.PISTE_BASE_URL  || 'https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app';
 
-  const out = { client_id: id ? id.substring(0,8)+'…' : 'MANQUANT', oauth: null, search: null };
+  const out = {
+    client_id: id ? id.substring(0,8)+'…' : 'MANQUANT',
+    api_key: apiKey ? apiKey.substring(0,8)+'…' : 'NON DÉFINI',
+    oauth: null, consult: null, search: null, search_results: []
+  };
 
   // Étape 1 — token OAuth
   let token = null;
@@ -74,28 +79,54 @@ app.get('/api/debug/piste', async (req, res) => {
     return res.json(out);
   }
 
-  // Étape 2 — appel recherche Légifrance
-  const searchBodies = [
-    // Format v2 standard
-    { recherche:{ champs:[{typeChamp:'ALL', criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'responsabilité'}], operateur:'ET'}], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' },
-    // Format alternatif sans fond
-    { recherche:{ champs:[{typeChamp:'ALL', criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'responsabilité'}], operateur:'ET'}], pageNumber:1, pageSize:5, operateur:'ET' } },
-    // Format simplifié
-    { recherche:{ query:'responsabilité', pageNumber:1, pageSize:5 } },
+  // Étape 2 — test GET simple (consult code civil) pour vérifier connectivité
+  try {
+    const r = await axios.get(`${apiBase}/consult/code/tableMatieres`, {
+      params: { textId: 'LEGITEXT000006070721', date: '2024-01-01' },
+      headers: { Authorization:`Bearer ${token}`, Accept:'application/json', ...(apiKey ? {'X-Gravitee-Api-Key': apiKey} : {}) },
+      timeout: 8000
+    });
+    out.consult = { ok:true, status:r.status, titre: r.data?.code?.titre || r.data?.titre || 'OK' };
+  } catch(e) {
+    out.consult = { ok:false, status:e.response?.status, error:e.response?.data || e.message };
+  }
+
+  // Étape 3 — recherche avec plusieurs formats et combinaisons headers
+  const baseBody = {
+    recherche: {
+      champs: [{ typeChamp:'ALL', criteres:[{ typeRecherche:'TOUS_LES_MOTS', valeur:'contrat' }], operateur:'ET' }],
+      filtres: [],
+      pageNumber: 1, pageSize: 5, operateur: 'ET', sort: 'PERTINENCE', typePagination: 'ARTICLE'
+    },
+    fond: 'CODE_DATE'
+  };
+
+  const variants = [
+    { name:'CODE_DATE + filtres vides', body: { ...baseBody } },
+    { name:'LEGI + filtres vides',      body: { ...baseBody, fond:'LEGI' } },
+    { name:'CODE_DATE + ETAT VIGUEUR',  body: { ...baseBody, recherche:{ ...baseBody.recherche, filtres:[{facette:'ETAT',valeur:'VIGUEUR'}] } } },
+    { name:'CODE_DATE sans sort',       body: { recherche:{ champs:[{typeChamp:'ALL',criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'contrat'}],operateur:'ET'}], filtres:[], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' } },
+    { name:'JURI fond',                 body: { ...baseBody, fond:'JURI' } },
   ];
 
-  for (let i = 0; i < searchBodies.length; i++) {
-    try {
-      const r = await axios.post(`${apiBase}/search`, searchBodies[i], {
-        headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json', Accept:'application/json' },
-        timeout:10000
-      });
-      out.search = { ok:true, format:i, status:r.status, total:r.data?.results?.length, sample:r.data?.results?.[0]?.titre || r.data?.results?.[0]?.title };
-      break;
-    } catch(e) {
-      out.search = { ok:false, format:i, status:e.response?.status, error:e.response?.data || e.message };
+  const headerSets = [
+    { label:'Bearer seul',           headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json', Accept:'application/json' } },
+    ...(apiKey ? [{ label:'Bearer + X-Gravitee-Api-Key', headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json', Accept:'application/json', 'X-Gravitee-Api-Key': apiKey } }] : []),
+  ];
+
+  for (const hset of headerSets) {
+    for (const v of variants) {
+      try {
+        const r = await axios.post(`${apiBase}/search`, v.body, { headers: hset.headers, timeout:10000 });
+        out.search = { ok:true, variant:v.name, headers:hset.label, status:r.status, total:r.data?.results?.length };
+        out.search_results = (r.data?.results || []).slice(0,2).map(x => x.titre||x.title);
+        return res.json(out);
+      } catch(e) {
+        out.search_results.push({ variant:v.name, headers:hset.label, status:e.response?.status, err: JSON.stringify(e.response?.data||e.message).substring(0,120) });
+      }
     }
   }
+  out.search = { ok:false, message:'Tous les formats ont échoué — voir search_results pour détails' };
   res.json(out);
 });
 
