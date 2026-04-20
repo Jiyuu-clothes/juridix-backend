@@ -52,23 +52,51 @@ app.use('/api/auth/', authLimiter);
 // ─── API Routes ───────────────────────────────────────────
 app.use('/api/search', searchRoutes);
 
-// ─── PISTE Debug ──────────────────────────────────────────
+// ─── PISTE Debug complet ───────────────────────────────────
 app.get('/api/debug/piste', async (req, res) => {
-  const pisteService = require('./services/piste');
-  const id = process.env.PISTE_CLIENT_ID || '';
+  const axios = require('axios');
+  const id     = process.env.PISTE_CLIENT_ID || '';
   const secret = process.env.PISTE_CLIENT_SECRET || '';
-  const envInfo = {
-    client_id_loaded: id ? id.substring(0, 8) + '…' : 'MANQUANT',
-    client_secret_loaded: secret ? secret.substring(0, 8) + '…' : 'MANQUANT',
-    oauth_url: process.env.PISTE_OAUTH_URL || 'https://oauth.piste.gouv.fr/api/oauth/token (défaut)',
-    api_url: process.env.PISTE_BASE_URL || 'https://sandbox-api.piste.gouv.fr/… (défaut)'
-  };
+  const oauthUrl = process.env.PISTE_OAUTH_URL || 'https://sandbox-oauth.piste.gouv.fr/api/oauth/token';
+  const apiBase  = process.env.PISTE_BASE_URL  || 'https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app';
+
+  const out = { client_id: id ? id.substring(0,8)+'…' : 'MANQUANT', oauth: null, search: null };
+
+  // Étape 1 — token OAuth
+  let token = null;
   try {
-    const token = await pisteService.getAccessToken();
-    res.json({ ok: true, env: envInfo, token_preview: token ? token.substring(0, 20) + '…' : null });
-  } catch (err) {
-    res.status(500).json({ ok: false, env: envInfo, error: err.message, details: err.response?.data || null });
+    const params = new URLSearchParams({ grant_type:'client_credentials', client_id:id, client_secret:secret, scope:'openid' });
+    const r = await axios.post(oauthUrl, params.toString(), { headers:{'Content-Type':'application/x-www-form-urlencoded'}, timeout:8000 });
+    token = r.data?.access_token;
+    out.oauth = { ok:true, token_preview: token?.substring(0,20)+'…' };
+  } catch(e) {
+    out.oauth = { ok:false, status:e.response?.status, error:e.response?.data || e.message };
+    return res.json(out);
   }
+
+  // Étape 2 — appel recherche Légifrance
+  const searchBodies = [
+    // Format v2 standard
+    { recherche:{ champs:[{typeChamp:'ALL', criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'responsabilité'}], operateur:'ET'}], pageNumber:1, pageSize:5, operateur:'ET', typePagination:'ARTICLE' }, fond:'CODE_DATE' },
+    // Format alternatif sans fond
+    { recherche:{ champs:[{typeChamp:'ALL', criteres:[{typeRecherche:'TOUS_LES_MOTS',valeur:'responsabilité'}], operateur:'ET'}], pageNumber:1, pageSize:5, operateur:'ET' } },
+    // Format simplifié
+    { recherche:{ query:'responsabilité', pageNumber:1, pageSize:5 } },
+  ];
+
+  for (let i = 0; i < searchBodies.length; i++) {
+    try {
+      const r = await axios.post(`${apiBase}/search`, searchBodies[i], {
+        headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json', Accept:'application/json' },
+        timeout:10000
+      });
+      out.search = { ok:true, format:i, status:r.status, total:r.data?.results?.length, sample:r.data?.results?.[0]?.titre || r.data?.results?.[0]?.title };
+      break;
+    } catch(e) {
+      out.search = { ok:false, format:i, status:e.response?.status, error:e.response?.data || e.message };
+    }
+  }
+  res.json(out);
 });
 
 // ─── Health Check ─────────────────────────────────────────
