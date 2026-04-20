@@ -1980,16 +1980,38 @@ function onEditorKey(e){
 
 function insertArticle(){
   if(!_art){ showToast('Ouvre d\'abord un article dans le lecteur'); return; }
-  document.getElementById('redac-editor').focus();
-  var citation = '<blockquote><strong>'+escHtml(_art.title||_art.ref||'Article')+'</strong>';
-  if(_art.code) citation += ' <em>('+escHtml(_art.code)+')</em>';
-  citation += '<br>';
-  var texte = (_art.texte||_art.content||'').substring(0,500);
-  if(texte) citation += escHtml(texte)+((_art.texte||_art.content||'').length>500?'…':'');
-  citation += '</blockquote><p></p>';
-  document.execCommand('insertHTML',false,citation);
+
+  // Titre et source propres
+  var artTitle = _art.title || _art.ref || 'Article';
+  var artCode  = _art.code || '';
+  // Nettoyer les codes PISTE génériques
+  if(artCode==='LEGI'||artCode==='legi'||artCode.startsWith('LEGIT')||artCode.startsWith('LEGI0')) artCode='Légifrance';
+
+  // Extraire le texte brut (strip HTML + espaces multiples)
+  var rawContent = _art.texte || _art.content || '';
+  var plainText  = rawContent.replace(/<[^>]*>/g,' ').replace(/&[a-z]+;/gi,' ').replace(/\s+/g,' ').trim();
+  var excerpt    = plainText.substring(0,450);
+
+  // Construire la citation
+  var html = '<p></p><blockquote>'
+    + '<strong>' + escHtml(artTitle) + '</strong>'
+    + (artCode ? ' <em>(' + escHtml(artCode) + ')</em>' : '')
+    + (excerpt ? '<br>' + escHtml(excerpt) + (plainText.length>450?'…':'') : '')
+    + '</blockquote><p><br></p>';
+
+  // Placer le curseur à la fin de l'éditeur avant d'insérer
+  var editor = document.getElementById('redac-editor');
+  editor.focus();
+  var range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  var sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  document.execCommand('insertHTML', false, html);
   onEditorInput();
-  // Revenir sur l'onglet rédac
+  showToast('✓ Article inséré dans le document');
   if(_tab!=='redac') switchTab('redac');
 }
 
