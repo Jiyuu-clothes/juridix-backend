@@ -71,15 +71,36 @@ async function search(query, filters = {}) {
     timeout: 10000
   });
 
-  return (r.data?.results || []).map(item => ({
-    id:      item.id || item.cid,
-    title:   item.titre || item.title || 'Article',
-    code:    item.nature || filters.fond || 'Légifrance',
-    article: item.num || '',
-    content: item.texte || item.extraits?.[0]?.valeur || '',
-    url:     `https://www.legifrance.gouv.fr/codes/article_lc/${item.id || item.cid}`,
-    source:  'piste'
-  }));
+  return (r.data?.results || []).map(item => {
+    const mainTitle = item.titles?.[0];
+    const cid  = mainTitle?.cid || mainTitle?.id || item.id || item.cid || '';
+    const nature = (item.nature || '').toLowerCase();
+
+    // Construire l'URL selon la nature du résultat
+    let url;
+    if (nature === 'article' || cid.startsWith('LEGIARTI')) {
+      url = `https://www.legifrance.gouv.fr/codes/article_lc/${cid}`;
+    } else if (nature === 'code' || cid.startsWith('LEGITEXT')) {
+      url = `https://www.legifrance.gouv.fr/codes/id/${cid}`;
+    } else {
+      url = `https://www.legifrance.gouv.fr/search?query=${encodeURIComponent(cid)}`;
+    }
+
+    const content = item.text
+      || (item.resumePrincipal || []).join(' ')
+      || (item.autreResume || []).join(' ')
+      || '';
+
+    return {
+      id:      cid,
+      title:   mainTitle?.title || item.titre || item.title || 'Document Légifrance',
+      code:    item.nature || item.origin || filters.fond || 'Légifrance',
+      article: item.num || '',
+      content,
+      url,
+      source:  'piste'
+    };
+  });
 }
 
 function buildFilters(filters) {
