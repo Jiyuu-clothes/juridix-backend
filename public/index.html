@@ -632,28 +632,32 @@ body.light.hub-mode #reader-pane{background:var(--bg2)!important}
 body.hub-mode .art-header{top:-32px;background:#0a0a1a!important}
 body.light.hub-mode .art-header{background:var(--bg2)!important}
 
-/* --- panel-r = container studio pleine hauteur ---
-   Chaîne flex correcte : #main(row) → #panel-r(column,stretch) → #lab-studio(flex:1) */
+/* --- panel-r = container studio pleine largeur + hauteur ---
+   #panel-r prend 38% de #main en largeur fixe.
+   #lab-studio remplit 100% de panel-r via flex:1. */
 body.hub-mode #panel-r{
-  flex:none;width:auto;
+  flex:0 0 38%;        /* 38% de la largeur de #main */
+  width:38%;
   display:flex;flex-direction:column;
-  align-self:stretch;     /* étire sur toute la hauteur de #main */
+  align-self:stretch;
   overflow:hidden;
   background:transparent;
 }
 body.hub-mode #split-r{display:none!important}
 body.hub-mode #notes-pane{display:none!important}
-/* lab-studio remplit TOUT panel-r via flex:1 — pas de height:100% */
+/* lab-studio : remplit TOUT panel-r */
 body.hub-mode #lab-studio{
   display:flex!important;
-  width:420px;min-width:0;max-width:52%;
-  flex:1;          /* grandit pour remplir panel-r */
-  min-height:0;    /* évite le débordement en flex-column */
-  height:auto;     /* laisse flex gérer */
+  width:100%!important;max-width:none!important;
+  flex:1;min-height:0;
   background:#12121e;border-left:1px solid var(--gb);
-  transition:width .25s cubic-bezier(.4,0,.2,1),border-left-color .25s;
+  transition:border-left-color .25s;
 }
-body.hub-mode.studio-hidden #lab-studio{width:0!important;overflow:hidden!important;border-left-color:transparent!important}
+/* Studio caché : masquer tout panel-r */
+body.hub-mode.studio-hidden #panel-r{
+  flex:0 0 0!important;width:0!important;overflow:hidden!important;
+}
+body.hub-mode.studio-hidden #lab-studio{border-left-color:transparent!important}
 
 /* --- Studio expand tab (bord droit quand studio fermé) --- */
 #studio-expand-tab{
