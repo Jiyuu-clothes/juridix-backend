@@ -49,9 +49,10 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .tb-right{display:flex;align-items:center;gap:8px;margin-left:auto}
 
 /* CREDITS BAR */
+/* V3.1 — barre de jetons affinée */
 #credits-wrap{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2)}
-#cred-bar-bg{width:80px;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
-#cred-bar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:3px;transition:width .3s}
+#cred-bar-bg{width:90px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+#cred-bar{height:100%;background:linear-gradient(90deg,var(--acc),rgba(124,107,255,0));border-radius:2px;transition:width .4s ease}
 #cred-txt{min-width:32px;text-align:right}
 .btn-icon{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r2);width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t2);transition:all .2s}
 .btn-icon:hover{background:rgba(255,255,255,0.12);color:var(--t1)}
@@ -96,6 +97,14 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .search-empty .ico{font-size:36px;display:block;margin-bottom:10px}
 .search-empty p{font-size:13px;line-height:1.6}
 
+/* V3.1 — Historique de recherche */
+#search-history{padding:8px 10px 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sh-label{font-size:10px;color:var(--t3);font-weight:600;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+.sh-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(124,107,255,0.1);border:1px solid rgba(124,107,255,0.2);color:var(--acc2);cursor:pointer;transition:all .2s;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.sh-badge:hover{background:var(--acc3);border-color:var(--acc)}
+/* V3.1 — indicateur de sauvegarde notes */
+@keyframes savePulse{0%{opacity:0;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}100%{opacity:.7;transform:scale(1)}}
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;animation:savePulse .5s ease;margin-left:4px}
 /* FILTER BAR */
 .filter-bar{padding:10px 10px 0;display:flex;gap:6px;flex-wrap:wrap}
 .fbtn{padding:4px 11px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--t2);transition:all .2s}
@@ -105,7 +114,8 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 /* RIGHT PANEL — Article Reader + Notes */
 #panel-r{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #split-r{flex:1;display:flex;overflow:hidden}
-#reader-pane{flex:1;overflow-y:auto;padding:24px 28px;font-family:Georgia,'Times New Roman',serif}
+/* V3.1 — fond feuille de travail légèrement différencié */
+#reader-pane{flex:1;overflow-y:auto;padding:32px 28px;font-family:Georgia,'Times New Roman',serif;background:#0a0a1a}
 #reader-pane::-webkit-scrollbar{width:4px}
 #reader-pane::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px}
 
@@ -113,14 +123,22 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #art-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);text-align:center;gap:12px}
 #art-empty .ico{font-size:48px;opacity:.4}
 #art-empty p{font-size:13px;max-width:220px;line-height:1.6}
-#art-content{display:none;animation:fadeUp .25s ease forwards}
-.art-header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--gb)}
+#art-content{display:none;animation:fadeUp .25s ease forwards;max-width:720px;margin:0 auto}
+/* V3.1 — sticky title en haut du lecteur pendant le scroll */
+.art-header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--gb);position:sticky;top:-32px;z-index:10;background:#0a0a1a;padding-top:8px}
 .art-code{font-size:11px;font-weight:700;color:var(--acc2);letter-spacing:1px;text-transform:uppercase;font-family:sans-serif;margin-bottom:4px}
 .art-ref{font-size:22px;font-weight:700;color:var(--t1);font-family:sans-serif;margin-bottom:6px}
 .art-title{font-size:15px;color:var(--t2);font-style:italic;margin-bottom:12px}
 .art-meta{font-size:11px;color:var(--t3);font-family:sans-serif;display:flex;gap:12px;flex-wrap:wrap}
 .art-meta span{display:flex;align-items:center;gap:4px}
-.art-texte{font-size:16px;line-height:1.85;color:var(--t1);white-space:pre-wrap;margin-bottom:24px}
+/* V3.1 — typographie améliorée : 1.1rem, interligne 1.8 */
+.art-texte{font-size:17.6px;line-height:1.8;color:var(--t1);white-space:pre-wrap;margin-bottom:24px}
+/* V3.1 — animation halo violet sur citation */
+@keyframes citeGlow{0%{box-shadow:0 0 0 0 rgba(124,107,255,0.7)}50%{box-shadow:0 0 0 8px rgba(124,107,255,0.2)}100%{box-shadow:0 0 0 0 rgba(124,107,255,0)}}
+#art-content.cite-flash{animation:citeGlow .6s ease}
+/* V3.1 — transition douce mode focus */
+#panel-l,#panel-r,#reader-pane,#redac-sidebar{transition:opacity .4s ease}
+body.focus-mode #panel-l,body.focus-mode #panel-r{opacity:1}
 .art-voir{margin-bottom:20px}
 .art-voir-title{font-size:11px;font-family:sans-serif;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
 .art-voir-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -450,6 +468,7 @@ body.redac-mode #notes-pane{display:none}
 
     <!-- SEARCH PAGE -->
     <div id="page-search" class="active">
+      <div id="search-history" style="display:none"></div>
       <div class="filter-bar" id="filter-bar">
         <div class="fbtn on" onclick="setFilter('all',this)">Tout</div>
         <div class="fbtn" onclick="setFilter('code',this)">📚 Codes &amp; Lois</div>
@@ -1080,6 +1099,14 @@ function loadStorage(){
 function saveStorage(){
   localStorage.setItem('jdx_cred',_cred);
   localStorage.setItem('jdx_notes',JSON.stringify(_notes));
+  // V3.1 — indicateur de sauvegarde
+  showSaveDot();
+}
+function showSaveDot(){
+  var el=document.getElementById('redac-autosave');
+  if(!el)return;
+  el.innerHTML='✓ Sauvegardé <span class="save-dot"></span>';
+  setTimeout(function(){el.innerHTML='✓ Sauvegardé';},1200);
 }
 function useCredit(){
   return true; /* MODE TEST */
@@ -1263,6 +1290,8 @@ function openArticle(id){
   var a=_searchResults[id]||CIDX[id];
   if(!a)return;
   _art=a;
+  // V3.1 — historique des articles consultés
+  addToHistory({id:a.id, ref:a.ref, title:a.title});
   document.getElementById('fiche-detail').classList.remove('show');
   document.getElementById('art-empty').style.display='none';
   var ac=document.getElementById('art-content');
@@ -1439,6 +1468,12 @@ function citeArticle(){
   var ref=_art.type==='jurisprudence'?(_art.ref+', '+_art.title):(_art.ref+' '+_art.code+' ('+(_art.vigeur||'')+')')
   try{navigator.clipboard.writeText(ref);}catch(e){var ta=document.createElement('textarea');ta.value=ref;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
   var t=document.getElementById('cite-toast');t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);
+  // V3.1 — halo violet sur l'article cité
+  var ac=document.getElementById('art-content');
+  ac.classList.remove('cite-flash');
+  void ac.offsetWidth; // reflow pour relancer l'animation
+  ac.classList.add('cite-flash');
+  setTimeout(function(){ac.classList.remove('cite-flash');},700);
 }
 function saveToNote(){
   if(!_art)return;
@@ -2489,6 +2524,35 @@ function applyPanelWidth(tab, forceDefault){
   );
 })();
 
+/* ===== V3.1 — HISTORIQUE DE RECHERCHE ===== */
+var _history = [];
+var HIST_KEY = 'juridix_history_v1';
+
+function loadHistory(){
+  try{ _history = JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); } catch(e){ _history=[]; }
+}
+
+function addToHistory(item){
+  // Éviter les doublons
+  _history = _history.filter(function(h){ return h.id !== item.id; });
+  _history.unshift(item);
+  _history = _history.slice(0,3); // garder les 3 derniers
+  localStorage.setItem(HIST_KEY, JSON.stringify(_history));
+  renderHistory();
+}
+
+function renderHistory(){
+  var el = document.getElementById('search-history');
+  if(!el) return;
+  if(_history.length===0){ el.style.display='none'; return; }
+  el.style.display='flex';
+  var html = '<span class="sh-label">Récents</span>';
+  _history.forEach(function(h){
+    html += '<div class="sh-badge" onclick="openArticle(\''+escHtml(h.id)+'\')" title="'+escHtml(h.title)+'">'+escHtml(h.ref||h.title.substring(0,20))+'</div>';
+  });
+  el.innerHTML = html;
+}
+
 /* ===== THÈME CLAIR / SOMBRE ===== */
 function toggleTheme(){
   var isLight = document.body.classList.toggle('light');
@@ -2507,6 +2571,8 @@ function toggleTheme(){
 
 /* ===== BOOT ===== */
 loadStorage();
+loadHistory();
+renderHistory();
 initFiches();
 initQuiz();
 </script>
