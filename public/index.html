@@ -632,14 +632,18 @@ body.light.hub-mode #reader-pane{background:var(--bg2)!important}
 body.hub-mode .art-header{top:-32px;background:#0a0a1a!important}
 body.light.hub-mode .art-header{background:var(--bg2)!important}
 
-/* --- panel-r = container studio uniquement --- */
-body.hub-mode #panel-r{flex:none;width:auto;display:flex;background:transparent}
+/* --- panel-r = container studio uniquement, pleine hauteur --- */
+body.hub-mode #panel-r{
+  flex:none;width:auto;display:flex;flex-direction:column;
+  background:transparent;align-self:stretch;
+}
 body.hub-mode #split-r{display:none!important}
 body.hub-mode #notes-pane{display:none!important}
-/* lab-studio = studio panel droit */
+/* lab-studio = studio panel droit, pleine hauteur */
 body.hub-mode #lab-studio{
   display:flex!important;
   width:420px;min-width:0;max-width:52%;
+  flex:1 1 auto;height:100%;
   background:#12121e;border-left:1px solid var(--gb);
   transition:width .25s cubic-bezier(.4,0,.2,1),border-left-color .25s;
 }
@@ -676,6 +680,38 @@ body.hub-mode .home-sub{font-size:12px}
 body.hub-mode .home-logo{font-size:32px;margin-bottom:4px}
 body.hub-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
 body.hub-mode #art-empty{gap:10px}
+
+/* --- Studio header aligné avec la zone article (même ligne visuelle) --- */
+body.hub-mode #lab-studio-hdr{
+  padding-top:32px;padding-bottom:10px;
+  align-items:flex-start;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+body.hub-mode .lab-title-label{
+  font-size:10px;color:var(--t3);letter-spacing:.6px;
+  text-transform:uppercase;margin-bottom:4px;
+}
+/* Aligner les boutons d'action sur la même ligne horizontale */
+body.hub-mode #lab-studio-hdr .lab-inject-btn,
+body.hub-mode #lab-studio-hdr .lab-copy-btn,
+body.hub-mode #lab-studio-hdr .studio-collapse-btn{
+  margin-top:0;
+}
+/* Supprimer les boutons doublons dans la topbar en hub-mode */
+body.hub-mode #topbar .btn-icon{display:none}
+/* Garder uniquement le bouton Omnisearch (⌘K) dans la topbar */
+body.hub-mode #topbar .btn-icon[onclick*="openOmniSearch"]{display:flex}
+
+/* Actions article : simplifier, retirer le bruit */
+body.hub-mode .btn-gold{display:none}     /* Générer fiche — accessible via Fiches */
+body.hub-mode .act-more-btn{display:none} /* menu Plus */
+/* Garder uniquement Citer + Légifrance comme actions rapides */
+body.hub-mode .art-actions-v4{gap:8px;padding-bottom:20px}
+
+/* Studio editor : aucune marge parasite, espace maxi */
+body.hub-mode #lab-title-wrap{padding:8px 20px 0}
+body.hub-mode #lab-editor-wrap2{padding:10px 20px 32px}
+body.hub-mode #lab-status2{padding:4px 20px}
 </style>
 </head>
 <body>
@@ -720,6 +756,7 @@ body.hub-mode #art-empty{gap:10px}
     <button class="ttab" data-tab="quiz" onclick="switchTab('quiz')">⚡ Quiz</button>
   </div>
   <div class="tb-right">
+    <!-- ⌘K conservé, theme/focus déplacés dans la sidebar -->
     <div class="btn-icon" onclick="openOmniSearch()" title="Rechercher (⌘K)" style="font-size:14px">🔍</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
     <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
@@ -749,8 +786,9 @@ body.hub-mode #art-empty{gap:10px}
     </div>
     <div id="sidebar-bottom">
       <div class="nav-icon" id="ni-studio" onclick="toggleStudio()" title="Studio de Rédaction">✍️<span class="ni-tip">Studio de Rédaction</span></div>
-      <div class="nav-icon" onclick="toggleFocus()" id="ni-focus">🎯<span class="ni-tip">Mode focus</span></div>
-      <div class="nav-icon" onclick="toggleTheme()" id="ni-theme">☀️<span class="ni-tip">Mode clair/sombre</span></div>
+      <div style="width:28px;height:1px;background:var(--gb);margin:4px auto;flex-shrink:0"></div>
+      <div class="nav-icon" onclick="toggleFocus()" id="ni-focus" title="Mode focus">🎯<span class="ni-tip">Mode focus</span></div>
+      <div class="nav-icon" onclick="toggleTheme()" id="ni-theme" title="Mode clair/sombre">☀️<span class="ni-tip">Mode clair/sombre</span></div>
     </div>
   </div>
 
@@ -949,6 +987,8 @@ body.hub-mode #art-empty{gap:10px}
           <div class="art-voir" id="ac-voir"></div>
           <div class="art-actions-v4">
             <button class="btn btn-green" onclick="citeArticleAnimated(this)">📋 Citer</button>
+            <button class="btn btn-outline" onclick="openLegifrance()" style="font-size:12px">🔗 Légifrance</button>
+            <!-- Conservés mais cachés en hub-mode par CSS -->
             <button class="btn btn-gold" onclick="generateFiche()">⭐ Générer fiche</button>
             <div class="act-more-btn">
               <button class="btn btn-outline" onclick="toggleActionsMenu(this)">… Plus</button>
