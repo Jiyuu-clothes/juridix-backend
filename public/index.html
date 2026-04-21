@@ -27,6 +27,7 @@ body.light .result-item:hover{background:rgba(105,88,232,0.07)}
 body.light #search-input{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1);color:var(--t1)}
 body.light #search-input:focus{background:#fff;border-color:var(--acc)}
 body.light #art-content,body.light #reader-pane{background:var(--bg2)}
+body.light #art-empty{background:var(--bg2)}
 body.light .note-chip{background:rgba(0,0,0,0.04)}
 body.light .fiche-card{background:rgba(0,0,0,0.03)}
 body.light #redac-editor{color:var(--t1)}
@@ -37,22 +38,79 @@ body.light #note-modal .nm-box{background:#ffffff}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
-/* TOPBAR */
-#topbar{height:52px;min-height:52px;background:rgba(10,10,25,0.95);border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:12px;padding:0 16px;backdrop-filter:blur(20px);z-index:100}
-.logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,#a89fff,#7c6bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;letter-spacing:-0.5px}
+/* TOPBAR — V4 épuré */
+#topbar{height:48px;min-height:48px;background:rgba(7,7,15,0.97);border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:12px;padding:0 16px;backdrop-filter:blur(24px);z-index:200}
+.logo{font-size:17px;font-weight:800;background:linear-gradient(135deg,#a89fff,#7c6bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;letter-spacing:-0.5px;cursor:pointer}
 .logo span{font-weight:300;opacity:.7}
-#search-wrap{flex:1;max-width:560px;position:relative}
-#search-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r);padding:8px 40px 8px 14px;color:var(--t1);font-size:14px;outline:none;transition:all .2s}
-#search-input:focus{border-color:var(--acc);background:rgba(124,107,255,0.08);box-shadow:0 0 0 3px rgba(124,107,255,0.15)}
-#search-input::placeholder{color:var(--t3)}
-.kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:5px;padding:2px 7px;font-size:11px;color:var(--t3);pointer-events:none}
-.tb-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+/* Fausse barre ⌘K dans le topbar */
+#omni-trigger{flex:1;max-width:480px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:7px 14px;color:var(--t3);font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s;user-select:none}
+#omni-trigger:hover{background:rgba(255,255,255,0.09);border-color:rgba(124,107,255,0.3);color:var(--t2)}
+#omni-trigger .omni-kbds{margin-left:auto;display:flex;gap:3px}
+#omni-trigger .omni-kbd{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:1px 6px;font-size:10px;color:var(--t3)}
+/* Champ caché pour compatibilité (utilisé par le backend) */
+#search-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.kbd{display:none}
+.tb-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+/* V4 — ICON SIDEBAR */
+#icon-sidebar{width:56px;min-width:56px;background:rgba(7,7,15,0.98);border-right:1px solid var(--gb);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;z-index:100;overflow:visible}
+.nav-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:all .2s ease;position:relative;color:var(--t3);flex-shrink:0}
+.nav-icon:hover{background:rgba(255,255,255,0.08);color:var(--t1);transform:translateY(-1px)}
+.nav-icon.on{background:var(--acc3);color:var(--acc2);box-shadow:0 0 12px rgba(124,107,255,0.2)}
+.nav-icon .ni-tip{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:rgba(15,15,35,0.97);border:1px solid var(--gb);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--t1);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:500;font-family:-apple-system,sans-serif;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+.nav-icon:hover .ni-tip{opacity:1}
+#sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:8px;padding-bottom:10px}
+#sidebar-cred{display:flex;flex-direction:column;align-items:center;gap:3px}
+#sidebar-cred-bar-bg{width:28px;height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+#sidebar-cred-bar{height:100%;background:linear-gradient(90deg,var(--acc),transparent);border-radius:2px;width:100%;transition:width .4s}
 
-/* CREDITS BAR */
-/* V3.1 — barre de jetons affinée */
-#credits-wrap{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2)}
+/* CREDITS BAR (topbar — caché en V4) */
+#credits-wrap{display:none}
 #cred-bar-bg{width:90px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
 #cred-bar{height:100%;background:linear-gradient(90deg,var(--acc),rgba(124,107,255,0));border-radius:2px;transition:width .4s ease}
+/* V4 — OMNISEARCH MODAL */
+#omnisearch-modal{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.55);backdrop-filter:blur(14px);display:none;align-items:flex-start;justify-content:center;padding-top:14vh;animation:fadeIn .15s ease}
+#omnisearch-modal.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#omnisearch-box{width:100%;max-width:640px;background:rgba(13,13,28,0.98);border:1px solid rgba(124,107,255,0.3);border-radius:16px;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,0.8);animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+#omnisearch-header{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07)}
+#omnisearch-header .os-icon{font-size:18px;color:var(--t3)}
+#omnisearch-in{flex:1;background:transparent;border:none;color:var(--t1);font-size:17px;outline:none;font-family:-apple-system,sans-serif}
+#omnisearch-in::placeholder{color:var(--t3)}
+.os-close{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:2px 8px;color:var(--t3);font-size:11px;cursor:pointer}
+#omnisearch-results{max-height:400px;overflow-y:auto;padding:6px}
+#omnisearch-results::-webkit-scrollbar{width:3px}
+#omnisearch-results::-webkit-scrollbar-thumb{background:var(--gb)}
+.os-result{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.os-result:hover,.os-result.os-active{background:rgba(124,107,255,0.1);border-color:rgba(124,107,255,0.25)}
+.os-result-icon{font-size:16px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:8px;flex-shrink:0}
+.os-result-body{flex:1;min-width:0}
+.os-result-ref{font-size:10px;color:var(--acc2);font-weight:700;letter-spacing:.3px;margin-bottom:2px}
+.os-result-title{font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.os-result-code{font-size:11px;color:var(--t3)}
+.os-result-kbd{font-size:10px;color:var(--t3);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:1px 6px;flex-shrink:0}
+#omnisearch-footer{padding:8px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;font-size:11px;color:var(--t3)}
+#omnisearch-footer span{display:flex;align-items:center;gap:4px}
+/* V4 — HOME SCREEN */
+#art-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:0;background:#0a0a1a}
+.home-logo{font-size:48px;font-weight:800;background:linear-gradient(135deg,#a89fff 0%,#7c6bff 50%,#5548cc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-2px;margin-bottom:8px}
+.home-logo span{font-weight:300;opacity:.6}
+.home-sub{font-size:14px;color:var(--t3);margin-bottom:36px;font-family:sans-serif}
+.home-omni-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(124,107,255,0.25);border-radius:14px;padding:14px 28px;color:var(--t2);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .25s;font-family:-apple-system,sans-serif;margin-bottom:28px}
+.home-omni-btn:hover{background:rgba(124,107,255,0.1);border-color:var(--acc);color:var(--t1);transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,107,255,0.15)}
+.home-omni-btn .home-kbd{background:rgba(255,255,255,0.1);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--t3)}
+.home-shortcuts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:400px}
+.home-shortcut{padding:7px 14px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--t3);font-size:12px;cursor:pointer;transition:all .2s;font-family:sans-serif}
+.home-shortcut:hover{background:rgba(124,107,255,0.1);border-color:var(--acc);color:var(--acc2)}
+/* V4 — ARTICLE ACTIONS consolidées */
+.art-actions-v4{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:sans-serif;padding-bottom:32px}
+.act-more-btn{position:relative}
+.act-more-menu{position:absolute;bottom:calc(100% + 6px);left:0;background:rgba(13,13,28,0.98);border:1px solid var(--gb);border-radius:12px;padding:6px;min-width:170px;box-shadow:0 16px 48px rgba(0,0,0,0.6);display:none;z-index:100}
+.act-more-menu.open{display:block;animation:slideDown .15s ease}
+.act-more-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t2);transition:all .15s}
+.act-more-item:hover{background:rgba(255,255,255,0.07);color:var(--t1)}
+/* V4 TABS — cachés (remplacés par icon sidebar) */
+#tabs{display:none}
 #cred-txt{min-width:32px;text-align:right}
 .btn-icon{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r2);width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t2);transition:all .2s}
 .btn-icon:hover{background:rgba(255,255,255,0.12);color:var(--t1)}
@@ -120,8 +178,6 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 #reader-pane::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px}
 
 /* ARTICLE READER */
-#art-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);text-align:center;gap:12px}
-#art-empty .ico{font-size:48px;opacity:.4}
 #art-empty p{font-size:13px;max-width:220px;line-height:1.6}
 #art-content{display:none;animation:fadeUp .25s ease forwards;max-width:720px;margin:0 auto}
 /* V3.1 — sticky title en haut du lecteur pendant le scroll */
@@ -434,13 +490,21 @@ body.redac-mode #notes-pane{display:none}
 </head>
 <body>
 
-<!-- TOPBAR -->
+<!-- TOPBAR V4 -->
 <div id="topbar">
-  <div class="logo">Juri<span>Dix</span></div>
-  <div id="search-wrap">
-    <input id="search-input" type="text" placeholder="Rechercher un article, une notion... (⌘K)" autocomplete="off">
-    <span class="kbd">⌘K</span>
+  <div class="logo" onclick="switchTab('search')">Juri<span>Dix</span></div>
+  <!-- Champ caché pour compatibilité backend -->
+  <input id="search-input" type="text" placeholder="Rechercher…" autocomplete="off" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+  <!-- Déclencheur Omnisearch ⌘K -->
+  <div id="omni-trigger" onclick="openOmniSearch()">
+    <span style="opacity:.5">🔍</span>
+    <span>Rechercher un article, une notion…</span>
+    <span class="omni-kbds">
+      <span class="omni-kbd">⌘</span>
+      <span class="omni-kbd">K</span>
+    </span>
   </div>
+  <!-- Tabs maintenus (cachés) pour compatibilité -->
   <div id="tabs">
     <div class="tab on" onclick="switchTab('search')">🔍 Recherche</div>
     <div class="tab" onclick="switchTab('codes')">📖 Codes</div>
@@ -449,11 +513,7 @@ body.redac-mode #notes-pane{display:none}
     <div class="tab" onclick="switchTab('quiz')">⚡ Quiz</div>
   </div>
   <div class="tb-right">
-    <div id="credits-wrap">
-      <span style="font-size:11px">🔑</span>
-      <div id="cred-bar-bg"><div id="cred-bar" style="width:100%"></div></div>
-      <span id="cred-txt">20/20</span>
-    </div>
+    <div id="credits-wrap" style="display:none"></div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
     <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
     <div class="btn-icon" id="print-btn" onclick="printArticle()" title="Exporter PDF">📄</div>
@@ -462,6 +522,29 @@ body.redac-mode #notes-pane{display:none}
 
 <!-- MAIN -->
 <div id="main">
+
+  <!-- ICON SIDEBAR V4 -->
+  <div id="icon-sidebar">
+    <div class="nav-icon on" id="ni-search" onclick="switchTab('search')">
+      🔍<span class="ni-tip">Recherche</span>
+    </div>
+    <div class="nav-icon" id="ni-codes" onclick="switchTab('codes')">
+      📖<span class="ni-tip">Codes juridiques</span>
+    </div>
+    <div class="nav-icon" id="ni-redac" onclick="switchTab('redac')">
+      ✍️<span class="ni-tip">Rédaction</span>
+    </div>
+    <div class="nav-icon" id="ni-fiches" onclick="switchTab('fiches')">
+      📋<span class="ni-tip">Fiches de révision</span>
+    </div>
+    <div class="nav-icon" id="ni-quiz" onclick="switchTab('quiz')">
+      ⚡<span class="ni-tip">Quiz</span>
+    </div>
+    <div id="sidebar-bottom">
+      <div class="nav-icon" onclick="toggleFocus()" id="ni-focus">🎯<span class="ni-tip">Mode focus</span></div>
+      <div class="nav-icon" onclick="toggleTheme()" id="ni-theme">☀️<span class="ni-tip">Mode clair/sombre</span></div>
+    </div>
+  </div>
 
   <!-- LEFT PANEL -->
   <div id="panel-l">
@@ -618,10 +701,22 @@ body.redac-mode #notes-pane{display:none}
           <div class="fd-title" id="fd-title"></div>
           <div id="fd-sections"></div>
         </div>
-        <!-- Article empty state -->
+        <!-- Home Screen V4 -->
         <div id="art-empty">
-          <span class="ico">📖</span>
-          <p>Sélectionnez un article dans les résultats pour le lire ici.</p>
+          <div class="home-logo">Juri<span>Dix</span></div>
+          <div class="home-sub">Votre bibliothèque juridique intelligente</div>
+          <div class="home-omni-btn" onclick="openOmniSearch()">
+            🔍&nbsp; Rechercher un article, une notion…
+            <span class="home-kbd">⌘K</span>
+          </div>
+          <div class="home-shortcuts">
+            <div class="home-shortcut" onclick="openArticle('cc-1240')">Art. 1240 — Faute</div>
+            <div class="home-shortcut" onclick="openArticle('cc-1101')">Art. 1101 — Contrat</div>
+            <div class="home-shortcut" onclick="openArticle('cp-121-1')">Art. 121-1 — Resp. pénale</div>
+            <div class="home-shortcut" onclick="openArticle('jp-blieck')">Arrêt Blieck</div>
+            <div class="home-shortcut" onclick="switchTab('codes')">📖 Parcourir les Codes</div>
+            <div class="home-shortcut" onclick="switchTab('fiches')">📋 Mes fiches</div>
+          </div>
         </div>
         <!-- Article content -->
         <div id="art-content">
@@ -638,12 +733,18 @@ body.redac-mode #notes-pane{display:none}
           <div id="ac-pedagogy"></div>
           <div id="ac-related"></div>
           <div class="art-voir" id="ac-voir"></div>
-          <div class="art-actions">
+          <div class="art-actions-v4">
             <button class="btn btn-green" onclick="citeArticle()">📋 Citer</button>
             <button class="btn btn-gold" onclick="generateFiche()">⭐ Générer fiche</button>
-            <button class="btn btn-outline" onclick="saveToNote()">✏️ Ajouter aux notes</button>
-            <button class="btn btn-outline" onclick="printArticle()">📄 PDF</button>
-            <button class="btn btn-outline" onclick="openLegifrance()">🔗 Légifrance</button>
+            <div class="act-more-btn">
+              <button class="btn btn-outline" onclick="toggleActionsMenu(this)">… Plus</button>
+              <div class="act-more-menu" id="act-more-menu">
+                <div class="act-more-item" onclick="saveToNote();closeActionsMenu()">✏️ Ajouter aux notes</div>
+                <div class="act-more-item" onclick="insertArticle();closeActionsMenu()">📎 Insérer en rédaction</div>
+                <div class="act-more-item" onclick="printArticle();closeActionsMenu()">📄 Exporter PDF</div>
+                <div class="act-more-item" onclick="openLegifrance();closeActionsMenu()">🔗 Légifrance</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -689,6 +790,26 @@ body.redac-mode #notes-pane{display:none}
     <div class="pw-btns">
       <button class="btn btn-outline" onclick="closePaywall()">Demain peut-être</button>
       <button class="btn btn-primary">✨ Passer Premium</button>
+    </div>
+  </div>
+</div>
+
+<!-- OMNISEARCH MODAL V4 -->
+<div id="omnisearch-modal" onclick="if(event.target===this)closeOmniSearch()">
+  <div id="omnisearch-box">
+    <div id="omnisearch-header">
+      <span class="os-icon">🔍</span>
+      <input id="omnisearch-in" type="text" placeholder="Rechercher un article, une notion, un arrêt…"
+             autocomplete="off" oninput="omniSearchInput()" onkeydown="omniSearchKey(event)">
+      <span class="os-close" onclick="closeOmniSearch()">Échap</span>
+    </div>
+    <div id="omnisearch-results">
+      <div style="padding:24px;text-align:center;color:var(--t3);font-size:13px">Tapez votre recherche…</div>
+    </div>
+    <div id="omnisearch-footer">
+      <span>↑↓ Naviguer</span>
+      <span>↵ Ouvrir</span>
+      <span>Échap Fermer</span>
     </div>
   </div>
 </div>
@@ -1492,11 +1613,17 @@ function openLegifrance(){
 /* ===== TABS ===== */
 function switchTab(tab){
   _tab=tab;
+  // Tabs cachés mais maintenus pour compatibilité
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   document.querySelectorAll('#page-search,#page-codes,#page-redac,#page-fiches,#page-quiz').forEach(function(p){p.classList.remove('active');});
   var tabs={'search':0,'codes':1,'redac':2,'fiches':3,'quiz':4};
-  document.querySelectorAll('.tab')[tabs[tab]].classList.add('on');
+  var tabEls = document.querySelectorAll('.tab');
+  if(tabEls[tabs[tab]]) tabEls[tabs[tab]].classList.add('on');
   document.getElementById('page-'+tab).classList.add('active');
+  // Sync icon sidebar
+  document.querySelectorAll('#icon-sidebar .nav-icon[id^="ni-"]').forEach(function(el){el.classList.remove('on');});
+  var ni = document.getElementById('ni-'+tab);
+  if(ni) ni.classList.add('on');
   // Rédaction : mode (cache panneau notes droite)
   document.body.classList.toggle('redac-mode', tab==='redac');
   // Adapter la largeur du panneau gauche selon l'onglet
@@ -1514,6 +1641,8 @@ function toggleFocus(){
   _focusOn=!_focusOn;
   document.body.classList.toggle('focus-mode',_focusOn);
   document.getElementById('focus-btn').classList.toggle('on',_focusOn);
+  var niFocus = document.getElementById('ni-focus');
+  if(niFocus) niFocus.classList.toggle('on',_focusOn);
   applyFocusClass();
 }
 
@@ -2556,7 +2685,10 @@ function renderHistory(){
 /* ===== THÈME CLAIR / SOMBRE ===== */
 function toggleTheme(){
   var isLight = document.body.classList.toggle('light');
-  document.getElementById('theme-btn').textContent = isLight ? '🌙' : '☀️';
+  var icon = isLight ? '🌙' : '☀️';
+  document.getElementById('theme-btn').textContent = icon;
+  var niTheme = document.getElementById('ni-theme');
+  if(niTheme) niTheme.textContent = icon;
   localStorage.setItem('juridix_theme', isLight ? 'light' : 'dark');
 }
 // Appliquer le thème sauvegardé au boot
@@ -2566,8 +2698,133 @@ function toggleTheme(){
     document.body.classList.add('light');
     var btn = document.getElementById('theme-btn');
     if(btn) btn.textContent = '🌙';
+    var niTheme = document.getElementById('ni-theme');
+    if(niTheme) niTheme.textContent = '🌙';
   }
 })();
+
+/* ===== OMNISEARCH V4 ===== */
+var _omniIdx = -1;
+var _omniResults = [];
+var _omniTimer = null;
+
+function openOmniSearch(){
+  var modal = document.getElementById('omnisearch-modal');
+  modal.classList.add('show');
+  var inp = document.getElementById('omnisearch-in');
+  inp.value = '';
+  setTimeout(function(){ inp.focus(); }, 60);
+  _omniIdx = -1;
+  _omniResults = [];
+  document.getElementById('omnisearch-results').innerHTML =
+    '<div style="padding:24px;text-align:center;color:var(--t3);font-size:13px">Tapez votre recherche…</div>';
+}
+
+function closeOmniSearch(){
+  document.getElementById('omnisearch-modal').classList.remove('show');
+  _omniIdx = -1;
+}
+
+function omniSearchInput(){
+  clearTimeout(_omniTimer);
+  _omniTimer = setTimeout(function(){
+    var q = document.getElementById('omnisearch-in').value.trim().toLowerCase();
+    if(!q){ _omniResults=[]; renderOmniResults([]); return; }
+    var results = CORPUS.filter(function(item){
+      return item.ref.toLowerCase().includes(q)
+          || item.title.toLowerCase().includes(q)
+          || (item.themes && item.themes.join(' ').toLowerCase().includes(q));
+    }).slice(0,8);
+    _omniResults = results;
+    _omniIdx = -1;
+    renderOmniResults(results);
+  }, 120);
+}
+
+function renderOmniResults(results){
+  var el = document.getElementById('omnisearch-results');
+  if(!results.length){
+    el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--t3);font-size:13px">Aucun résultat. Essayez un autre mot-clé.</div>';
+    return;
+  }
+  var icons = {code:'📚',jurisprudence:'⚖️',definition:'📖'};
+  el.innerHTML = results.map(function(r,i){
+    return '<div class="os-result'+(i===_omniIdx?' os-active':'')+'" onclick="omniSelectIdx('+i+')">'
+      +'<div class="os-result-icon">'+(icons[r.type]||'📄')+'</div>'
+      +'<div class="os-result-body">'
+      +'<div class="os-result-ref">'+escHtml(r.ref)+'</div>'
+      +'<div class="os-result-title">'+escHtml(r.title)+'</div>'
+      +'<div class="os-result-code">'+escHtml(r.code)+'</div>'
+      +'</div>'
+      +'<div class="os-result-kbd">↵</div>'
+      +'</div>';
+  }).join('');
+}
+
+function omniSelectIdx(i){
+  var item = _omniResults[i];
+  if(!item) return;
+  closeOmniSearch();
+  openArticle(item.id);
+}
+
+function omniSearchKey(e){
+  if(e.key==='Escape'){ closeOmniSearch(); return; }
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    _omniIdx = Math.min(_omniIdx+1, _omniResults.length-1);
+    renderOmniResults(_omniResults);
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    _omniIdx = Math.max(_omniIdx-1, -1);
+    renderOmniResults(_omniResults);
+  } else if(e.key==='Enter'){
+    if(_omniIdx>=0){ omniSelectIdx(_omniIdx); }
+    else if(_omniResults.length>0){ omniSelectIdx(0); }
+    else {
+      var q = document.getElementById('omnisearch-in').value.trim();
+      closeOmniSearch();
+      document.getElementById('search-input').value = q;
+      doSearch(q);
+    }
+  }
+}
+
+/* ===== ACTIONS MENU V4 ===== */
+function toggleActionsMenu(btn){
+  var menu = document.getElementById('act-more-menu');
+  if(!menu) return;
+  var isOpen = menu.classList.toggle('open');
+  if(isOpen){
+    setTimeout(function(){
+      document.addEventListener('click', function closeMenu(e){
+        if(!menu.contains(e.target) && !btn.contains(e.target)){
+          menu.classList.remove('open');
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 10);
+  }
+}
+
+function closeActionsMenu(){
+  var menu = document.getElementById('act-more-menu');
+  if(menu) menu.classList.remove('open');
+}
+
+/* ===== RACCOURCIS CLAVIER GLOBAUX ===== */
+document.addEventListener('keydown', function(e){
+  // ⌘K / Ctrl+K → ouvre l'Omnisearch
+  if((e.metaKey||e.ctrlKey) && e.key==='k'){
+    e.preventDefault();
+    openOmniSearch();
+  }
+  // Échap → ferme l'omnisearch si ouvert (géré aussi par le modal lui-même)
+  if(e.key==='Escape'){
+    var modal = document.getElementById('omnisearch-modal');
+    if(modal && modal.classList.contains('show')) closeOmniSearch();
+  }
+});
 
 /* ===== BOOT ===== */
 loadStorage();
