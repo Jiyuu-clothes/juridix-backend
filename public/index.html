@@ -36,7 +36,11 @@ body.light .rdoc-chip:hover{background:rgba(0,0,0,0.05)}
 body.light .code-btn{background:rgba(0,0,0,0.04)}
 body.light #note-modal .nm-box{background:#ffffff}
 *{box-sizing:border-box;margin:0;padding:0}
+*{transition-timing-function:cubic-bezier(0.4,0,0.2,1)}
 body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* BARRE LUMINEUSE VIOLETTE — 2px top */
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--acc) 30%,#a89fff 60%,transparent 100%);z-index:9999;opacity:.7;pointer-events:none}
 
 /* TOPBAR — V4 épuré */
 #topbar{height:48px;min-height:48px;background:rgba(7,7,15,0.97);border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:12px;padding:0 16px;backdrop-filter:blur(24px);z-index:200}
@@ -498,6 +502,20 @@ body.redac-mode #notes-pane{display:none}
 /* GENERATE FICHE */
 .btn-gold{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.25);color:var(--gold)}
 .btn-gold:hover{background:rgba(251,191,36,0.22)}
+/* SKELETON LOADER */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.skeleton-wrap{padding:12px 10px;display:flex;flex-direction:column;gap:10px}
+.skeleton-item{border-radius:10px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px}
+.sk-line{height:10px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.04) 75%);background-size:400px 100%;animation:shimmer 1.4s infinite}
+.sk-line.short{width:40%}
+.sk-line.long{width:90%}
+.sk-line.mid{width:65%}
+/* BULLE AUTO-CITATION */
+#cite-bubble{position:fixed;z-index:5000;background:rgba(13,13,28,0.97);border:1px solid rgba(124,107,255,0.4);border-radius:10px;padding:6px 8px;display:none;gap:4px;box-shadow:0 8px 32px rgba(0,0,0,0.6);backdrop-filter:blur(16px);animation:slideDown .15s ease}
+#cite-bubble.show{display:flex}
+.cb-btn{background:var(--acc3);border:1px solid rgba(124,107,255,0.3);border-radius:7px;padding:5px 10px;color:var(--acc2);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:sans-serif;transition:all .15s}
+.cb-btn:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
+.cb-btn-close{background:transparent;border:none;color:var(--t3);font-size:14px;cursor:pointer;padding:4px;line-height:1}
 /* SEARCH LOADING */
 .search-loading{padding:40px;text-align:center;color:var(--t3);display:flex;flex-direction:column;align-items:center;gap:14px;font-size:13px}
 .search-loading .spinner{width:22px;height:22px}
@@ -758,7 +776,7 @@ body.redac-mode #notes-pane{display:none}
           <div id="ac-related"></div>
           <div class="art-voir" id="ac-voir"></div>
           <div class="art-actions-v4">
-            <button class="btn btn-green" onclick="citeArticle()">📋 Citer</button>
+            <button class="btn btn-green" onclick="citeArticleAnimated(this)">📋 Citer</button>
             <button class="btn btn-gold" onclick="generateFiche()">⭐ Générer fiche</button>
             <div class="act-more-btn">
               <button class="btn btn-outline" onclick="toggleActionsMenu(this)">… Plus</button>
@@ -816,6 +834,13 @@ body.redac-mode #notes-pane{display:none}
       <button class="btn btn-primary">✨ Passer Premium</button>
     </div>
   </div>
+</div>
+
+<!-- BULLE AUTO-CITATION -->
+<div id="cite-bubble">
+  <button class="cb-btn" onclick="bubbleCiteToNote()">📎 Citer dans mes notes</button>
+  <button class="cb-btn" onclick="bubbleCopyRef()">📋 Copier</button>
+  <button class="cb-btn-close" onclick="hideCiteBubble()">✕</button>
 </div>
 
 <!-- OMNISEARCH MODAL V4 -->
@@ -2985,13 +3010,108 @@ function setArticleText(el, text){
   }
 }
 
-/* ===== RENDER COLD START — LOADER INTELLIGENT ===== */
+/* ===== SKELETON LOADER ===== */
 function renderSearchLoader(){
-  return '<div class="render-loader">'
-    +'<div class="spinner"></div>'
-    +'<span>Recherche en cours…</span>'
-    +'<span class="render-cold-msg">⏳ Le serveur se réveille, patiente 15s…</span>'
-    +'</div>';
+  var items='';
+  for(var i=0;i<4;i++){
+    items+='<div class="skeleton-item">'
+      +'<div class="sk-line short"></div>'
+      +'<div class="sk-line long"></div>'
+      +'<div class="sk-line mid"></div>'
+      +'</div>';
+  }
+  return '<div class="skeleton-wrap">'+items+'</div>'
+    +'<div class="render-cold-msg" style="padding:0 12px 12px;font-size:11px;color:var(--t3);opacity:0;animation:fadeIn .5s ease 2.5s forwards">⏳ Réveil du serveur en cours…</div>';
+}
+
+/* ===== BULLE AUTO-CITATION ===== */
+var _bubbleSelection = '';
+
+function initCiteBubble(){
+  document.getElementById('reader-pane').addEventListener('mouseup', function(e){
+    setTimeout(function(){
+      var sel = window.getSelection();
+      var text = sel ? sel.toString().trim() : '';
+      if(!text || text.length < 10){ hideCiteBubble(); return; }
+      // Vérifier que la sélection est dans le reader
+      var range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+      if(!range) return;
+      var container = range.commonAncestorContainer;
+      var pane = document.getElementById('reader-pane');
+      if(!pane.contains(container)){ hideCiteBubble(); return; }
+      _bubbleSelection = text;
+      // Positionner la bulle près de la sélection
+      var rect = range.getBoundingClientRect();
+      var bubble = document.getElementById('cite-bubble');
+      bubble.style.top  = (rect.top + window.scrollY - 48)+'px';
+      bubble.style.left = Math.min(rect.left, window.innerWidth - 300)+'px';
+      bubble.classList.add('show');
+    }, 10);
+  });
+  // Cacher si clic ailleurs
+  document.addEventListener('mousedown', function(e){
+    var bubble = document.getElementById('cite-bubble');
+    if(bubble && !bubble.contains(e.target)) hideCiteBubble();
+  });
+}
+
+function hideCiteBubble(){
+  var b = document.getElementById('cite-bubble');
+  if(b) b.classList.remove('show');
+  _bubbleSelection = '';
+}
+
+function bubbleCiteToNote(){
+  if(!_bubbleSelection) return;
+  var ref = _art ? (_art.ref||'') + (_art.code ? ', '+_art.code : '') : 'JuriDix';
+  var md = '> "'+_bubbleSelection+'"\n> — '+ref;
+  // Ajouter à la note courante ou en créer une nouvelle
+  var bodyEl = document.getElementById('note-body-in');
+  if(bodyEl){
+    bodyEl.value = bodyEl.value ? bodyEl.value + '\n\n' + md : md;
+    if(!document.getElementById('note-title-in').value && _art){
+      document.getElementById('note-title-in').value = _art.ref || 'Note';
+    }
+  }
+  // Si on est dans l'onglet notes de la rédaction
+  hideCiteBubble();
+  showToast('📎 Citation ajoutée aux notes !');
+}
+
+function bubbleCopyRef(){
+  if(!_bubbleSelection) return;
+  var ref = _art ? (_art.ref||'') + (_art.code ? ', '+_art.code : '') : '';
+  var text = '"'+_bubbleSelection+'" ('+ref+')';
+  navigator.clipboard.writeText(text).catch(function(){
+    var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  });
+  hideCiteBubble();
+  showToast('📋 Copié avec référence !');
+}
+
+function showToast(msg){
+  var t = document.getElementById('cite-toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+/* ===== BOUTON CITER — ANIMATION CHECK ===== */
+function citeArticleAnimated(btn){
+  citeArticle();
+  if(!btn) return;
+  var orig = btn.innerHTML;
+  btn.innerHTML = '✅ Copié !';
+  btn.style.background = 'rgba(52,211,153,0.25)';
+  btn.style.borderColor = 'rgba(52,211,153,0.5)';
+  btn.disabled = true;
+  setTimeout(function(){
+    btn.innerHTML = orig;
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.disabled = false;
+  }, 2000);
 }
 
 /* ===== NOTES — AUTOSAVE PULSE ===== */
@@ -3024,6 +3144,7 @@ loadHistory();
 renderHistory();
 initFiches();
 initQuiz();
+initCiteBubble();
 </script>
 </body>
 </html>
