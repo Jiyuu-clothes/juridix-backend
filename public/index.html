@@ -1154,9 +1154,8 @@ function renderLinkedJuris(items, container){
   if(!items.length){container.innerHTML='';return;}
   var html='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>';
   items.forEach(function(jp){
-    var sid=jp.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     var excerpt=(jp.texte||'').slice(0,160)+'…';
-    html+='<div class="related-item" onclick="openArticle(\''+sid+\')">'
+    html+='<div class="related-item" onclick="openArticle('+JSON.stringify(jp.id)+')">'
       +'<div class="ri2-ref">'+escHtml(jp.ref)+'</div>'
       +'<div class="ri2-title">'+escHtml(jp.title)+'</div>'
       +'<div class="ri2-exc">'+escHtml(excerpt)+'</div>'
@@ -1170,8 +1169,7 @@ function renderLinkedArticles(items, container){
   if(!items.length){container.innerHTML='';return;}
   var html='<div class="art-related"><div class="art-related-title">📚 Articles appliqués</div>';
   items.forEach(function(art){
-    var sid=art.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html+='<div class="related-item" onclick="openArticle(\''+sid+\')">'
+    html+='<div class="related-item" onclick="openArticle('+JSON.stringify(art.id)+')">'
       +'<div class="ri2-ref">'+escHtml(art.code)+'</div>'
       +'<div class="ri2-title">'+escHtml(art.ref+' — '+art.title)+'</div>'
       +'</div>';
