@@ -187,8 +187,25 @@ body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSyst
 .art-title{font-size:15px;color:var(--t2);font-style:italic;margin-bottom:12px}
 .art-meta{font-size:11px;color:var(--t3);font-family:sans-serif;display:flex;gap:12px;flex-wrap:wrap}
 .art-meta span{display:flex;align-items:center;gap:4px}
-/* V3.1 — typographie améliorée : 1.1rem, interligne 1.8 */
-.art-texte{font-size:17.6px;line-height:1.8;color:var(--t1);white-space:pre-wrap;margin-bottom:24px}
+/* READER TYPOGRAPHIE */
+.art-texte{font-size:1.1rem;line-height:1.75;color:var(--t1);margin-bottom:24px;font-family:Georgia,'Newsreader','Times New Roman',serif}
+/* Hover highlight alinéas */
+.art-para{display:block;margin-bottom:.85em;transition:opacity .25s;cursor:default;border-radius:4px;padding:2px 4px;margin-left:-4px}
+.art-texte.has-paras:hover .art-para{opacity:.38}
+.art-texte.has-paras:hover .art-para:hover{opacity:1;background:rgba(124,107,255,0.04)}
+/* TOOLBAR FLOTTANTE CONTEXTUELLE */
+#art-toolbar-float{position:sticky;top:8px;float:right;clear:right;margin-right:-4px;display:flex;gap:4px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;font-family:sans-serif;margin-bottom:-40px}
+#art-content:hover #art-toolbar-float{opacity:1;pointer-events:auto}
+.atf-btn{background:rgba(10,10,26,0.92);border:1px solid var(--gb);border-radius:8px;padding:5px 11px;color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;backdrop-filter:blur(12px)}
+.atf-btn:hover{background:var(--acc3);color:var(--acc2);border-color:var(--acc)}
+body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:var(--t2)}
+/* RENDER COLD START LOADER */
+.render-loader{padding:40px 20px;text-align:center;color:var(--t3);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.render-loader .spinner{width:22px;height:22px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+.render-cold-msg{font-size:11px;color:var(--t3);opacity:0;animation:fadeIn .5s ease 2.5s forwards}
+/* NOTES AUTOSAVE PULSE */
+@keyframes syncPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:syncPulse 1.5s ease infinite;margin-left:5px;vertical-align:middle}
 /* V3.1 — animation halo violet sur citation */
 @keyframes citeGlow{0%{box-shadow:0 0 0 0 rgba(124,107,255,0.7)}50%{box-shadow:0 0 0 8px rgba(124,107,255,0.2)}100%{box-shadow:0 0 0 0 rgba(124,107,255,0)}}
 #art-content.cite-flash{animation:citeGlow .6s ease}
@@ -720,6 +737,13 @@ body.redac-mode #notes-pane{display:none}
         </div>
         <!-- Article content -->
         <div id="art-content">
+          <!-- Toolbar flottante contextuelle (visible au survol) -->
+          <div id="art-toolbar-float">
+            <button class="atf-btn" onclick="citeArticle()" title="Copier la référence">📋 Citer</button>
+            <button class="atf-btn" onclick="saveToNote()" title="Ajouter aux notes">✏️ Note</button>
+            <button class="atf-btn" onclick="toggleFocus()" title="Mode focus">🎯</button>
+            <button class="atf-btn" onclick="printArticle()" title="PDF">📄</button>
+          </div>
           <div class="art-header">
             <div class="art-code" id="ac-code"></div>
             <div class="art-ref" id="ac-ref"></div>
@@ -1443,7 +1467,7 @@ async function doSearch(){
     renderResults(localRes.map(function(x){return x.a;}), q);
   } else {
     /* Afficher spinner pendant recherche API */
-    document.getElementById('results-list').innerHTML='<div class="search-loading"><div class="spinner"></div><span>Recherche dans Légifrance…</span></div>';
+    document.getElementById('results-list').innerHTML=renderSearchLoader();
   }
 
   /* ── 2. Appel API backend ── */
@@ -1518,7 +1542,7 @@ function openArticle(id){
   document.getElementById('ac-title').textContent=a.title;
   document.getElementById('ac-vigeur').textContent=a.vigeur||'En vigueur';
   document.getElementById('ac-type').textContent=a.type==='jurisprudence'?'Jurisprudence':a.type==='definition'?'Doctrine':'Article de code';
-  document.getElementById('ac-texte').textContent=a.texte;
+  setArticleText(document.getElementById('ac-texte'), a.texte||'');
 
   /* ── Section Analyse pédagogique ── */
   var ped=PEDAGOGY[a.id];
@@ -1633,7 +1657,7 @@ function openRelatedJuris(url, title, content, source){
   document.getElementById('ac-title').textContent=fakeArt.title;
   document.getElementById('ac-vigeur').textContent='En vigueur';
   document.getElementById('ac-type').textContent='Jurisprudence';
-  document.getElementById('ac-texte').textContent=fakeArt.texte;
+  setArticleText(document.getElementById('ac-texte'), fakeArt.texte||'');
   document.getElementById('ac-related').innerHTML='';
   document.getElementById('ac-voir').innerHTML=url?'<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>':'';
   document.getElementById('reader-pane').scrollTop=0;
@@ -2286,7 +2310,9 @@ function onDocTitleChange(){
 
 function setAutoSaveStatus(msg){
   var el = document.getElementById('redac-autosave');
-  if(el) el.textContent = msg;
+  if(!el) return;
+  if(msg.includes('Sauvegardé')){showSavePulse('redac-autosave');return;}
+  el.textContent = msg;
 }
 
 function updateWordCount(){
@@ -2465,7 +2491,7 @@ function openRedacResult(i){
   document.getElementById('ac-vigeur').textContent='En vigueur';
   document.getElementById('ac-type').textContent = item.type==='jurisprudence'?'Jurisprudence':'Article de code';
   var texte = (item.texte||item.content||'').replace(/<[^>]*>/g,' ');
-  document.getElementById('ac-texte').textContent = texte || '(Texte non disponible)';
+  setArticleText(document.getElementById('ac-texte'), texte || '(Texte non disponible)');
   document.getElementById('ac-pedagogy').innerHTML='';
   document.getElementById('ac-related').innerHTML='';
   if(item.url) document.getElementById('ac-voir').innerHTML='<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+item.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
@@ -2655,7 +2681,9 @@ async function openNavArticle(cid, el){
     document.getElementById('ac-code').textContent = art.code || 'Légifrance';
     document.getElementById('ac-ref').textContent = art.article ? 'Art. '+art.article : cid;
     document.getElementById('ac-title').textContent = art.title || ('Article '+cid);
-    document.getElementById('ac-texte').innerHTML = art.content || '<em style="color:var(--t3)">Contenu non disponible.</em>';
+    var el=document.getElementById('ac-texte');
+    if(art.content){el.innerHTML=art.content;el.classList.remove('has-paras');}
+    else{setArticleText(el,'(Contenu non disponible)');};
     // Lien Légifrance dans ac-voir
     if(art.url){
       document.getElementById('ac-voir').innerHTML = '<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+art.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
@@ -2844,17 +2872,25 @@ function closeOmniSearch(){
 function omniSearchInput(){
   clearTimeout(_omniTimer);
   _omniTimer = setTimeout(function(){
-    var q = document.getElementById('omnisearch-in').value.trim().toLowerCase();
+    var raw = document.getElementById('omnisearch-in').value.trim();
+    var q = raw.toLowerCase();
     if(!q){ _omniResults=[]; renderOmniResults([]); return; }
+    // Alias : "1240" → "art. 1240", numéros seuls, etc.
+    var aliases = [q];
+    if(/^\d[\d\-]*$/.test(q)) aliases.push('art. '+q, 'art.'+q, 'l.'+q, 'l '+q);
+    aliases.push(q.replace(/^art\.?\s*/i,''));
     var results = CORPUS.filter(function(item){
-      return item.ref.toLowerCase().includes(q)
-          || item.title.toLowerCase().includes(q)
-          || (item.themes && item.themes.join(' ').toLowerCase().includes(q));
+      var ref = item.ref.toLowerCase();
+      var title = item.title.toLowerCase();
+      var themes = (item.themes||[]).join(' ').toLowerCase();
+      return aliases.some(function(a){
+        return ref.includes(a) || title.includes(a) || themes.includes(a);
+      });
     }).slice(0,8);
     _omniResults = results;
     _omniIdx = -1;
     renderOmniResults(results);
-  }, 120);
+  }, 100);
 }
 
 function renderOmniResults(results){
@@ -2926,6 +2962,46 @@ function toggleActionsMenu(btn){
 function closeActionsMenu(){
   var menu = document.getElementById('act-more-menu');
   if(menu) menu.classList.remove('open');
+}
+
+/* ===== READER — PARAGRAPHES INTERACTIFS ===== */
+function setArticleText(el, text){
+  if(!text){el.innerHTML='';el.classList.remove('has-paras');return;}
+  // Divise par double saut de ligne ou numérotation (1°, 2°, alinéas)
+  var parts = text.split(/\n\n+/);
+  if(parts.length < 2){
+    // Essai par saut de ligne simple
+    parts = text.split(/\n/);
+  }
+  parts = parts.map(function(p){return p.trim();}).filter(Boolean);
+  if(parts.length <= 1){
+    el.textContent = text;
+    el.classList.remove('has-paras');
+  } else {
+    el.innerHTML = parts.map(function(p){
+      return '<span class="art-para">'+escHtml(p)+'</span>';
+    }).join('');
+    el.classList.add('has-paras');
+  }
+}
+
+/* ===== RENDER COLD START — LOADER INTELLIGENT ===== */
+function renderSearchLoader(){
+  return '<div class="render-loader">'
+    +'<div class="spinner"></div>'
+    +'<span>Recherche en cours…</span>'
+    +'<span class="render-cold-msg">⏳ Le serveur se réveille, patiente 15s…</span>'
+    +'</div>';
+}
+
+/* ===== NOTES — AUTOSAVE PULSE ===== */
+function showSavePulse(statusId){
+  var el = document.getElementById(statusId||'redac-autosave');
+  if(!el) return;
+  el.innerHTML = '✓ Sauvegardé <span class="sync-dot"></span>';
+  setTimeout(function(){
+    if(el) el.innerHTML = '✓ Sauvegardé';
+  }, 2000);
 }
 
 /* ===== RACCOURCIS CLAVIER GLOBAUX ===== */
