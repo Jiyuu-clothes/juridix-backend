@@ -632,18 +632,24 @@ body.light.hub-mode #reader-pane{background:var(--bg2)!important}
 body.hub-mode .art-header{top:-32px;background:#0a0a1a!important}
 body.light.hub-mode .art-header{background:var(--bg2)!important}
 
-/* --- panel-r = container studio uniquement, pleine hauteur --- */
+/* --- panel-r = container studio pleine hauteur ---
+   Chaîne flex correcte : #main(row) → #panel-r(column,stretch) → #lab-studio(flex:1) */
 body.hub-mode #panel-r{
-  flex:none;width:auto;display:flex;flex-direction:column;
-  background:transparent;align-self:stretch;
+  flex:none;width:auto;
+  display:flex;flex-direction:column;
+  align-self:stretch;     /* étire sur toute la hauteur de #main */
+  overflow:hidden;
+  background:transparent;
 }
 body.hub-mode #split-r{display:none!important}
 body.hub-mode #notes-pane{display:none!important}
-/* lab-studio = studio panel droit, pleine hauteur */
+/* lab-studio remplit TOUT panel-r via flex:1 — pas de height:100% */
 body.hub-mode #lab-studio{
   display:flex!important;
   width:420px;min-width:0;max-width:52%;
-  flex:1 1 auto;height:100%;
+  flex:1;          /* grandit pour remplir panel-r */
+  min-height:0;    /* évite le débordement en flex-column */
+  height:auto;     /* laisse flex gérer */
   background:#12121e;border-left:1px solid var(--gb);
   transition:width .25s cubic-bezier(.4,0,.2,1),border-left-color .25s;
 }
