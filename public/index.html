@@ -587,6 +587,95 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
 #lab-editor-wrap2.cite-flash{animation:citeGlow .6s ease}
 #lab-status2{padding:5px 28px;font-size:11px;color:var(--t3);font-family:-apple-system,sans-serif;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.01);flex-shrink:0}
 #lab-autosave2{color:var(--green)}
+
+/* ===================================================================
+   HUB MODE — INTERFACE MULTI-OUTILS (remplace lab-mode)
+   Layout: [sidebar 52px] [tiroir gauche] [reader flex:1] [studio]
+   =================================================================== */
+
+/* --- Sidebar toujours visible --- */
+body.hub-mode #icon-sidebar{opacity:1!important;transform:none!important}
+
+/* --- Top Tabs (remplacent les anciens .tab) --- */
+#top-tabs{display:none;gap:2px;background:rgba(255,255,255,0.05);border-radius:8px;padding:3px;flex:1;max-width:460px}
+body.hub-mode #top-tabs{display:flex}
+.ttab{padding:5px 11px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);background:transparent;border:1px solid transparent;transition:all .2s;white-space:nowrap;font-family:-apple-system,sans-serif}
+.ttab.on{background:var(--acc3);color:var(--acc2);border-color:rgba(124,107,255,0.3)}
+.ttab:hover:not(.on){color:var(--t1);background:rgba(255,255,255,0.07)}
+body.light .ttab.on{background:rgba(105,88,232,0.1)}
+
+/* --- Drawer header (en haut du tiroir gauche) --- */
+#drawer-header{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--gb);flex-shrink:0;font-family:-apple-system,sans-serif;background:rgba(255,255,255,0.015)}
+#drawer-title{font-size:12px;font-weight:700;color:var(--t2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer-close-btn{background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:3px 8px;color:var(--t3);font-size:11px;cursor:pointer;font-family:sans-serif;transition:all .15s;white-space:nowrap}
+.drawer-close-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
+
+/* --- Layout panel-l = tiroir gauche --- */
+body.hub-mode #panel-l{
+  width:290px!important;max-width:390px!important;min-width:0!important;
+  flex-direction:column!important;
+  transition:width .25s cubic-bezier(.4,0,.2,1),border-right-color .25s;
+  border-right:1px solid var(--gb);
+}
+body.hub-mode.drawer-closed #panel-l{width:0!important;overflow:hidden!important;border-right-color:transparent!important}
+body.hub-mode.drawer-closed #main-resizer{display:none!important}
+/* Scroll visible pour les pages actives dans le tiroir */
+body.hub-mode #page-search,body.hub-mode #page-codes,
+body.hub-mode #page-fiches,body.hub-mode #page-quiz{max-height:none!important}
+
+/* --- Reader-pane = zone centrale toujours visible --- */
+body.hub-mode #reader-pane{
+  flex:1!important;min-width:260px!important;border-top:none!important;
+  background:#0a0a1a!important;padding:32px 28px!important;
+}
+body.light.hub-mode #reader-pane{background:var(--bg2)!important}
+body.hub-mode .art-header{top:-32px;background:#0a0a1a!important}
+body.light.hub-mode .art-header{background:var(--bg2)!important}
+
+/* --- panel-r = container studio uniquement --- */
+body.hub-mode #panel-r{flex:none;width:auto;display:flex;background:transparent}
+body.hub-mode #split-r{display:none!important}
+body.hub-mode #notes-pane{display:none!important}
+/* lab-studio = studio panel droit */
+body.hub-mode #lab-studio{
+  display:flex!important;
+  width:420px;min-width:0;max-width:52%;
+  background:#12121e;border-left:1px solid var(--gb);
+  transition:width .25s cubic-bezier(.4,0,.2,1),border-left-color .25s;
+}
+body.hub-mode.studio-hidden #lab-studio{width:0!important;overflow:hidden!important;border-left-color:transparent!important}
+
+/* --- Studio expand tab (bord droit quand studio fermé) --- */
+#studio-expand-tab{
+  position:fixed;right:0;top:50%;transform:translateY(-50%);
+  background:rgba(13,13,28,0.95);border:1px solid var(--gb);border-right:none;
+  border-radius:8px 0 0 8px;padding:20px 8px;
+  display:none;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;z-index:50;transition:all .2s;
+  font-family:-apple-system,sans-serif;box-shadow:-4px 0 20px rgba(0,0,0,.4);
+}
+#studio-expand-tab:hover{background:rgba(124,107,255,0.15);border-color:var(--acc)}
+body.hub-mode.studio-hidden #studio-expand-tab{display:flex}
+#studio-expand-tab .set-icon{font-size:17px}
+#studio-expand-tab .set-label{
+  writing-mode:vertical-rl;font-size:10px;font-weight:700;
+  color:var(--acc2);letter-spacing:.8px;text-transform:uppercase
+}
+
+/* --- Studio collapse button --- */
+.studio-collapse-btn{
+  background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;
+  padding:4px 8px;color:var(--t3);font-size:11px;cursor:pointer;
+  font-family:-apple-system,sans-serif;transition:all .15s;white-space:nowrap
+}
+.studio-collapse-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
+
+/* --- Home screen en hub-mode : compact --- */
+body.hub-mode .home-shortcuts{display:none}
+body.hub-mode .home-sub{font-size:12px}
+body.hub-mode .home-logo{font-size:32px;margin-bottom:4px}
+body.hub-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
+body.hub-mode #art-empty{gap:10px}
 </style>
 </head>
 <body>
@@ -611,16 +700,24 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
   </div>
 </div>
 
-<!-- TOPBAR ÉPURÉ -->
+<!-- TOPBAR -->
 <div id="topbar">
   <div class="logo" onclick="switchTab('search')">Juri<span>Dix</span></div>
   <input id="search-input" type="text" placeholder="Rechercher…" autocomplete="off" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+  <!-- Ancien système (maintenu pour compat JS) -->
   <div id="tabs" style="display:none">
     <div class="tab on" onclick="switchTab('search')">🔍 Recherche</div>
     <div class="tab" onclick="switchTab('codes')">📖 Codes</div>
     <div class="tab" onclick="switchTab('redac')">✍️ Rédaction</div>
     <div class="tab" onclick="switchTab('fiches')">📋 Fiches</div>
     <div class="tab" onclick="switchTab('quiz')">⚡ Quiz</div>
+  </div>
+  <!-- NOUVEAUX ONGLETS HUB -->
+  <div id="top-tabs">
+    <button class="ttab on" data-tab="search" onclick="switchTab('search')">🔍 Recherche</button>
+    <button class="ttab" data-tab="codes" onclick="switchTab('codes')">📚 Codes</button>
+    <button class="ttab" data-tab="fiches" onclick="switchTab('fiches')">📝 Fiches</button>
+    <button class="ttab" data-tab="quiz" onclick="switchTab('quiz')">⚡ Quiz</button>
   </div>
   <div class="tb-right">
     <div class="btn-icon" onclick="openOmniSearch()" title="Rechercher (⌘K)" style="font-size:14px">🔍</div>
@@ -632,31 +729,39 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
 <!-- MAIN -->
 <div id="main">
 
-  <!-- ICON SIDEBAR V4 -->
+  <!-- ICON SIDEBAR — toujours visible en hub mode -->
   <div id="icon-sidebar">
-    <div class="nav-icon on" id="ni-search" onclick="switchTab('search')">
+    <div class="nav-icon on" id="ni-search" onclick="switchTab('search')" title="Recherche">
       🔍<span class="ni-tip">Recherche</span>
     </div>
-    <div class="nav-icon" id="ni-codes" onclick="switchTab('codes')">
-      📖<span class="ni-tip">Codes juridiques</span>
+    <div class="nav-icon" id="ni-codes" onclick="switchTab('codes')" title="Bibliothèque des Codes">
+      📚<span class="ni-tip">Bibliothèque des Codes</span>
     </div>
-    <div class="nav-icon" id="ni-redac" onclick="switchTab('redac')">
-      ✍️<span class="ni-tip">Rédaction</span>
+    <div class="nav-icon" id="ni-fiches" onclick="switchTab('fiches')" title="Mes Fiches">
+      📝<span class="ni-tip">Mes Fiches</span>
     </div>
-    <div class="nav-icon" id="ni-fiches" onclick="switchTab('fiches')">
-      📋<span class="ni-tip">Fiches de révision</span>
-    </div>
-    <div class="nav-icon" id="ni-quiz" onclick="switchTab('quiz')">
+    <div class="nav-icon" id="ni-quiz" onclick="switchTab('quiz')" title="Quiz">
       ⚡<span class="ni-tip">Quiz</span>
     </div>
+    <!-- ni-redac maintenu pour compat JS mais caché -->
+    <div class="nav-icon" id="ni-redac" onclick="switchTab('redac')" style="display:none">
+      ✍️<span class="ni-tip">Rédaction avancée</span>
+    </div>
     <div id="sidebar-bottom">
+      <div class="nav-icon" id="ni-studio" onclick="toggleStudio()" title="Studio de Rédaction">✍️<span class="ni-tip">Studio de Rédaction</span></div>
       <div class="nav-icon" onclick="toggleFocus()" id="ni-focus">🎯<span class="ni-tip">Mode focus</span></div>
       <div class="nav-icon" onclick="toggleTheme()" id="ni-theme">☀️<span class="ni-tip">Mode clair/sombre</span></div>
     </div>
   </div>
 
-  <!-- LEFT PANEL -->
+  <!-- LEFT PANEL (tiroir gauche) -->
   <div id="panel-l">
+
+    <!-- DRAWER HEADER -->
+    <div id="drawer-header">
+      <span id="drawer-title">🔍 Recherche</span>
+      <button class="drawer-close-btn" onclick="toggleDrawer()" title="Fermer le tiroir">◀ Réduire</button>
+    </div>
 
     <!-- SEARCH PAGE -->
     <div id="page-search" class="active">
@@ -884,10 +989,11 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
     <!-- LAB STUDIO — panneau de rédaction en mode split-screen -->
     <div id="lab-studio">
       <div id="lab-studio-hdr">
-        <span class="lab-title-label">✍️ Studio de Rédaction</span>
+        <span class="lab-title-label">✍️ Studio</span>
         <button class="lab-inject-btn" onclick="injectArticleToLab()">📎 Injecter l'article</button>
-        <button class="lab-copy-btn" onclick="copyLabDoc()">📋 Copier</button>
+        <button class="lab-copy-btn" onclick="copyLabDoc()">📋</button>
         <span id="lab-wcount">0 mot</span>
+        <button class="studio-collapse-btn" onclick="collapseStudio()" title="Réduire le studio">▶ Réduire</button>
       </div>
       <div id="lab-title-wrap">
         <input id="lab-doc-title" placeholder="Titre du document…" oninput="onLabTitleChange()">
@@ -971,6 +1077,12 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
       <button class="nm-btn nm-btn-save" onclick="saveNoteFromModal()">💾 Enregistrer</button>
     </div>
   </div>
+</div>
+
+<!-- STUDIO EXPAND TAB (visible quand studio réduit) -->
+<div id="studio-expand-tab" onclick="expandStudio()">
+  <span class="set-icon">✍️</span>
+  <span class="set-label">Studio</span>
 </div>
 
 <script>
@@ -1866,24 +1978,45 @@ function openLegifrance(){
   window.open('https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q),'_blank');
 }
 /* ===== TABS ===== */
+var DRAWER_TITLES = {
+  search:'🔍 Recherche',
+  codes:'📚 Bibliothèque des Codes',
+  fiches:'📝 Mes Fiches',
+  quiz:'⚡ Quiz',
+  redac:'✍️ Rédaction'
+};
+
 function switchTab(tab){
-  _tab=tab;
-  // Tabs cachés mais maintenus pour compatibilité
+  // Hub-mode: clic sur onglet actif → toggle le tiroir
+  if(_hubInited && _tab === tab && !document.body.classList.contains('drawer-closed')){
+    toggleDrawer(); return;
+  }
+  _tab = tab;
+  // Compat: anciens .tab
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   document.querySelectorAll('#page-search,#page-codes,#page-redac,#page-fiches,#page-quiz').forEach(function(p){p.classList.remove('active');});
-  var tabs={'search':0,'codes':1,'redac':2,'fiches':3,'quiz':4};
-  var tabEls = document.querySelectorAll('.tab');
-  if(tabEls[tabs[tab]]) tabEls[tabs[tab]].classList.add('on');
-  document.getElementById('page-'+tab).classList.add('active');
-  // Sync icon sidebar
+  var tabsOld = {'search':0,'codes':1,'redac':2,'fiches':3,'quiz':4};
+  var tabEls  = document.querySelectorAll('.tab');
+  if(tabEls[tabsOld[tab]]) tabEls[tabsOld[tab]].classList.add('on');
+  var pg = document.getElementById('page-'+tab);
+  if(pg) pg.classList.add('active');
+  // Sync sidebar icons
   document.querySelectorAll('#icon-sidebar .nav-icon[id^="ni-"]').forEach(function(el){el.classList.remove('on');});
   var ni = document.getElementById('ni-'+tab);
   if(ni) ni.classList.add('on');
-  // Rédaction : mode (cache panneau notes droite)
+  // Sync top tabs (.ttab)
+  document.querySelectorAll('.ttab').forEach(function(t){t.classList.remove('on');});
+  var tt = document.querySelector('.ttab[data-tab="'+tab+'"]');
+  if(tt) tt.classList.add('on');
+  // Drawer header title
+  var dt = document.getElementById('drawer-title');
+  if(dt && DRAWER_TITLES[tab]) dt.textContent = DRAWER_TITLES[tab];
+  // Hub mode: ouvrir le tiroir
+  if(_hubInited){ openDrawer(); }
+  // Rédaction
   document.body.classList.toggle('redac-mode', tab==='redac');
-  // Adapter la largeur du panneau gauche selon l'onglet
-  if(typeof applyPanelWidth === 'function') applyPanelWidth(tab);
-  // Recalculer le focus si actif
+  // Largeur panel gauche (mode classique uniquement)
+  if(!_hubInited && typeof applyPanelWidth==='function') applyPanelWidth(tab);
   if(_focusOn) applyFocusClass();
   if(tab==='codes' && !_codesInited){initCodes();}
   if(tab==='redac' && !_redacInited){initRedac();}
@@ -2863,6 +2996,7 @@ function makeResizer(resizerEl, getTarget, getSize, setSize, opts){
 var TAB_DEFAULT_PCT = { search:40, codes:34, redac:65, fiches:38, quiz:38 };
 
 function applyPanelWidth(tab, forceDefault){
+  if(_hubInited) return; // hub-mode gère sa propre largeur
   var panelL  = document.getElementById('panel-l');
   var winW    = window.innerWidth;
   var key     = 'juridix_pw_' + tab;
@@ -3124,8 +3258,8 @@ function exitZenMode(){
   if(!sp) return;
   sp.classList.add('fade-out');
   setTimeout(function(){ sp.classList.add('gone'); }, 420);
-  // Activer le mode Lab split-screen
-  setTimeout(function(){ enterLabMode(); }, 250);
+  // Activer le Hub Mode (interface multi-outils)
+  setTimeout(function(){ initHubMode(); }, 250);
 }
 
 function spotlightLive(){
@@ -3142,11 +3276,12 @@ function spotlightKey(e){
   }
 }
 
-/* ===== GHOST SIDEBAR ===== */
+/* ===== GHOST SIDEBAR (désactivé en hub-mode) ===== */
 function initGhostSidebar(){
+  // En hub-mode la sidebar est toujours visible — ghost désactivé
+  if(_hubInited) return;
   var sidebar = document.getElementById('icon-sidebar');
   if(!sidebar) return;
-  // Zone de déclenchement : 14px sur le bord gauche sous le topbar
   var trigger = document.createElement('div');
   trigger.style.cssText = 'position:fixed;left:0;top:48px;width:14px;height:calc(100vh - 48px);z-index:101;';
   document.body.appendChild(trigger);
@@ -3275,25 +3410,102 @@ document.addEventListener('keydown', function(e){
   }
 });
 
-/* ===== LAB MODE — SPLIT SCREEN ===== */
-var _labTimer = null;
+/* ===== HUB MODE — INTERFACE MULTI-OUTILS ===== */
+var _labTimer  = null;
+var _hubInited = false;
 
-function enterLabMode(){
-  if(document.body.classList.contains('lab-mode')) return;
-  // Déplacer le reader-pane dans panel-l (sous la liste de résultats)
+function initHubMode(){
+  if(_hubInited) return;
+  _hubInited = true;
+
+  // 1. Déplacer reader-pane hors de split-r → entre le resizer et panel-r
+  var main      = document.getElementById('main');
+  var panelR    = document.getElementById('panel-r');
+  var readerPane= document.getElementById('reader-pane');
+  if(main && panelR && readerPane && readerPane.parentNode !== main){
+    main.insertBefore(readerPane, panelR);
+  }
+
+  // 2. Activer hub-mode
+  document.body.classList.add('hub-mode');
+  document.body.classList.remove('lab-mode'); // nettoyer l'ancien
+
+  // 3. Largeur initiale du tiroir
   var panelL = document.getElementById('panel-l');
-  var readerPane = document.getElementById('reader-pane');
-  if(panelL && readerPane) panelL.appendChild(readerPane);
-  // Activer la classe CSS lab-mode
-  document.body.classList.add('lab-mode');
-  // Restaurer le contenu sauvegardé du studio
+  if(panelL){
+    var saved = localStorage.getItem('jdx_hub_drawer_w');
+    var w = saved ? Math.max(200, Math.min(390, parseFloat(saved))) : 290;
+    panelL.style.width    = w + 'px';
+    panelL.style.maxWidth = w + 'px';
+  }
+
+  // 4. Brancher le resizer sur le tiroir gauche (stocker sous clé hub)
+  (function(){
+    var resEl = document.getElementById('main-resizer');
+    if(!resEl || !panelL) return;
+    // Supprimer l'ancien listener si possible, rebrancher
+    var startX, startW;
+    resEl.addEventListener('mousedown', function(e){
+      if(!_hubInited) return;
+      e.preventDefault();
+      startX = e.clientX; startW = panelL.getBoundingClientRect().width;
+      resEl.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(e){
+        var w = Math.max(200, Math.min(390, startW + e.clientX - startX));
+        panelL.style.width = w+'px'; panelL.style.maxWidth = w+'px';
+      }
+      function onUp(){
+        resEl.classList.remove('dragging');
+        document.body.style.cursor=''; document.body.style.userSelect='';
+        localStorage.setItem('jdx_hub_drawer_w', panelL.getBoundingClientRect().width);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    }, {capture:false});
+  })();
+
+  // 5. Restaurer le contenu du studio
   var savedContent = localStorage.getItem('jdx_lab_content') || '';
   var savedTitle   = localStorage.getItem('jdx_lab_title')   || '';
-  var editor = document.getElementById('lab-editor2');
+  var editor  = document.getElementById('lab-editor2');
   var titleEl = document.getElementById('lab-doc-title');
   if(editor)  editor.innerHTML = savedContent;
   if(titleEl) titleEl.value   = savedTitle;
   updateLabWordCount();
+}
+
+/* Alias pour compatibilité si appelé depuis exitZenMode */
+function enterLabMode(){ initHubMode(); }
+
+/* --- Tiroir gauche --- */
+function toggleDrawer(){
+  document.body.classList.toggle('drawer-closed');
+}
+function openDrawer(){
+  document.body.classList.remove('drawer-closed');
+}
+function closeDrawer(){
+  document.body.classList.add('drawer-closed');
+}
+
+/* --- Studio droit --- */
+function collapseStudio(){
+  document.body.classList.add('studio-hidden');
+  var ni = document.getElementById('ni-studio');
+  if(ni) ni.classList.add('on'); // icône active = studio fermé
+}
+function expandStudio(){
+  document.body.classList.remove('studio-hidden');
+  var ni = document.getElementById('ni-studio');
+  if(ni) ni.classList.remove('on');
+}
+function toggleStudio(){
+  if(document.body.classList.contains('studio-hidden')) expandStudio();
+  else collapseStudio();
 }
 
 function injectArticleToLab(){
