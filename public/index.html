@@ -1084,6 +1084,102 @@ var CORPUS=[
 var CIDX={};
 CORPUS.forEach(function(a){CIDX[a.id]=a;});
 
+/* ===== LIAISONS BIDIRECTIONNELLES CORPUS ===== */
+function normalizeRef(s){
+  return (s||'').toLowerCase()
+    .replace(/\s+(code civil|code pénal|code du travail|constitution 1958|c\.?\s*civ\.?|c\.?\s*pen\.?)\s*$/i,'')
+    .replace(/\s+/g,' ').trim();
+}
+
+var VOIR_INDEX={};
+CORPUS.forEach(function(item){
+  VOIR_INDEX[normalizeRef(item.ref)] = item.id;
+  if(item.type==='jurisprudence'){
+    var name = item.title.toLowerCase().split('—')[0].trim().replace(/^arrêt\s+/i,'').trim();
+    if(name){ VOIR_INDEX['arrêt '+name] = item.id; VOIR_INDEX[name] = item.id; }
+  }
+});
+
+function findCorpusId(vRef){
+  var n = normalizeRef(vRef);
+  if(VOIR_INDEX[n]) return VOIR_INDEX[n];
+  // Recherche partielle (ex: "Arrêt Blieck" → "blieck")
+  var parts = n.split(/[\s\-—]+/).filter(function(p){return p.length>4;});
+  for(var key in VOIR_INDEX){
+    if(parts.some(function(p){return key.includes(p);})) return VOIR_INDEX[key];
+  }
+  return null;
+}
+
+function getLinkedJuris(article){
+  var results=[]; var seen={}; seen[article.id]=true;
+  // 1. voir[] de l'article → entrées jurisprudence du corpus
+  (article.voir||[]).forEach(function(v){
+    var id=findCorpusId(v);
+    if(id&&CIDX[id]&&CIDX[id].type==='jurisprudence'&&!seen[id]){results.push(CIDX[id]);seen[id]=true;}
+  });
+  // 2. jurisprudences dont le voir[] cite cet article
+  var artRefN=normalizeRef(article.ref);
+  CORPUS.forEach(function(item){
+    if(item.type!=='jurisprudence'||seen[item.id])return;
+    var match=(item.voir||[]).some(function(v){
+      var vn=normalizeRef(v);
+      return vn===artRefN||vn.includes(artRefN)||artRefN.includes(vn);
+    });
+    if(match){results.push(item);seen[item.id]=true;}
+  });
+  return results;
+}
+
+function getLinkedArticles(jurisEntry){
+  var results=[]; var seen={}; seen[jurisEntry.id]=true;
+  // 1. voir[] de l'arrêt → articles du corpus
+  (jurisEntry.voir||[]).forEach(function(v){
+    var id=findCorpusId(v);
+    if(id&&CIDX[id]&&CIDX[id].type!=='jurisprudence'&&CIDX[id].type!=='definition'&&!seen[id]){results.push(CIDX[id]);seen[id]=true;}
+  });
+  // 2. articles dont le voir[] cite cet arrêt
+  var jpKey=jurisEntry.title.toLowerCase().split('—')[0].trim().replace(/^arrêt\s+/i,'').trim();
+  CORPUS.forEach(function(item){
+    if(item.type==='jurisprudence'||item.type==='definition'||seen[item.id])return;
+    var match=(item.voir||[]).some(function(v){
+      return v.toLowerCase().includes(jpKey)||findCorpusId(v)===jurisEntry.id;
+    });
+    if(match){results.push(item);seen[item.id]=true;}
+  });
+  return results;
+}
+
+function renderLinkedJuris(items, container){
+  if(!items.length){container.innerHTML='';return;}
+  var html='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>';
+  items.forEach(function(jp){
+    var sid=jp.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var excerpt=(jp.texte||'').slice(0,160)+'…';
+    html+='<div class="related-item" onclick="openArticle(\''+sid+\')">'
+      +'<div class="ri2-ref">'+escHtml(jp.ref)+'</div>'
+      +'<div class="ri2-title">'+escHtml(jp.title)+'</div>'
+      +'<div class="ri2-exc">'+escHtml(excerpt)+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function renderLinkedArticles(items, container){
+  if(!items.length){container.innerHTML='';return;}
+  var html='<div class="art-related"><div class="art-related-title">📚 Articles appliqués</div>';
+  items.forEach(function(art){
+    var sid=art.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html+='<div class="related-item" onclick="openArticle(\''+sid+\')">'
+      +'<div class="ri2-ref">'+escHtml(art.code)+'</div>'
+      +'<div class="ri2-title">'+escHtml(art.ref+' — '+art.title)+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+
 /* ===== PÉDAGOGIE — Analyse par article ===== */
 var PEDAGOGY={
 'cc-1240':{
@@ -1443,17 +1539,39 @@ function openArticle(id){
     pedEl.innerHTML='';
   }
 
-  var voir=(a.voir||[]).map(function(v){return '<span class="voir-chip" onclick="searchVoir(\''+v+'\')">'+v+'</span>';}).join('');
+  // Voir aussi — chips intelligents (ouvre corpus si possible)
+  var voir=(a.voir||[]).map(function(v){
+    var cid=findCorpusId(v);
+    if(cid&&CIDX[cid]){
+      var sid=cid.replace(/'/g,"\\'");
+      return '<span class="voir-chip" onclick="openArticle(\''+sid+'\')">'+escHtml(v)+'</span>';
+    }
+    var sv=v.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<span class="voir-chip" onclick="searchVoir(\''+sv+'\')">'+escHtml(v)+'</span>';
+  }).join('');
   document.getElementById('ac-voir').innerHTML=voir?'<div class="art-voir-title">Voir aussi</div><div class="art-voir-chips">'+voir+'</div>':'';
-  document.getElementById('ac-related').innerHTML='';
+
+  // Liaisons bidirectionnelles corpus
+  var relContainer=document.getElementById('ac-related');
+  relContainer.innerHTML='';
   _relatedJuris=[];
+  if(a.type==='jurisprudence'){
+    // Arrêt → articles appliqués
+    var linkedArts=getLinkedArticles(a);
+    renderLinkedArticles(linkedArts, relContainer);
+  } else if(a.type!=='definition'){
+    // Article → jurisprudence liée (corpus d'abord, API en fallback)
+    var linkedJuris=getLinkedJuris(a);
+    if(linkedJuris.length>0){
+      renderLinkedJuris(linkedJuris, relContainer);
+    } else {
+      loadRelatedJurisprudence(a.ref, a.code);
+    }
+  }
+
   document.querySelectorAll('.result-item').forEach(function(el){el.classList.remove('on');});
   document.querySelectorAll('.result-item[data-id="'+id+'"]').forEach(function(el){el.classList.add('on');});
   document.getElementById('reader-pane').scrollTop=0;
-  /* Charger la jurisprudence liée si c'est un article de code */
-  if(a.type!=='jurisprudence'&&a.type!=='definition'){
-    loadRelatedJurisprudence(a.ref, a.code);
-  }
 }
 
 /* Cherche la jurisprudence liée à un article via le backend */
