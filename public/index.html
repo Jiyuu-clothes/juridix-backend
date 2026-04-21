@@ -540,6 +540,53 @@ body.redac-mode #notes-pane{display:none}
 .search-loading .spinner{width:22px;height:22px}
 /* API BADGE */
 .api-badge{font-size:9px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);color:var(--green);padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle;font-family:sans-serif}
+
+/* ===== LAB MODE — SPLIT SCREEN ===== */
+#lab-studio{display:none;flex-direction:column;height:100%;overflow:hidden;background:#12121e;flex:1}
+body.lab-mode #lab-studio{display:flex}
+body.lab-mode #split-r{display:none}
+body.lab-mode #main-resizer{display:none}
+body.lab-mode #panel-l{width:45%!important;max-width:45%!important;display:flex;flex-direction:column}
+body.lab-mode #panel-r{width:55%!important;flex:none!important;background:#12121e}
+body.lab-mode #reader-pane{flex:1;border-top:1px solid var(--gb);min-height:160px;background:#0a0a1a;padding:16px 18px}
+body.lab-mode #art-content{max-width:100%}
+body.lab-mode .art-header{top:0;background:#0a0a1a;padding-top:10px}
+body.lab-mode #page-search{max-height:44%;flex-shrink:0}
+body.lab-mode .home-shortcuts{display:none}
+body.lab-mode .home-sub{display:none}
+body.lab-mode #art-empty{gap:12px}
+body.lab-mode .home-logo{font-size:30px;margin-bottom:4px}
+body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
+
+/* LAB STUDIO — header */
+#lab-studio-hdr{padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;font-family:-apple-system,sans-serif;background:rgba(255,255,255,0.015);flex-shrink:0}
+.lab-title-label{font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;flex:1}
+.lab-inject-btn{background:var(--acc3);border:1px solid rgba(124,107,255,0.4);border-radius:8px;padding:6px 16px;color:var(--acc2);font-size:12px;font-weight:700;cursor:pointer;font-family:-apple-system,sans-serif;transition:all .2s;white-space:nowrap}
+.lab-inject-btn:hover{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 4px 16px rgba(124,107,255,0.3)}
+.lab-copy-btn{background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 12px;color:var(--t3);font-size:12px;cursor:pointer;font-family:-apple-system,sans-serif;transition:all .15s}
+.lab-copy-btn:hover{color:var(--t1);background:rgba(255,255,255,0.06)}
+#lab-wcount{font-size:11px;color:var(--t3);font-family:-apple-system,sans-serif;white-space:nowrap}
+
+/* LAB STUDIO — title & editor */
+#lab-title-wrap{padding:14px 28px 0;flex-shrink:0}
+#lab-doc-title{width:100%;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--t1);font-size:20px;font-weight:800;outline:none;padding:4px 0;transition:border-color .2s;font-family:-apple-system,sans-serif}
+#lab-doc-title:focus{border-bottom-color:var(--acc)}
+#lab-doc-title::placeholder{color:var(--t3)}
+#lab-editor-wrap2{flex:1;overflow-y:auto;padding:12px 28px 40px}
+#lab-editor-wrap2::-webkit-scrollbar{width:4px}
+#lab-editor-wrap2::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px}
+#lab-editor2{min-height:60vh;outline:none;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.9;color:var(--t1);caret-color:var(--acc2)}
+#lab-editor2:empty:before{content:attr(data-placeholder);color:var(--t3);pointer-events:none;white-space:pre-wrap}
+#lab-editor2 h1{font-size:22px;font-weight:800;color:var(--t1);margin:24px 0 10px;font-family:-apple-system,sans-serif;border-bottom:2px solid var(--gb);padding-bottom:8px}
+#lab-editor2 h2{font-size:17px;font-weight:700;color:var(--acc2);margin:20px 0 8px;font-family:-apple-system,sans-serif}
+#lab-editor2 h3{font-size:15px;font-weight:700;color:var(--t2);margin:16px 0 6px;font-family:-apple-system,sans-serif}
+#lab-editor2 p{margin-bottom:10px}
+#lab-editor2 blockquote{margin:12px 0;padding:10px 16px;border-left:3px solid var(--acc);background:rgba(124,107,255,0.08);border-radius:0 6px 6px 0;color:var(--t2);font-style:italic;font-size:14px}
+#lab-editor2 strong{color:var(--t1);font-weight:700}
+#lab-editor2 em{color:var(--acc2)}
+#lab-editor-wrap2.cite-flash{animation:citeGlow .6s ease}
+#lab-status2{padding:5px 28px;font-size:11px;color:var(--t3);font-family:-apple-system,sans-serif;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.01);flex-shrink:0}
+#lab-autosave2{color:var(--green)}
 </style>
 </head>
 <body>
@@ -833,6 +880,29 @@ body.redac-mode #notes-pane{display:none}
       </div>
 
     </div><!-- /split-r -->
+
+    <!-- LAB STUDIO — panneau de rédaction en mode split-screen -->
+    <div id="lab-studio">
+      <div id="lab-studio-hdr">
+        <span class="lab-title-label">✍️ Studio de Rédaction</span>
+        <button class="lab-inject-btn" onclick="injectArticleToLab()">📎 Injecter l'article</button>
+        <button class="lab-copy-btn" onclick="copyLabDoc()">📋 Copier</button>
+        <span id="lab-wcount">0 mot</span>
+      </div>
+      <div id="lab-title-wrap">
+        <input id="lab-doc-title" placeholder="Titre du document…" oninput="onLabTitleChange()">
+      </div>
+      <div id="lab-editor-wrap2">
+        <div id="lab-editor2" contenteditable="true" spellcheck="true"
+             oninput="onLabEditorInput()"
+             data-placeholder="Commence à rédiger ton plan, ta dissertation, ta fiche…&#10;&#10;Ouvre un article à gauche, puis clique sur &quot;📎 Injecter l'article&quot; pour le coller ici."></div>
+      </div>
+      <div id="lab-status2">
+        <span id="lab-autosave2">✓ Sauvegardé</span>
+        <span id="lab-charcount2">0 caractères</span>
+      </div>
+    </div>
+
   </div><!-- /panel-r -->
 
 </div><!-- /main -->
@@ -3054,6 +3124,8 @@ function exitZenMode(){
   if(!sp) return;
   sp.classList.add('fade-out');
   setTimeout(function(){ sp.classList.add('gone'); }, 420);
+  // Activer le mode Lab split-screen
+  setTimeout(function(){ enterLabMode(); }, 250);
 }
 
 function spotlightLive(){
@@ -3202,6 +3274,123 @@ document.addEventListener('keydown', function(e){
     if(modal && modal.classList.contains('show')) closeOmniSearch();
   }
 });
+
+/* ===== LAB MODE — SPLIT SCREEN ===== */
+var _labTimer = null;
+
+function enterLabMode(){
+  if(document.body.classList.contains('lab-mode')) return;
+  // Déplacer le reader-pane dans panel-l (sous la liste de résultats)
+  var panelL = document.getElementById('panel-l');
+  var readerPane = document.getElementById('reader-pane');
+  if(panelL && readerPane) panelL.appendChild(readerPane);
+  // Activer la classe CSS lab-mode
+  document.body.classList.add('lab-mode');
+  // Restaurer le contenu sauvegardé du studio
+  var savedContent = localStorage.getItem('jdx_lab_content') || '';
+  var savedTitle   = localStorage.getItem('jdx_lab_title')   || '';
+  var editor = document.getElementById('lab-editor2');
+  var titleEl = document.getElementById('lab-doc-title');
+  if(editor)  editor.innerHTML = savedContent;
+  if(titleEl) titleEl.value   = savedTitle;
+  updateLabWordCount();
+}
+
+function injectArticleToLab(){
+  if(!_art){
+    // Indiquer que rien n'est ouvert
+    var lbl = document.querySelector('.lab-title-label');
+    if(lbl){
+      var orig = lbl.textContent;
+      lbl.style.color = 'var(--red)';
+      lbl.textContent = '⚠️ Ouvre d\'abord un article à gauche';
+      setTimeout(function(){ lbl.style.color=''; lbl.textContent=orig; }, 2200);
+    }
+    return;
+  }
+  var ref   = escHtml(_art.ref  || '');
+  var code  = _art.code  ? ' — ' + escHtml(_art.code)  : '';
+  var texte = _art.texte || '';
+  var short = texte.length > 600 ? texte.substring(0,600)+'…' : texte;
+  var html  = '<blockquote><strong>'+ref+code+'</strong><br><em>'+escHtml(short)+'</em></blockquote><p></p>';
+  var editor = document.getElementById('lab-editor2');
+  if(!editor) return;
+  editor.focus();
+  var sel = window.getSelection();
+  if(sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)){
+    document.execCommand('insertHTML', false, html);
+  } else {
+    editor.innerHTML += html;
+  }
+  onLabEditorInput();
+  // Animation halo
+  var wrap = document.getElementById('lab-editor-wrap2');
+  if(wrap){ wrap.classList.add('cite-flash'); setTimeout(function(){ wrap.classList.remove('cite-flash'); }, 700); }
+  // Flash sur le bouton
+  var btn = document.querySelector('.lab-inject-btn');
+  if(btn){
+    var origTxt = btn.textContent;
+    btn.textContent = '✅ Injecté !';
+    btn.style.background = 'rgba(52,211,153,0.2)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    setTimeout(function(){
+      btn.textContent = origTxt;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 1800);
+  }
+}
+
+function onLabEditorInput(){
+  var editor = document.getElementById('lab-editor2');
+  if(!editor) return;
+  var text = editor.innerText || '';
+  var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  var wc = document.getElementById('lab-wcount');
+  var cc = document.getElementById('lab-charcount2');
+  if(wc) wc.textContent = words + ' mot' + (words !== 1 ? 's' : '');
+  if(cc) cc.textContent = text.length + ' caractères';
+  // Autosave
+  clearTimeout(_labTimer);
+  var as = document.getElementById('lab-autosave2');
+  if(as) as.textContent = '…';
+  _labTimer = setTimeout(function(){
+    localStorage.setItem('jdx_lab_content', editor.innerHTML);
+    if(as) as.textContent = '✓ Sauvegardé';
+  }, 1200);
+}
+
+function onLabTitleChange(){
+  var val = (document.getElementById('lab-doc-title')||{}).value || '';
+  localStorage.setItem('jdx_lab_title', val);
+}
+
+function copyLabDoc(){
+  var editor = document.getElementById('lab-editor2');
+  var text = (editor ? editor.innerText : '') || '';
+  if(!text.trim()) return;
+  var btn = document.querySelector('.lab-copy-btn');
+  navigator.clipboard.writeText(text).then(function(){
+    if(btn){ btn.textContent='✅ Copié !'; setTimeout(function(){ btn.textContent='📋 Copier'; },2000); }
+  }).catch(function(){
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    if(btn){ btn.textContent='✅ Copié !'; setTimeout(function(){ btn.textContent='📋 Copier'; },2000); }
+  });
+}
+
+function updateLabWordCount(){
+  var editor = document.getElementById('lab-editor2');
+  if(!editor) return;
+  var text = editor.innerText || '';
+  var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  var wc = document.getElementById('lab-wcount');
+  if(wc) wc.textContent = words + ' mot' + (words !== 1 ? 's' : '');
+  var cc = document.getElementById('lab-charcount2');
+  if(cc) cc.textContent = text.length + ' caractères';
+}
 
 /* ===== BOOT ===== */
 loadStorage();
