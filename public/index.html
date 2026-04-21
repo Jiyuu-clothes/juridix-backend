@@ -55,8 +55,27 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;backgroun
 #search-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 .kbd{display:none}
 .tb-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+/* SPOTLIGHT ZEN */
+#spotlight{position:fixed;inset:0;z-index:1500;background:#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;transition:opacity 0.4s cubic-bezier(0.4,0,0.2,1)}
+#spotlight.fade-out{opacity:0;pointer-events:none}
+#spotlight.gone{display:none}
+#spotlight-inner{width:100%;max-width:620px;display:flex;flex-direction:column;align-items:center}
+#spotlight-logo{font-size:52px;font-weight:800;background:linear-gradient(135deg,#a89fff,#7c6bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-2px;margin-bottom:8px}
+#spotlight-logo span{font-weight:300;opacity:.6}
+#spotlight-sub{font-size:14px;color:var(--t3);margin-bottom:44px}
+#spotlight-search-wrap{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:12px;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);margin-bottom:20px}
+#spotlight-search-wrap:focus-within{background:rgba(255,255,255,0.1);border-color:rgba(124,107,255,0.45);box-shadow:0 0 0 4px rgba(124,107,255,0.1)}
+#spotlight-search-icon{font-size:18px;opacity:.4;flex-shrink:0}
+#spotlight-input{flex:1;background:transparent;border:none;color:var(--t1);font-size:17px;outline:none;font-family:-apple-system,sans-serif}
+#spotlight-input::placeholder{color:var(--t3)}
+.sp-hint{display:flex;gap:16px;font-size:11px;color:var(--t3);font-family:sans-serif}
+.sp-hint span{display:flex;align-items:center;gap:5px}
+.sp-kbd{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:1px 7px;font-size:10px}
+
+/* GHOST SIDEBAR */
 /* V4 — ICON SIDEBAR */
-#icon-sidebar{width:56px;min-width:56px;background:rgba(7,7,15,0.98);border-right:1px solid var(--gb);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;z-index:100;overflow:visible}
+#icon-sidebar{width:56px;min-width:56px;background:rgba(7,7,15,0.98);border-right:1px solid var(--gb);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;z-index:100;overflow:visible;opacity:0;transform:translateX(-4px);transition:opacity 0.3s cubic-bezier(0.4,0,0.2,1),transform 0.3s cubic-bezier(0.4,0,0.2,1)}
+#icon-sidebar.ghost-visible{opacity:1;transform:translateX(0)}
 .nav-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:all .2s ease;position:relative;color:var(--t3);flex-shrink:0}
 .nav-icon:hover{background:rgba(255,255,255,0.08);color:var(--t1);transform:translateY(-1px)}
 .nav-icon.on{background:var(--acc3);color:var(--acc2);box-shadow:0 0 12px rgba(124,107,255,0.2)}
@@ -525,22 +544,31 @@ body.redac-mode #notes-pane{display:none}
 </head>
 <body>
 
-<!-- TOPBAR V4 -->
+<!-- SPOTLIGHT ZEN — visible au chargement, disparaît après 1ère recherche -->
+<div id="spotlight">
+  <div id="spotlight-inner">
+    <div id="spotlight-logo">Juri<span>Dix</span></div>
+    <div id="spotlight-sub">Bibliothèque juridique intelligente</div>
+    <div id="spotlight-search-wrap">
+      <span id="spotlight-search-icon">🔍</span>
+      <input id="spotlight-input" type="text"
+             placeholder="Rechercher un article, une notion, un arrêt…"
+             autocomplete="off"
+             oninput="spotlightLive()"
+             onkeydown="spotlightKey(event)">
+    </div>
+    <div class="sp-hint">
+      <span><span class="sp-kbd">↵</span> Rechercher</span>
+      <span><span class="sp-kbd">⌘K</span> Rouvrir</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR ÉPURÉ -->
 <div id="topbar">
   <div class="logo" onclick="switchTab('search')">Juri<span>Dix</span></div>
-  <!-- Champ caché pour compatibilité backend -->
   <input id="search-input" type="text" placeholder="Rechercher…" autocomplete="off" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
-  <!-- Déclencheur Omnisearch ⌘K -->
-  <div id="omni-trigger" onclick="openOmniSearch()">
-    <span style="opacity:.5">🔍</span>
-    <span>Rechercher un article, une notion…</span>
-    <span class="omni-kbds">
-      <span class="omni-kbd">⌘</span>
-      <span class="omni-kbd">K</span>
-    </span>
-  </div>
-  <!-- Tabs maintenus (cachés) pour compatibilité -->
-  <div id="tabs">
+  <div id="tabs" style="display:none">
     <div class="tab on" onclick="switchTab('search')">🔍 Recherche</div>
     <div class="tab" onclick="switchTab('codes')">📖 Codes</div>
     <div class="tab" onclick="switchTab('redac')">✍️ Rédaction</div>
@@ -548,10 +576,9 @@ body.redac-mode #notes-pane{display:none}
     <div class="tab" onclick="switchTab('quiz')">⚡ Quiz</div>
   </div>
   <div class="tb-right">
-    <div id="credits-wrap" style="display:none"></div>
+    <div class="btn-icon" onclick="openOmniSearch()" title="Rechercher (⌘K)" style="font-size:14px">🔍</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
     <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
-    <div class="btn-icon" id="print-btn" onclick="printArticle()" title="Exporter PDF">📄</div>
   </div>
 </div>
 
@@ -745,23 +772,16 @@ body.redac-mode #notes-pane{display:none}
             <span class="home-kbd">⌘K</span>
           </div>
           <div class="home-shortcuts">
-            <div class="home-shortcut" onclick="openArticle('cc-1240')">Art. 1240 — Faute</div>
-            <div class="home-shortcut" onclick="openArticle('cc-1101')">Art. 1101 — Contrat</div>
-            <div class="home-shortcut" onclick="openArticle('cp-121-1')">Art. 121-1 — Resp. pénale</div>
-            <div class="home-shortcut" onclick="openArticle('jp-blieck')">Arrêt Blieck</div>
-            <div class="home-shortcut" onclick="switchTab('codes')">📖 Parcourir les Codes</div>
-            <div class="home-shortcut" onclick="switchTab('fiches')">📋 Mes fiches</div>
+            <div class="home-shortcut" onclick="exitZenMode();openArticle('cc-1240')">Art. 1240 — Faute</div>
+            <div class="home-shortcut" onclick="exitZenMode();openArticle('cc-1101')">Art. 1101 — Contrat</div>
+            <div class="home-shortcut" onclick="exitZenMode();openArticle('cp-121-1')">Art. 121-1 — Resp. pénale</div>
+            <div class="home-shortcut" onclick="exitZenMode();openArticle('jp-blieck')">Arrêt Blieck</div>
+            <div class="home-shortcut" onclick="exitZenMode();switchTab('codes')">📖 Parcourir les Codes</div>
+            <div class="home-shortcut" onclick="exitZenMode();switchTab('fiches')">📋 Mes fiches</div>
           </div>
         </div>
         <!-- Article content -->
         <div id="art-content">
-          <!-- Toolbar flottante contextuelle (visible au survol) -->
-          <div id="art-toolbar-float">
-            <button class="atf-btn" onclick="citeArticle()" title="Copier la référence">📋 Citer</button>
-            <button class="atf-btn" onclick="saveToNote()" title="Ajouter aux notes">✏️ Note</button>
-            <button class="atf-btn" onclick="toggleFocus()" title="Mode focus">🎯</button>
-            <button class="atf-btn" onclick="printArticle()" title="PDF">📄</button>
-          </div>
           <div class="art-header">
             <div class="art-code" id="ac-code"></div>
             <div class="art-ref" id="ac-ref"></div>
@@ -3024,6 +3044,51 @@ function renderSearchLoader(){
     +'<div class="render-cold-msg" style="padding:0 12px 12px;font-size:11px;color:var(--t3);opacity:0;animation:fadeIn .5s ease 2.5s forwards">⏳ Réveil du serveur en cours…</div>';
 }
 
+/* ===== SPOTLIGHT ZEN ===== */
+var _zenActive = true;
+
+function exitZenMode(){
+  if(!_zenActive) return;
+  _zenActive = false;
+  var sp = document.getElementById('spotlight');
+  if(!sp) return;
+  sp.classList.add('fade-out');
+  setTimeout(function(){ sp.classList.add('gone'); }, 420);
+}
+
+function spotlightLive(){
+  // Pas d'action live — on attend Enter pour ne pas déclencher trop tôt
+}
+
+function spotlightKey(e){
+  var q = document.getElementById('spotlight-input').value.trim();
+  if(e.key === 'Enter' && q){
+    exitZenMode();
+    switchTab('search');
+    document.getElementById('search-input').value = q;
+    doSearch(q);
+  }
+}
+
+/* ===== GHOST SIDEBAR ===== */
+function initGhostSidebar(){
+  var sidebar = document.getElementById('icon-sidebar');
+  if(!sidebar) return;
+  // Zone de déclenchement : 14px sur le bord gauche sous le topbar
+  var trigger = document.createElement('div');
+  trigger.style.cssText = 'position:fixed;left:0;top:48px;width:14px;height:calc(100vh - 48px);z-index:101;';
+  document.body.appendChild(trigger);
+  var hideT;
+  function show(){ clearTimeout(hideT); sidebar.classList.add('ghost-visible'); }
+  function hide(delay){ hideT = setTimeout(function(){ sidebar.classList.remove('ghost-visible'); }, delay||300); }
+  trigger.addEventListener('mouseenter', show);
+  sidebar.addEventListener('mouseenter', show);
+  sidebar.addEventListener('mouseleave', function(){ hide(400); });
+  trigger.addEventListener('mouseleave', function(e){
+    if(!sidebar.contains(e.relatedTarget)) hide(200);
+  });
+}
+
 /* ===== BULLE AUTO-CITATION ===== */
 var _bubbleSelection = '';
 
@@ -3145,6 +3210,12 @@ renderHistory();
 initFiches();
 initQuiz();
 initCiteBubble();
+initGhostSidebar();
+// Focus auto sur le champ spotlight
+setTimeout(function(){
+  var sp = document.getElementById('spotlight-input');
+  if(sp) sp.focus();
+}, 80);
 </script>
 </body>
 </html>
