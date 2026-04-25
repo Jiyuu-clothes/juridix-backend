@@ -612,4 +612,108 @@ function buildExcerpt(content, normalizedTerms) {
   return (start > 0 ? '…' : '') + content.slice(start, end) + (end < content.length ? '…' : '');
 }
 
-module.exports = { search, ARTICLES };
+// ══════════════════════════════════════════════════════════
+// FUZZY CORRECTION — Levenshtein contre un dico juridique
+// (utilisé quand PISTE renvoie 0 résultat pour une requête)
+// ══════════════════════════════════════════════════════════
+
+const LEGAL_DICT = [
+  // Pénal
+  'meurtre','assassinat','homicide','empoisonnement','infanticide','parricide','suicide',
+  'viol','agression','attouchement','harcèlement','exhibition','proxénétisme',
+  'vol','escroquerie','abus de confiance','recel','blanchiment','extorsion','chantage',
+  'séquestration','enlèvement','prise d\'otages','torture','barbarie',
+  'violences','menaces','outrage','rébellion','évasion','complicité','récidive',
+  'délit','crime','contravention','tentative','infraction','légitime défense',
+  // Civil
+  'responsabilité','contrat','obligation','prescription','propriété','servitude',
+  'usufruit','nue-propriété','succession','testament','donation','divorce','mariage','pacs',
+  'concubinage','filiation','adoption','tutelle','curatelle','sauvegarde',
+  'majeur','mineur','émancipation','autorité parentale','garde','pension',
+  'bail','locataire','propriétaire','copropriété','syndic','servitude',
+  'mitoyenneté','bornage','prescription acquisitive','usucapion',
+  // Branches
+  'civil','civile','pénal','pénale','administratif','administrative',
+  'commercial','commerciale','social','sociale','fiscal','fiscale',
+  'constitutionnel','constitutionnelle','international','européen',
+  // Procédure & juridictions
+  'jurisprudence','arrêt','décision','jugement','ordonnance','référé',
+  'tribunal','juridiction','cassation','appel','première instance','conseil',
+  'magistrat','procureur','avocat','huissier','notaire','greffier',
+  'demande','assignation','citation','requête','pourvoi','opposition',
+  // Preuve & théorie
+  'preuve','présomption','aveu','témoignage','expertise','serment',
+  'force majeure','imprévision','dol','erreur','violence','lésion','simulation',
+  'nullité','résolution','résiliation','exécution','inexécution','résolutoire',
+  'dommage','préjudice','réparation','indemnisation','intérêts','dommages-intérêts',
+  // Travail
+  'salarié','employeur','licenciement','démission','rupture','prud\'hommes',
+  'cdi','cdd','convention collective','grève','syndicat',
+  // Notions transversales
+  'compétence','recevabilité','prescription','forclusion','déchéance',
+  'bonne foi','mauvaise foi','équité','proportionnalité','subsidiarité',
+];
+
+// Pré-normaliser une seule fois pour la perf
+const LEGAL_DICT_NORM = LEGAL_DICT.map(normalize);
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const al = a.length, bl = b.length;
+  if (al === 0) return bl;
+  if (bl === 0) return al;
+  // Distance optimisée 1D
+  const dp = new Array(bl + 1);
+  for (let j = 0; j <= bl; j++) dp[j] = j;
+  for (let i = 1; i <= al; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= bl; j++) {
+      const tmp = dp[j];
+      dp[j] = a[i - 1] === b[j - 1]
+        ? prev
+        : 1 + Math.min(prev, dp[j - 1], dp[j]);
+      prev = tmp;
+    }
+  }
+  return dp[bl];
+}
+
+function fuzzyCorrectTerm(term) {
+  const n = normalize(term);
+  if (n.length < 4) return null;                  // trop court → pas de correction
+  if (LEGAL_DICT_NORM.includes(n)) return null;   // déjà valide
+  // Plafond de distance proportionnel à la longueur
+  const maxDist = n.length <= 6 ? 1 : 2;
+  let best = null, bestDist = maxDist + 1;
+  for (let i = 0; i < LEGAL_DICT_NORM.length; i++) {
+    const candidate = LEGAL_DICT_NORM[i];
+    // Heuristique : skip rapidement si la longueur diffère trop
+    if (Math.abs(candidate.length - n.length) > maxDist) continue;
+    const dist = levenshtein(n, candidate);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = LEGAL_DICT[i];
+      if (dist === 1) break;
+    }
+  }
+  return best;
+}
+
+/**
+ * Tente de corriger les fautes de frappe d'une requête utilisateur.
+ * Retourne null si rien à corriger, sinon la version corrigée.
+ *   "meutre"          → "meurtre"
+ *   "responsabilté"   → "responsabilité"
+ *   "1240"            → null (numérique = pas de correction)
+ *   "meurtre"         → null (déjà valide)
+ */
+function fuzzyCorrect(query) {
+  if (!query || /^\d/.test(query.trim())) return null;
+  const tokens = query.split(/\s+/);
+  const corrected = tokens.map(t => fuzzyCorrectTerm(t) || t);
+  const out = corrected.join(' ');
+  return out.toLowerCase() !== query.toLowerCase() ? out : null;
+}
+
+module.exports = { search, ARTICLES, fuzzyCorrect };

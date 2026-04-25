@@ -41,12 +41,32 @@ router.post('/', async (req, res) => {
     let results = [];
     let source  = 'corpus';
     let pisteError = null;
+    let corrected = null;
+
+    const runPiste = async (q) => {
+      const pisteFilters = { ...filters, type: getType(filters) };
+      return await piste.search(q, pisteFilters);
+    };
 
     if (hasCreds) {
       try {
-        const pisteFilters = { ...filters, type: getType(filters) };
-        results = await piste.search(query, pisteFilters);
-        source  = 'piste';
+        results = await runPiste(query);
+        source = 'piste';
+
+        // Si PISTE renvoie 0 résultat, on tente une correction de typo
+        // (Levenshtein ≤ 2 contre un dico juridique) et on relance.
+        if (!Array.isArray(results) || results.length === 0) {
+          const fix = corpus.fuzzyCorrect(query);
+          if (fix && fix.toLowerCase() !== query.toLowerCase()) {
+            try {
+              const retry = await runPiste(fix);
+              if (Array.isArray(retry) && retry.length > 0) {
+                results = retry;
+                corrected = fix;
+              }
+            } catch (_) { /* on garde le résultat vide d'origine */ }
+          }
+        }
       } catch (err) {
         pisteError = err.detail || err.message;
         console.warn('[PISTE] Indisponible, fallback corpus —', pisteError);
@@ -56,11 +76,30 @@ router.post('/', async (req, res) => {
       results = corpus.search(query, filters);
     }
 
+    // Boost numérique : si la query est un numéro d'article (ex. "1240" ou "221-1"),
+    // on fait remonter les résultats qui matchent exactement ce numéro.
+    const numMatch = query.trim().match(/^(\d{1,4}(?:[-\s]\d+)?)$/);
+    if (numMatch && Array.isArray(results) && results.length > 1) {
+      const num = numMatch[1].replace(/\s+/g, '-');
+      const refOf = (s) => (s || '').toString();
+      const isExactNum = (a) => {
+        const r = refOf(a.ref);
+        const art = refOf(a.article);
+        return art === num
+          || r === num
+          || r.endsWith(' ' + num)
+          || r.endsWith('.' + num)
+          || r.endsWith('art. ' + num);
+      };
+      results.sort((a, b) => (isExactNum(b) ? 1 : 0) - (isExactNum(a) ? 1 : 0));
+    }
+
     return res.json({
       query,
       results,
       source,
-      total: results.length,
+      total: Array.isArray(results) ? results.length : 0,
+      ...(corrected ? { corrected } : {}),
       credits_remaining: null,
       ...(pisteError && process.env.NODE_ENV !== 'production' ? { piste_error: pisteError } : {})
     });

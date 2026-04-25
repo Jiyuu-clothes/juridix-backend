@@ -57,6 +57,40 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;backgroun
 #search-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 .kbd{display:none}
 .tb-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+/* ===== COMMAND BAR PERSISTANTE (Phase 9) ===== */
+#topbar-search-wrap{position:relative;flex:1;max-width:520px;min-width:280px;margin-left:auto}
+#topbar-search-wrap .tb-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.55;pointer-events:none}
+#topbar-search-wrap .tb-kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:5px;padding:2px 7px;font-size:10px;color:var(--t3);font-family:ui-monospace,Menlo,monospace;letter-spacing:.5px;pointer-events:none;transition:opacity .15s}
+#topbar-search{width:100%;height:34px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:0 52px 0 36px;color:var(--t1);font-size:13px;outline:none;transition:all .2s cubic-bezier(.4,0,.2,1)}
+#topbar-search::placeholder{color:var(--t3);opacity:.65}
+#topbar-search:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.16)}
+#topbar-search:focus{background:rgba(15,23,42,0.85);border-color:#38BDF8;box-shadow:0 0 0 3px rgba(56,189,248,.18),0 0 30px rgba(56,189,248,.18)}
+#topbar-search:focus + .tb-kbd{opacity:0}
+body.light #topbar-search{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.10);color:#0F172A}
+body.light #topbar-search:focus{background:#fff;border-color:#0EA5E9;box-shadow:0 0 0 3px rgba(14,165,233,.18),0 0 30px rgba(14,165,233,.15)}
+/* Dropdown overlay */
+.tbdd{position:absolute;top:calc(100% + 8px);left:0;right:0;background:rgba(7,7,15,0.97);border:1px solid rgba(255,255,255,0.10);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px rgba(56,189,248,.10);backdrop-filter:blur(28px);max-height:520px;overflow-y:auto;display:none;z-index:1100}
+.tbdd.show{display:block;animation:tbddIn .18s cubic-bezier(.4,0,.2,1)}
+@keyframes tbddIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+body.light .tbdd{background:rgba(255,255,255,0.98);border-color:rgba(0,0,0,0.08);box-shadow:0 24px 60px rgba(0,0,0,.18)}
+.tbdd-corrected{padding:9px 16px;font-size:12px;color:#fbbf24;background:rgba(251,191,36,.06);border-bottom:1px solid rgba(255,255,255,0.06)}
+.tbdd-corrected b{color:#fde68a;font-weight:700}
+body.light .tbdd-corrected{color:#92400e;background:rgba(251,191,36,.10)}
+.tbdd-loading{padding:18px 20px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:10px}
+.tbdd-loading .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.15);border-top-color:#38BDF8;border-radius:50%;animation:tbddSpin .7s linear infinite}
+@keyframes tbddSpin{to{transform:rotate(360deg)}}
+.tbdd-empty{padding:22px 20px;text-align:center;font-size:13px;color:var(--t3)}
+.tbdd-section{padding:8px 16px 4px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);opacity:.7;font-weight:700}
+.tbdd-item{padding:10px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background .12s}
+.tbdd-item:last-child{border-bottom:none}
+.tbdd-item:hover,.tbdd-item.sel{background:rgba(56,189,248,.08)}
+.tbdd-ref{font-size:11px;font-weight:700;color:#38BDF8;letter-spacing:.4px;display:flex;align-items:center;gap:8px}
+.tbdd-ref .pill{font-size:9px;background:rgba(124,107,255,.14);color:#a89fff;border:1px solid rgba(124,107,255,.3);padding:1px 6px;border-radius:4px;font-weight:600;letter-spacing:.3px}
+.tbdd-title{font-size:13px;font-weight:600;color:var(--t1);margin-top:2px;line-height:1.35}
+.tbdd-excerpt{font-size:12px;color:var(--t3);margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tbdd-foot{padding:8px 16px;font-size:11px;color:var(--t3);border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center}
+.tbdd-foot kbd{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:3px;padding:1px 5px;font-size:10px;font-family:ui-monospace,Menlo,monospace}
+@media(max-width:760px){#topbar-search-wrap{min-width:140px}#topbar-search-wrap .tb-kbd{display:none}}
 /* SPOTLIGHT ZEN */
 #spotlight{position:fixed;inset:0;z-index:1500;background:#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;transition:opacity 0.4s cubic-bezier(0.4,0,0.2,1)}
 #spotlight.fade-out{opacity:0;pointer-events:none}
@@ -710,9 +744,9 @@ body.hub-mode #lab-studio-hdr .studio-collapse-btn{
   margin-top:0;
 }
 /* Supprimer les boutons doublons dans la topbar en hub-mode */
-body.hub-mode #topbar .btn-icon{display:none}
+body.hub-mode #topbar .btn-icon{display:flex}
 /* Garder uniquement le bouton Omnisearch (⌘K) dans la topbar */
-body.hub-mode #topbar .btn-icon[onclick*="openOmniSearch"]{display:flex}
+/* (Phase 9) ⌘K déplacé dans la command bar persistante */
 
 /* Actions article : simplifier, retirer le bruit */
 body.hub-mode .btn-gold{display:none}     /* Générer fiche — accessible via Fiches */
@@ -778,9 +812,14 @@ body.hub-mode #lab-status2{padding:4px 20px}
     <button class="ttab" data-tab="fiches" onclick="switchTab('fiches')">📝 Fiches</button>
     <button class="ttab" data-tab="quiz" onclick="switchTab('quiz')">⚡ Quiz</button>
   </div>
+  <!-- ===== COMMAND BAR PERSISTANTE ===== -->
+  <div id="topbar-search-wrap">
+    <span class="tb-icon">🔍</span>
+    <input id="topbar-search" type="text" autocomplete="off" spellcheck="false" placeholder="Chercher l'art. 1240 Civil…">
+    <span class="tb-kbd">⌘K</span>
+    <div id="topbar-search-dd" class="tbdd"></div>
+  </div>
   <div class="tb-right">
-    <!-- ⌘K conservé, theme/focus déplacés dans la sidebar -->
-    <div class="btn-icon" onclick="openOmniSearch()" title="Rechercher (⌘K)" style="font-size:14px">🔍</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
     <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
   </div>
@@ -3074,18 +3113,231 @@ async function openNavArticle(cid, el){
 document.addEventListener('keydown',function(e){
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){
     e.preventDefault();
-    document.getElementById('search-input').focus();
-    document.getElementById('search-input').select();
-    if(_tab!=='search')switchTab('search');
+    var tb=document.getElementById('topbar-search');
+    if(tb){tb.focus();tb.select();}
   }
   if(e.key==='Escape'){
-    document.getElementById('search-input').blur();
+    var tb=document.getElementById('topbar-search');
+    if(tb){tb.blur();}
+    closeTopbarDD();
     closePaywall();
   }
 });
 document.getElementById('search-input').addEventListener('keydown',function(e){
   if(e.key==='Enter')doSearch();
 });
+
+/* ===== COMMAND BAR PERSISTANTE — Phase 9 ===== */
+var _tbTimer=null, _tbVer=0, _tbSel=-1, _tbItems=[];
+
+function tbDD(){return document.getElementById('topbar-search-dd');}
+function closeTopbarDD(){var dd=tbDD();if(dd){dd.classList.remove('show');dd.innerHTML='';}_tbSel=-1;_tbItems=[];}
+function openTopbarDD(html){var dd=tbDD();if(!dd)return;dd.innerHTML=html;dd.classList.add('show');}
+
+function tbEscapeHtml(s){return (s||'').toString().replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+function renderTopbarDD(items, q, corrected){
+  if(!items || items.length===0){
+    var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
+    openTopbarDD('<div class="tbdd-empty">Aucun résultat pour « '+tbEscapeHtml(q)+' ».<br><a href="'+lurl+'" target="_blank" style="color:#38BDF8;text-decoration:none;font-size:12px;display:inline-block;margin-top:8px">🔗 Chercher sur Légifrance →</a></div>');
+    return;
+  }
+  var html='';
+  if(corrected){
+    html+='<div class="tbdd-corrected">Aucun résultat pour « '+tbEscapeHtml(q)+' ». Voici <b>'+tbEscapeHtml(corrected)+'</b> :</div>';
+  }
+  html+='<div class="tbdd-section">Résultats ('+items.length+')</div>';
+  items.slice(0,8).forEach(function(a,i){
+    var pill = a._fromAPI ? '<span class="pill">PISTE</span>' : (a.type==='jurisprudence' ? '<span class="pill">JURIS</span>' : '');
+    var exc=(a.texte||'').replace(/\n/g,' ').slice(0,140);
+    html+='<div class="tbdd-item" data-idx="'+i+'" onclick="topbarPick('+i+')">'
+        + '<div class="tbdd-ref">'+tbEscapeHtml(a.ref||'')+' · '+tbEscapeHtml(a.code||'')+pill+'</div>'
+        + '<div class="tbdd-title">'+tbEscapeHtml(a.title||'')+'</div>'
+        + (exc?'<div class="tbdd-excerpt">'+tbEscapeHtml(exc)+'…</div>':'')
+        + '</div>';
+  });
+  html+='<div class="tbdd-foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer · <kbd>↵</kbd> ouvrir · <kbd>Esc</kbd> fermer</span><span style="opacity:.6">JuriDix</span></div>';
+  openTopbarDD(html);
+}
+
+function topbarPick(i){
+  var a=_tbItems[i]; if(!a) return;
+  // Cache for openArticle()
+  if(typeof _searchResults!=='undefined' && _searchResults){
+    _searchResults[a.id]=a;
+  }
+  closeTopbarDD();
+  var tb=document.getElementById('topbar-search');
+  if(tb)tb.blur();
+  if(typeof switchTab==='function' && typeof _tab!=='undefined' && _tab!=='search'){
+    switchTab('search');
+  }
+  if(typeof openArticle==='function') openArticle(a.id);
+}
+
+async function topbarSearch(q){
+  q=(q||'').trim();
+  if(q.length<2){closeTopbarDD();return;}
+  var ver=++_tbVer;
+  openTopbarDD('<div class="tbdd-loading"><div class="spin"></div>Recherche en cours…</div>');
+
+  // Local corpus pre-results (instant)
+  var localItems=[];
+  try{
+    if(typeof CORPUS!=='undefined' && typeof score==='function'){
+      localItems=CORPUS.map(function(a){return{a:a,s:score(a,q)};})
+                      .filter(function(x){return x.s>0;})
+                      .sort(function(a,b){return b.s-a.s;})
+                      .slice(0,8)
+                      .map(function(x){return x.a;});
+    }
+  }catch(_){}
+
+  // Numeric exact-article boost
+  var numMatch=q.match(/^(\d{1,4}(?:[-\s]\d+)?)$/);
+  if(numMatch && localItems.length>1){
+    var num=numMatch[1].replace(/\s+/g,'-');
+    localItems.sort(function(a,b){
+      var ra=(a.ref||a.article||'').toString();
+      var rb=(b.ref||b.article||'').toString();
+      var ea=(a.article===num || ra===num || ra.endsWith(' '+num) || ra.endsWith('.'+num)) ? 1 : 0;
+      var eb=(b.article===num || rb===num || rb.endsWith(' '+num) || rb.endsWith('.'+num)) ? 1 : 0;
+      return eb-ea;
+    });
+  }
+
+  try{
+    var resp=await fetch('/api/search',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q, filters:{type:'ALL'}})
+    });
+    if(ver!==_tbVer)return;
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    var data=await resp.json();
+    if(ver!==_tbVer)return;
+
+    var apiItems=(data.results||[])
+      .map(typeof normalizeAPIResult==='function' ? normalizeAPIResult : function(x){return x;})
+      .filter(function(a){return a && a.texte && a.texte.length>10;});
+
+    // Merge: dedup by ref+code, prefer local (has pedagogy)
+    var merged=[].concat(localItems);
+    var seen=new Set(localItems.map(function(a){return (a.ref||'')+'|'+(a.code||'');}));
+    apiItems.forEach(function(a){
+      var k=(a.ref||'')+'|'+(a.code||'');
+      if(!seen.has(k)){seen.add(k);merged.push(a);}
+    });
+    _tbItems=merged.slice(0,8);
+    renderTopbarDD(_tbItems, q, data.corrected||null);
+  }catch(e){
+    if(ver!==_tbVer)return;
+    if(localItems.length>0){
+      _tbItems=localItems;
+      renderTopbarDD(_tbItems, q, null);
+    } else {
+      _tbItems=[];
+      renderTopbarDD([], q, null);
+    }
+  }
+}
+
+function tbHighlight(idx){
+  var dd=tbDD();if(!dd)return;
+  dd.querySelectorAll('.tbdd-item').forEach(function(el){el.classList.remove('sel');});
+  if(idx<0)return;
+  var sel=dd.querySelector('.tbdd-item[data-idx="'+idx+'"]');
+  if(sel){sel.classList.add('sel');sel.scrollIntoView({block:'nearest'});}
+}
+
+(function initTopbarSearch(){
+  function ready(){
+    var tb=document.getElementById('topbar-search');
+    if(!tb)return;
+
+    // Placeholder rotatif
+    var phs=[
+      "Chercher l'art. 1240 Civil…",
+      "Chercher l'art. 221-1 Pénal…",
+      "Chercher « responsabilité contractuelle »…",
+      "Chercher l'arrêt Blieck…",
+      "Tape « 1382 » → art. exact en 1ʳᵉ position…"
+    ];
+    var pi=0;
+    setInterval(function(){
+      if(document.activeElement===tb || tb.value) return;
+      pi=(pi+1)%phs.length;
+      tb.placeholder=phs[pi];
+    }, 3500);
+
+    // Input debounced
+    tb.addEventListener('input', function(){
+      var q=tb.value;
+      if(_tbTimer)clearTimeout(_tbTimer);
+      if(q.trim().length<2){closeTopbarDD();return;}
+      _tbTimer=setTimeout(function(){topbarSearch(q);}, 220);
+    });
+
+    // Focus → reopen if has value
+    tb.addEventListener('focus', function(){
+      if(tb.value.trim().length>=2 && _tbItems.length>0){
+        var dd=tbDD();if(dd && !dd.classList.contains('show'))dd.classList.add('show');
+      }
+    });
+
+    // Keyboard nav
+    tb.addEventListener('keydown', function(e){
+      var dd=tbDD();
+      var open=dd && dd.classList.contains('show');
+      if(e.key==='ArrowDown'){
+        if(!open){topbarSearch(tb.value);return;}
+        e.preventDefault();
+        _tbSel=Math.min(_tbItems.length-1, _tbSel+1);
+        tbHighlight(_tbSel);
+      } else if(e.key==='ArrowUp'){
+        if(!open)return;
+        e.preventDefault();
+        _tbSel=Math.max(-1, _tbSel-1);
+        tbHighlight(_tbSel);
+      } else if(e.key==='Enter'){
+        e.preventDefault();
+        if(_tbSel>=0 && _tbItems[_tbSel]){
+          topbarPick(_tbSel);
+        } else if(_tbItems.length>0){
+          topbarPick(0);
+        } else {
+          // Fallback: route to full search
+          var legacy=document.getElementById('search-input');
+          if(legacy){legacy.value=tb.value;}
+          if(typeof switchTab==='function')switchTab('search');
+          if(typeof doSearch==='function')doSearch();
+        }
+      } else if(e.key==='Escape'){
+        tb.blur();closeTopbarDD();
+      }
+    });
+
+    // Click outside → close
+    document.addEventListener('click', function(e){
+      var wrap=document.getElementById('topbar-search-wrap');
+      if(wrap && !wrap.contains(e.target))closeTopbarDD();
+    });
+
+    // Autofocus on load (sauf si modal auth ouvert)
+    setTimeout(function(){
+      var auth=document.getElementById('jd-auth-modal');
+      var paywall=document.getElementById('paywall-modal');
+      if(auth && auth.classList.contains('show'))return;
+      if(paywall && paywall.classList.contains('show'))return;
+      tb.focus();
+    }, 600);
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', ready);
+  } else {
+    ready();
+  }
+})();
 
 /* ===== RESIZERS ===== */
 function makeResizer(resizerEl, getTarget, getSize, setSize, opts){
@@ -3525,15 +3777,17 @@ function showSavePulse(statusId){
 
 /* ===== RACCOURCIS CLAVIER GLOBAUX ===== */
 document.addEventListener('keydown', function(e){
-  // ⌘K / Ctrl+K → ouvre l'Omnisearch
+  // ⌘K / Ctrl+K → focus la command bar persistante
   if((e.metaKey||e.ctrlKey) && e.key==='k'){
     e.preventDefault();
-    openOmniSearch();
+    var tb=document.getElementById('topbar-search');
+    if(tb){tb.focus();tb.select();}
   }
-  // Échap → ferme l'omnisearch si ouvert (géré aussi par le modal lui-même)
+  // Échap → ferme l'omnisearch ou le dropdown
   if(e.key==='Escape'){
     var modal = document.getElementById('omnisearch-modal');
     if(modal && modal.classList.contains('show')) closeOmniSearch();
+    closeTopbarDD();
   }
 });
 
