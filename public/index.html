@@ -92,6 +92,9 @@ body.light .tbdd-corrected{color:#92400e;background:rgba(251,191,36,.10)}
 .tbdd-foot{padding:8px 16px;font-size:11px;color:var(--t3);border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center}
 .tbdd-foot kbd{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:3px;padding:1px 5px;font-size:10px;font-family:ui-monospace,Menlo,monospace}
 @media(max-width:760px){#topbar-search-wrap{min-width:140px}#topbar-search-wrap .tb-kbd{display:none}}
+/* Phase 9 — sur Recherche, le tiroir gauche disparaît (dropdown suffit) */
+body.on-search.hub-mode #panel-l{width:0!important;max-width:0!important;min-width:0!important;border:none!important;overflow:hidden!important}
+body.on-search.hub-mode #main-resizer{display:none!important}
 /* SPOTLIGHT ZEN */
 #spotlight{position:fixed;inset:0;z-index:1500;background:#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;transition:opacity 0.4s cubic-bezier(0.4,0,0.2,1)}
 #spotlight.fade-out{opacity:0;pointer-events:none}
@@ -631,7 +634,7 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
    =================================================================== */
 
 /* --- Sidebar toujours visible --- */
-body.hub-mode #icon-sidebar{opacity:1!important;transform:none!important}
+body.hub-mode #icon-sidebar{display:none!important}
 
 /* --- Top Tabs (remplacent les anciens .tab) --- */
 #top-tabs{display:none;gap:2px;background:rgba(255,255,255,0.05);border-radius:8px;padding:3px;max-width:380px}
@@ -2179,6 +2182,8 @@ function switchTab(tab){
   if(_hubInited){ openDrawer(); }
   // Rédaction
   document.body.classList.toggle('redac-mode', tab==='redac');
+  // Phase 9 : sur la Recherche, le tiroir gauche est inutile (dropdown overlay suffit)
+  document.body.classList.toggle('on-search', tab==='search');
   // Largeur panel gauche (mode classique uniquement)
   if(!_hubInited && typeof applyPanelWidth==='function') applyPanelWidth(tab);
   if(_focusOn) applyFocusClass();
@@ -3808,6 +3813,8 @@ function initHubMode(){
   // 2. Activer hub-mode
   document.body.classList.add('hub-mode');
   document.body.classList.remove('lab-mode'); // nettoyer l'ancien
+  // Phase 9 — état initial : Recherche → tiroir caché (dropdown overlay suffit)
+  if(_tab==='search') document.body.classList.add('on-search');
 
   // 3. Largeur initiale du tiroir
   var panelL = document.getElementById('panel-l');
