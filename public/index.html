@@ -774,27 +774,35 @@ body.hub-mode #lab-status2{padding:4px 20px}
   box-shadow:0 0 12px rgba(124,107,255,0.25)
 }
 
-/* --- STUDIO PRIMARY : Studio en tâche principale, recherche en secondaire ---
-   panel-r passe à 65%, panel-l reste tiroir, reader-pane se réduit. */
-body.hub-mode.studio-primary #panel-r{
-  flex:0 0 65%!important;width:65%!important;
+/* --- STUDIO PRIMARY : SWITCH centre↔droite ---
+   Studio (panel-r) prend la place du reader (centre), reader-pane part à droite.
+   On ne touche QUE l'ordre + les largeurs. */
+body.hub-mode.studio-primary #panel-l       { order:1 }
+body.hub-mode.studio-primary #main-resizer  { order:2 }
+body.hub-mode.studio-primary #panel-r       { order:3; flex:1!important; width:auto!important; min-width:320px!important; border-left:none!important }
+body.hub-mode.studio-primary #right-resizer { order:4 }
+body.hub-mode.studio-primary #reader-pane   { order:5; flex:0 0 var(--reader-w,380px)!important; min-width:240px!important; max-width:60%; border-left:1px solid var(--gb)!important; padding:24px 22px!important }
+body.hub-mode.studio-primary #panel-l       { width:240px!important; max-width:240px!important }
+body.hub-mode.studio-primary #lab-editor2   { font-size:16px; line-height:2.0; max-width:780px; margin:0 auto }
+body.hub-mode.studio-primary #lab-title-wrap{ max-width:780px; margin:0 auto; width:100% }
+body.hub-mode.studio-primary #lab-studio    { border-left:none!important }
+body.hub-mode.studio-primary #studio-expand-tab{ display:none!important }
+/* Le reader-pane à droite garde un fond légèrement contrasté */
+body.hub-mode.studio-primary #reader-pane   { background:#0a0a1a!important }
+body.light.hub-mode.studio-primary #reader-pane{ background:var(--bg2)!important }
+/* Sur small screen, on cache le reader pour laisser tout le studio */
+@media (max-width: 1100px){
+  body.hub-mode.studio-primary #reader-pane,
+  body.hub-mode.studio-primary #right-resizer{ display:none!important }
 }
-body.hub-mode.studio-primary #panel-l{
-  width:240px!important;max-width:240px!important;
-}
-body.hub-mode.studio-primary #reader-pane{
-  min-width:200px!important;padding:24px 18px!important;
-}
-body.hub-mode.studio-primary #lab-editor2{
-  font-size:16px;line-height:2.0;max-width:780px;margin:0 auto;
-}
-body.hub-mode.studio-primary #lab-title-wrap{max-width:780px;margin:0 auto;width:100%}
-/* Si studio caché et qu'on toggle primary, on l'ouvre */
-body.hub-mode.studio-primary.studio-hidden #panel-r{
-  flex:0 0 65%!important;width:65%!important;overflow:visible!important;
-}
-body.hub-mode.studio-primary.studio-hidden{}
-body.hub-mode.studio-primary.studio-hidden #studio-expand-tab{display:none}
+
+/* --- RESIZER central/droit (par défaut entre reader-pane et panel-r) --- */
+#right-resizer{ display:none }
+body.hub-mode #right-resizer{ display:block }
+body.hub-mode.studio-hidden:not(.studio-primary) #right-resizer{ display:none }
+body.hub-mode.studio-fullscreen #right-resizer{ display:none!important }
+#right-resizer:hover{ background:rgba(124,107,255,0.25) }
+#right-resizer.dragging{ background:rgba(124,107,255,0.5) }
 
 /* --- STUDIO FULLSCREEN : Studio plein écran, tout le reste masqué ---
    Garde uniquement la topbar (avec command bar ⌘K toujours accessible). */
@@ -1140,8 +1148,11 @@ body.hub-mode #lab-toolbar{display:flex}
 
   </div><!-- /panel-l -->
 
-  <!-- SÉPARATEUR REDIMENSIONNABLE -->
+  <!-- SÉPARATEUR REDIMENSIONNABLE (drawer ↔ centre) -->
   <div class="resizer" id="main-resizer"></div>
+
+  <!-- SÉPARATEUR REDIMENSIONNABLE (centre ↔ droite, hub-mode uniquement) -->
+  <div class="resizer" id="right-resizer"></div>
 
   <!-- RIGHT PANEL -->
   <div id="panel-r">
@@ -4404,12 +4415,18 @@ function initHubMode(){
   if(_hubInited) return;
   _hubInited = true;
 
-  // 1. Déplacer reader-pane hors de split-r → entre le resizer et panel-r
+  // 1. Déplacer reader-pane hors de split-r → entre les deux resizers
+  //    Ordre DOM final : panel-l | main-resizer | reader-pane | right-resizer | panel-r
   var main      = document.getElementById('main');
   var panelR    = document.getElementById('panel-r');
   var readerPane= document.getElementById('reader-pane');
+  var rightRes  = document.getElementById('right-resizer');
   if(main && panelR && readerPane && readerPane.parentNode !== main){
     main.insertBefore(readerPane, panelR);
+  }
+  // Garantir l'ordre : right-resizer doit être juste avant panel-r, après reader-pane
+  if(main && panelR && rightRes && rightRes.nextElementSibling !== panelR){
+    main.insertBefore(rightRes, panelR);
   }
 
   // 2. Activer hub-mode
@@ -4454,6 +4471,81 @@ function initHubMode(){
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     }, {capture:false});
+  })();
+
+  // 4bis. Brancher le resizer central/droit (entre reader-pane et panel-r)
+  (function(){
+    var resEl = document.getElementById('right-resizer');
+    if(!resEl) return;
+    var panelR = document.getElementById('panel-r');
+    var readerPane = document.getElementById('reader-pane');
+    if(!panelR || !readerPane) return;
+    // Restaurer la largeur sauvegardée du panneau secondaire (Studio en normal, reader en primary)
+    var savedR = parseFloat(localStorage.getItem('jdx_hub_panelR_w')||'');
+    if(savedR && savedR>200){
+      panelR.style.flex = '0 0 '+savedR+'px';
+      panelR.style.width = savedR+'px';
+    }
+    var savedReader = parseFloat(localStorage.getItem('jdx_hub_reader_w')||'');
+    if(savedReader && savedReader>200){
+      document.documentElement.style.setProperty('--reader-w', savedReader+'px');
+    }
+    var startX, startW, target, mode;
+    resEl.addEventListener('mousedown', function(e){
+      if(!_hubInited) return;
+      // En mode plein écran ou drawer fermé pour studio : pas de resize
+      if(document.body.classList.contains('studio-fullscreen')) return;
+      e.preventDefault();
+      // Quel panneau on redimensionne ?
+      // - studio-primary : on dimensionne reader-pane (à droite)
+      // - sinon : on dimensionne panel-r (Studio à droite)
+      mode = document.body.classList.contains('studio-primary') ? 'reader' : 'panelR';
+      target = (mode==='reader') ? readerPane : panelR;
+      startX = e.clientX;
+      startW = target.getBoundingClientRect().width;
+      resEl.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      var mainW = document.getElementById('main').getBoundingClientRect().width;
+      function onMove(ev){
+        // Le resizer est À GAUCHE du panneau cible → drag droite agrandit le centre, pas le côté
+        var delta = ev.clientX - startX;
+        // Quand on déplace la souris à droite, le panneau cible (à droite) DIMINUE
+        var w = Math.max(240, Math.min(mainW*0.7, startW - delta));
+        if(mode==='reader'){
+          document.documentElement.style.setProperty('--reader-w', w+'px');
+        } else {
+          target.style.flex  = '0 0 '+w+'px';
+          target.style.width = w+'px';
+        }
+      }
+      function onUp(){
+        resEl.classList.remove('dragging');
+        document.body.style.cursor=''; document.body.style.userSelect='';
+        var w = target.getBoundingClientRect().width;
+        if(mode==='reader'){
+          localStorage.setItem('jdx_hub_reader_w', w);
+        } else {
+          localStorage.setItem('jdx_hub_panelR_w', w);
+        }
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    }, {capture:false});
+    // Double-click → reset à la valeur par défaut
+    resEl.addEventListener('dblclick', function(){
+      var primary = document.body.classList.contains('studio-primary');
+      if(primary){
+        document.documentElement.style.setProperty('--reader-w','380px');
+        localStorage.removeItem('jdx_hub_reader_w');
+      } else {
+        panelR.style.flex = '';
+        panelR.style.width = '';
+        localStorage.removeItem('jdx_hub_panelR_w');
+      }
+    });
   })();
 
   // 5. Restaurer le contenu du studio
