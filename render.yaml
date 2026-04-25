@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────
+# Render Blueprint — JuriDix v2.0
+# Deploy: connect this repo on render.com, then "Apply Blueprint".
+# All sync:false vars must be filled in the Render dashboard before first deploy.
+# ─────────────────────────────────────────────────────────────
+services:
+  - type: web
+    name: juridix
+    runtime: node
+    plan: starter            # bump to "standard" if you need always-on for webhooks
+    region: frankfurt        # closest to FR users + PISTE sandbox
+    branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # ── Mode tarifaire ─────────────────────────────────────
+      - key: CONFIG_MODE
+        value: RUSH                        # flip to ROUTINE post-rush
+      - key: RUSH_CUTOFF_DATE
+        value: "2026-06-01"
+      - key: RUSH_ACCESS_EXPIRY
+        value: "2026-06-30"
+
+      # ── Supabase ───────────────────────────────────────────
+      - key: SUPABASE_URL
+        sync: false                        # set in dashboard
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+
+      # ── Stripe (Phase 4) ───────────────────────────────────
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID_RUSH
+        sync: false
+      - key: STRIPE_PRICE_ID_ROUTINE
+        sync: false
+
+      # ── PISTE Légifrance ───────────────────────────────────
+      - key: PISTE_CLIENT_ID
+        sync: false
+      - key: PISTE_CLIENT_SECRET
+        sync: false
+      - key: PISTE_BASE_URL
+        value: https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app
+      - key: PISTE_OAUTH_URL
+        value: https://sandbox-oauth.piste.gouv.fr/api/oauth/token
+
+      # ── Server ─────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: CORS_ORIGIN
+        value: "*"                         # tighten to your domain post-launch
+      - key: PORT
+        value: "10000"                     # Render assigns; this is overridden anyway

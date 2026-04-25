@@ -1,20 +1,9 @@
-# Credentials — NE JAMAIS COMMITER
-.env
-*.env
-.env.*
-
-# Node
 node_modules/
-npm-debug.log*
-
-# Base de données locale
-db/*.db
-db/*.sqlite
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-logs/
+.env
+.env.local
 *.log
+.DS_Store
+_legacy/
+e2e-test.js
+e2e-full.js
+test-piste.js
