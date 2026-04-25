@@ -762,6 +762,141 @@ body.hub-mode .art-actions-v4{gap:8px;padding-bottom:20px}
 body.hub-mode #lab-title-wrap{padding:8px 20px 0}
 body.hub-mode #lab-editor-wrap2{padding:10px 20px 32px}
 body.hub-mode #lab-status2{padding:4px 20px}
+
+/* ===================================================================
+   PHASE 10.1 — STUDIO LAYOUTS (PRIMARY + FULLSCREEN)
+   =================================================================== */
+
+/* Bouton studio actif (état on) */
+.btn-icon#studio-mode-btn.on,
+.btn-icon#studio-full-btn.on{
+  background:var(--acc3);border-color:var(--acc);color:var(--acc2);
+  box-shadow:0 0 12px rgba(124,107,255,0.25)
+}
+
+/* --- STUDIO PRIMARY : Studio en tâche principale, recherche en secondaire ---
+   panel-r passe à 65%, panel-l reste tiroir, reader-pane se réduit. */
+body.hub-mode.studio-primary #panel-r{
+  flex:0 0 65%!important;width:65%!important;
+}
+body.hub-mode.studio-primary #panel-l{
+  width:240px!important;max-width:240px!important;
+}
+body.hub-mode.studio-primary #reader-pane{
+  min-width:200px!important;padding:24px 18px!important;
+}
+body.hub-mode.studio-primary #lab-editor2{
+  font-size:16px;line-height:2.0;max-width:780px;margin:0 auto;
+}
+body.hub-mode.studio-primary #lab-title-wrap{max-width:780px;margin:0 auto;width:100%}
+/* Si studio caché et qu'on toggle primary, on l'ouvre */
+body.hub-mode.studio-primary.studio-hidden #panel-r{
+  flex:0 0 65%!important;width:65%!important;overflow:visible!important;
+}
+body.hub-mode.studio-primary.studio-hidden{}
+body.hub-mode.studio-primary.studio-hidden #studio-expand-tab{display:none}
+
+/* --- STUDIO FULLSCREEN : Studio plein écran, tout le reste masqué ---
+   Garde uniquement la topbar (avec command bar ⌘K toujours accessible). */
+body.hub-mode.studio-fullscreen #panel-l{
+  width:0!important;max-width:0!important;border:none!important;overflow:hidden!important;
+}
+body.hub-mode.studio-fullscreen #main-resizer{display:none!important}
+body.hub-mode.studio-fullscreen #reader-pane{display:none!important}
+body.hub-mode.studio-fullscreen #split-r{display:none!important}
+body.hub-mode.studio-fullscreen #panel-r{
+  flex:0 0 100%!important;width:100%!important;
+  background:#0a0a1a!important;
+}
+body.hub-mode.studio-fullscreen #lab-studio{
+  background:#0a0a1a!important;border-left:none!important;
+}
+body.hub-mode.studio-fullscreen #lab-editor2{
+  font-size:17px;line-height:2.05;max-width:820px;margin:0 auto;
+}
+body.hub-mode.studio-fullscreen #lab-title-wrap{
+  max-width:820px;margin:0 auto;width:100%;padding-top:24px;
+}
+body.hub-mode.studio-fullscreen #lab-editor-wrap2{padding:16px 32px 60px}
+body.hub-mode.studio-fullscreen #lab-doc-title{font-size:28px;font-weight:800}
+body.hub-mode.studio-fullscreen #studio-expand-tab{display:none!important}
+body.hub-mode.studio-fullscreen #top-tabs{display:none!important}
+
+/* Sortie discrète plein écran (Échap visible) */
+.studio-exit-hint{
+  position:fixed;top:50px;right:18px;z-index:200;
+  background:rgba(15,23,42,0.85);border:1px solid var(--gb);border-radius:8px;
+  padding:5px 10px;color:var(--t3);font-size:11px;
+  font-family:-apple-system,sans-serif;display:none;
+  pointer-events:none;
+}
+body.studio-fullscreen .studio-exit-hint{display:block}
+
+/* ===================================================================
+   PHASE 10.2 — TOOLBAR ÉDITEUR
+   =================================================================== */
+#lab-toolbar{
+  display:none;align-items:center;gap:2px;flex-wrap:wrap;
+  padding:6px 18px;border-bottom:1px solid rgba(255,255,255,0.06);
+  background:rgba(255,255,255,0.02);flex-shrink:0;
+  font-family:-apple-system,sans-serif;
+}
+body.hub-mode #lab-toolbar{display:flex}
+.tb-group{display:flex;align-items:center;gap:1px;padding:0 4px;border-right:1px solid rgba(255,255,255,0.07)}
+.tb-group:last-child{border-right:none}
+.tb-btn{
+  background:transparent;border:1px solid transparent;border-radius:5px;
+  padding:5px 8px;color:var(--t2);font-size:13px;cursor:pointer;
+  transition:all .12s;font-family:inherit;min-width:28px;height:28px;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.tb-btn:hover{background:rgba(255,255,255,0.07);color:var(--t1)}
+.tb-btn.active{background:var(--acc3);color:var(--acc2);border-color:rgba(124,107,255,0.3)}
+.tb-btn.tb-btn-text{font-size:11px;font-weight:700;letter-spacing:.3px;padding:5px 9px}
+.tb-btn.tb-btn-h{font-size:12px;font-weight:800;font-family:Georgia,serif;font-style:italic}
+.tb-sep{width:1px;height:18px;background:rgba(255,255,255,0.08);margin:0 3px}
+
+/* Style des éléments injectés dans l'éditeur */
+#lab-editor2 ul, #lab-editor2 ol{margin:8px 0 12px;padding-left:28px}
+#lab-editor2 ul li, #lab-editor2 ol li{margin:3px 0}
+#lab-editor2 code{background:rgba(124,107,255,0.12);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',Consolas,monospace;font-size:13px;color:var(--acc2)}
+#lab-editor2 u{text-decoration:underline;text-decoration-color:var(--acc2)}
+#lab-editor2 s{text-decoration:line-through;color:var(--t3)}
+#lab-editor2 a{color:var(--acc2);text-decoration:underline}
+#lab-editor2 table{border-collapse:collapse;margin:14px 0;width:100%;font-size:13px;font-family:-apple-system,sans-serif}
+#lab-editor2 table th, #lab-editor2 table td{border:1px solid var(--gb);padding:8px 10px;text-align:left;vertical-align:top}
+#lab-editor2 table th{background:rgba(124,107,255,0.08);font-weight:700;color:var(--acc2);text-align:left}
+#lab-editor2 sup.footnote{color:var(--acc2);font-weight:700;cursor:pointer;font-size:10px;margin:0 1px}
+#lab-editor2 .legal-cite{display:block;margin:14px 0;padding:10px 14px;border-left:3px solid var(--acc);background:rgba(124,107,255,0.06);border-radius:0 6px 6px 0;font-family:Georgia,serif;font-size:14px;color:var(--t1)}
+#lab-editor2 .legal-cite .lc-ref{display:block;font-weight:700;color:var(--acc2);font-size:12px;margin-bottom:5px;font-family:-apple-system,sans-serif}
+#lab-editor2 .legal-cite .lc-text{font-style:italic;color:var(--t2)}
+
+/* Mini-popup pour insertion d'article (Phase 10.3) */
+#lab-insert-pop{
+  position:absolute;display:none;z-index:300;
+  width:min(420px,86vw);background:rgba(13,13,28,0.98);
+  border:1px solid var(--gb);border-radius:10px;
+  box-shadow:0 18px 60px rgba(0,0,0,0.5);
+  font-family:-apple-system,sans-serif;
+}
+#lab-insert-pop.show{display:block;animation:tbddIn .18s cubic-bezier(.4,0,.2,1)}
+#lab-insert-pop .lip-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--gb)}
+#lab-insert-pop input{flex:1;background:transparent;border:none;color:var(--t1);font-size:13px;outline:none;font-family:inherit}
+#lab-insert-pop .lip-list{max-height:280px;overflow-y:auto;padding:4px 0}
+#lab-insert-pop .lip-row{padding:8px 14px;cursor:pointer;font-size:12px;color:var(--t2);transition:background .12s}
+#lab-insert-pop .lip-row:hover, #lab-insert-pop .lip-row.sel{background:rgba(124,107,255,0.12);color:var(--t1)}
+#lab-insert-pop .lip-row .lr-ref{color:var(--acc2);font-weight:700;font-size:11px;margin-bottom:2px}
+#lab-insert-pop .lip-foot{padding:6px 12px;border-top:1px solid var(--gb);font-size:10px;color:var(--t3);display:flex;gap:14px}
+
+/* Couleur indicator pour color picker */
+.tb-color-pop{
+  position:absolute;display:none;background:rgba(13,13,28,0.98);
+  border:1px solid var(--gb);border-radius:8px;padding:8px;
+  z-index:300;box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+.tb-color-pop.show{display:flex;flex-wrap:wrap;gap:4px;width:152px}
+.tb-color-swatch{width:20px;height:20px;border-radius:4px;cursor:pointer;border:1px solid rgba(255,255,255,0.15)}
+.tb-color-swatch:hover{transform:scale(1.15)}
 </style>
 </head>
 <body>
@@ -824,6 +959,8 @@ body.hub-mode #lab-status2{padding:4px 20px}
     <div id="topbar-search-dd" class="tbdd"></div>
   </div>
   <div class="tb-right">
+    <div class="btn-icon" id="studio-mode-btn" onclick="toggleStudioMode()" title="Studio en tâche principale">📝</div>
+    <div class="btn-icon" id="studio-full-btn" onclick="toggleStudioFullscreen()" title="Studio plein écran">⛶</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
     <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
   </div>
@@ -1103,12 +1240,65 @@ body.hub-mode #lab-status2{padding:4px 20px}
         <span id="lab-wcount">0 mot</span>
         <button class="studio-collapse-btn" onclick="collapseStudio()" title="Réduire le studio">▶ Réduire</button>
       </div>
+
+      <!-- TOOLBAR ÉDITEUR (Phase 10.2 + 10.3) -->
+      <div id="lab-toolbar" onmousedown="event.preventDefault()">
+        <!-- Annuler / Refaire -->
+        <div class="tb-group">
+          <button class="tb-btn" title="Annuler (⌘Z)" onclick="labExec('undo')">↶</button>
+          <button class="tb-btn" title="Refaire (⌘⇧Z)" onclick="labExec('redo')">↷</button>
+        </div>
+        <!-- Headings + paragraphe -->
+        <div class="tb-group">
+          <button class="tb-btn tb-btn-h" data-cmd-block="h1" title="Titre 1" onclick="labFormatBlock('h1')">H1</button>
+          <button class="tb-btn tb-btn-h" data-cmd-block="h2" title="Titre 2" onclick="labFormatBlock('h2')">H2</button>
+          <button class="tb-btn tb-btn-h" data-cmd-block="h3" title="Titre 3" onclick="labFormatBlock('h3')">H3</button>
+          <button class="tb-btn tb-btn-text" data-cmd-block="p" title="Paragraphe" onclick="labFormatBlock('p')">¶</button>
+        </div>
+        <!-- Formatage caractère -->
+        <div class="tb-group">
+          <button class="tb-btn" data-cmd="bold" title="Gras (⌘B)" onclick="labExec('bold')"><b>B</b></button>
+          <button class="tb-btn" data-cmd="italic" title="Italique (⌘I)" onclick="labExec('italic')"><i>I</i></button>
+          <button class="tb-btn" data-cmd="underline" title="Souligné (⌘U)" onclick="labExec('underline')"><u>U</u></button>
+          <button class="tb-btn" data-cmd="strikeThrough" title="Barré" onclick="labExec('strikeThrough')"><s>S</s></button>
+          <button class="tb-btn" title="Code inline" onclick="labWrapCode()">{ }</button>
+        </div>
+        <!-- Listes + citation -->
+        <div class="tb-group">
+          <button class="tb-btn" data-cmd="insertUnorderedList" title="Liste à puces" onclick="labExec('insertUnorderedList')">•</button>
+          <button class="tb-btn" data-cmd="insertOrderedList" title="Liste numérotée" onclick="labExec('insertOrderedList')">1.</button>
+          <button class="tb-btn" data-cmd-block="blockquote" title="Citation" onclick="labFormatBlock('blockquote')">❝</button>
+        </div>
+        <!-- Alignement -->
+        <div class="tb-group">
+          <button class="tb-btn" data-cmd="justifyLeft" title="Aligner à gauche" onclick="labExec('justifyLeft')">⇤</button>
+          <button class="tb-btn" data-cmd="justifyCenter" title="Centrer" onclick="labExec('justifyCenter')">≡</button>
+          <button class="tb-btn" data-cmd="justifyRight" title="Aligner à droite" onclick="labExec('justifyRight')">⇥</button>
+          <button class="tb-btn" data-cmd="justifyFull" title="Justifier" onclick="labExec('justifyFull')">☰</button>
+        </div>
+        <!-- Couleur + lien -->
+        <div class="tb-group">
+          <button class="tb-btn" title="Couleur du texte" onclick="labOpenColorPop(event)">🎨</button>
+          <button class="tb-btn" title="Lien" onclick="labInsertLink()">🔗</button>
+        </div>
+        <!-- Insertion juridique (Phase 10.3) -->
+        <div class="tb-group">
+          <button class="tb-btn tb-btn-text" title="Insérer un article" onclick="labOpenInsertPop()">⚖️ Article</button>
+          <button class="tb-btn tb-btn-text" title="Insérer une note de bas de page" onclick="labInsertFootnote()">¹ Note</button>
+          <button class="tb-btn tb-btn-text" title="Insérer un tableau" onclick="labInsertTable()">▦ Tableau</button>
+          <button class="tb-btn tb-btn-text" title="Effacer le formatage" onclick="labExec('removeFormat')">⨯ Format</button>
+        </div>
+      </div>
+
       <div id="lab-title-wrap">
         <input id="lab-doc-title" placeholder="Titre du document…" oninput="onLabTitleChange()">
       </div>
       <div id="lab-editor-wrap2">
         <div id="lab-editor2" contenteditable="true" spellcheck="true"
              oninput="onLabEditorInput()"
+             onkeyup="labUpdateToolbarState()"
+             onmouseup="labUpdateToolbarState()"
+             onfocus="labUpdateToolbarState()"
              data-placeholder="Commence à rédiger ton plan, ta dissertation, ta fiche…&#10;&#10;Ouvre un article à gauche, puis clique sur &quot;📎 Injecter l'article&quot; pour le coller ici."></div>
       </div>
       <div id="lab-status2">
@@ -1116,6 +1306,28 @@ body.hub-mode #lab-status2{padding:4px 20px}
         <span id="lab-charcount2">0 caractères</span>
       </div>
     </div>
+
+    <!-- POPUP INSERTION ARTICLE (Phase 10.3) -->
+    <div id="lab-insert-pop">
+      <div class="lip-head">
+        <span style="font-size:14px">⚖️</span>
+        <input id="lab-insert-input" type="text" placeholder="Chercher l'article à insérer…"
+               autocomplete="off" oninput="labInsertLive()" onkeydown="labInsertKey(event)">
+        <span class="os-close" style="cursor:pointer;color:var(--t3);font-size:11px" onclick="labCloseInsertPop()">✕</span>
+      </div>
+      <div class="lip-list" id="lab-insert-list">
+        <div style="padding:18px;text-align:center;color:var(--t3);font-size:12px">Tapez un article ou une notion…</div>
+      </div>
+      <div class="lip-foot">
+        <span>↑↓ Naviguer</span><span>↵ Insérer (texte)</span><span>⇧↵ Réf seule</span><span>Échap Fermer</span>
+      </div>
+    </div>
+
+    <!-- POPUP COULEUR (Phase 10.2) -->
+    <div id="lab-color-pop" class="tb-color-pop"></div>
+
+    <!-- HINT plein écran -->
+    <div class="studio-exit-hint">Échap pour quitter le plein écran</div>
 
   </div><!-- /panel-r -->
 
@@ -3786,11 +3998,401 @@ document.addEventListener('keydown', function(e){
     var tb=document.getElementById('topbar-search');
     if(tb){tb.focus();tb.select();}
   }
-  // Échap → ferme l'omnisearch ou le dropdown
+  // Échap → ferme l'omnisearch / dropdown / popup d'insertion / mode plein écran
   if(e.key==='Escape'){
     var modal = document.getElementById('omnisearch-modal');
     if(modal && modal.classList.contains('show')) closeOmniSearch();
     closeTopbarDD();
+    var ip = document.getElementById('lab-insert-pop');
+    if(ip && ip.classList.contains('show')){ labCloseInsertPop(); return; }
+    var cp = document.getElementById('lab-color-pop');
+    if(cp && cp.classList.contains('show')) cp.classList.remove('show');
+    if(document.body.classList.contains('studio-fullscreen')){
+      toggleStudioFullscreen();
+    }
+  }
+});
+
+/* ===================================================================
+   PHASE 10.1 — STUDIO LAYOUTS (PRIMARY + FULLSCREEN)
+   =================================================================== */
+function toggleStudioMode(){
+  var b = document.body;
+  // Si on est en plein écran, on ramène d'abord à l'état normal
+  if(b.classList.contains('studio-fullscreen')){
+    b.classList.remove('studio-fullscreen');
+  }
+  var on = b.classList.toggle('studio-primary');
+  // S'assurer que le studio est ouvert quand on l'active
+  if(on){
+    b.classList.remove('studio-hidden');
+    if(_tab==='search') b.classList.remove('on-search'); // libérer la place
+  }
+  try{ localStorage.setItem('jdx_studio_primary', on?'1':'0'); }catch(e){}
+  _syncStudioBtns();
+  // Focus l'éditeur si on vient d'activer
+  if(on){
+    var ed = document.getElementById('lab-editor2');
+    if(ed) setTimeout(function(){ ed.focus(); }, 200);
+  }
+}
+function toggleStudioFullscreen(){
+  var b = document.body;
+  var on = b.classList.toggle('studio-fullscreen');
+  if(on){
+    b.classList.remove('studio-hidden');
+    b.classList.remove('on-search');
+  }
+  try{ localStorage.setItem('jdx_studio_fullscreen', on?'1':'0'); }catch(e){}
+  _syncStudioBtns();
+  if(on){
+    var ed = document.getElementById('lab-editor2');
+    if(ed) setTimeout(function(){ ed.focus(); }, 200);
+  }
+}
+function _syncStudioBtns(){
+  var b1 = document.getElementById('studio-mode-btn');
+  var b2 = document.getElementById('studio-full-btn');
+  if(b1) b1.classList.toggle('on', document.body.classList.contains('studio-primary'));
+  if(b2) b2.classList.toggle('on', document.body.classList.contains('studio-fullscreen'));
+}
+/* Restaurer la préférence au chargement (après initHubMode) */
+function _restoreStudioMode(){
+  try{
+    if(localStorage.getItem('jdx_studio_primary')==='1') document.body.classList.add('studio-primary');
+    if(localStorage.getItem('jdx_studio_fullscreen')==='1') document.body.classList.add('studio-fullscreen');
+  }catch(e){}
+  _syncStudioBtns();
+}
+
+/* ===================================================================
+   PHASE 10.2 — TOOLBAR ÉDITEUR (formatage, headings, listes, undo/redo)
+   =================================================================== */
+function _ensureLabFocus(){
+  var ed = document.getElementById('lab-editor2');
+  if(!ed) return null;
+  // Si la sélection n'est pas dans l'éditeur, on pose le caret à la fin
+  var sel = window.getSelection();
+  var inside = sel && sel.rangeCount && ed.contains(sel.anchorNode);
+  if(!inside){
+    ed.focus();
+    var range = document.createRange();
+    range.selectNodeContents(ed);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  return ed;
+}
+function labExec(cmd, val){
+  _ensureLabFocus();
+  try{ document.execCommand(cmd, false, val||null); }catch(e){}
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+  labUpdateToolbarState();
+}
+function labFormatBlock(tag){
+  _ensureLabFocus();
+  // Toggle: si déjà sur ce bloc, on revient au paragraphe
+  var current = (document.queryCommandValue('formatBlock')||'').toLowerCase();
+  var target = (current === tag) ? 'p' : tag;
+  try{ document.execCommand('formatBlock', false, target); }catch(e){
+    try{ document.execCommand('formatBlock', false, '<'+target+'>'); }catch(e2){}
+  }
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+  labUpdateToolbarState();
+}
+function labWrapCode(){
+  var ed = _ensureLabFocus();
+  if(!ed) return;
+  var sel = window.getSelection();
+  if(!sel.rangeCount) return;
+  var r = sel.getRangeAt(0);
+  if(r.collapsed){
+    var node = document.createElement('code');
+    node.textContent = ' ';
+    r.insertNode(node);
+    var nr = document.createRange();
+    nr.selectNodeContents(node);
+    sel.removeAllRanges();
+    sel.addRange(nr);
+  } else {
+    var content = r.extractContents();
+    var code = document.createElement('code');
+    code.appendChild(content);
+    r.insertNode(code);
+    sel.removeAllRanges();
+    var nr2 = document.createRange();
+    nr2.selectNodeContents(code);
+    sel.addRange(nr2);
+  }
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+}
+function labInsertLink(){
+  var ed = _ensureLabFocus();
+  if(!ed) return;
+  var url = prompt('URL du lien :', 'https://');
+  if(!url || url==='https://') return;
+  // Ajout https:// si manquant
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  document.execCommand('createLink', false, url);
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+}
+/* Couleurs : palette inspirée de la charte */
+var LAB_COLORS = [
+  '#E5E7EB','#A0AEC0','#1E293B', // neutre
+  '#7C6BFF','#38BDF8','#34D399', // accents
+  '#F59E0B','#EF4444','#EC4899', // alertes
+  '#FACC15','#A78BFA','#0EA5E9'  // extras
+];
+function labOpenColorPop(ev){
+  if(ev) ev.preventDefault();
+  var pop = document.getElementById('lab-color-pop');
+  if(!pop) return;
+  if(!pop.dataset.built){
+    LAB_COLORS.forEach(function(c){
+      var sw = document.createElement('div');
+      sw.className = 'tb-color-swatch';
+      sw.style.background = c;
+      sw.title = c;
+      sw.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        labExec('foreColor', c);
+        pop.classList.remove('show');
+      });
+      pop.appendChild(sw);
+    });
+    pop.dataset.built = '1';
+  }
+  // Position relative au bouton cliqué
+  var btn = ev && ev.currentTarget;
+  if(btn){
+    var rect = btn.getBoundingClientRect();
+    pop.style.top = (rect.bottom+6) + 'px';
+    pop.style.left = Math.max(8, rect.left - 60) + 'px';
+  }
+  pop.classList.toggle('show');
+}
+/* État actif des boutons de la toolbar */
+function labUpdateToolbarState(){
+  var bar = document.getElementById('lab-toolbar');
+  if(!bar) return;
+  var btns = bar.querySelectorAll('[data-cmd]');
+  for(var i=0;i<btns.length;i++){
+    var cmd = btns[i].getAttribute('data-cmd');
+    try{
+      btns[i].classList.toggle('active', !!document.queryCommandState(cmd));
+    }catch(e){}
+  }
+  var blockBtns = bar.querySelectorAll('[data-cmd-block]');
+  var current = '';
+  try{ current = (document.queryCommandValue('formatBlock')||'').toLowerCase(); }catch(e){}
+  for(var j=0;j<blockBtns.length;j++){
+    var b = blockBtns[j].getAttribute('data-cmd-block');
+    blockBtns[j].classList.toggle('active', current===b);
+  }
+}
+/* Raccourcis clavier dans l'éditeur (en plus des natifs ⌘B/I/U) */
+document.addEventListener('keydown', function(e){
+  var ed = document.getElementById('lab-editor2');
+  if(!ed) return;
+  if(!ed.contains(document.activeElement) && document.activeElement!==ed) return;
+  // ⌘⇧7 / Ctrl+Shift+7 → liste numérotée
+  if((e.metaKey||e.ctrlKey) && e.shiftKey && e.key==='7'){
+    e.preventDefault(); labExec('insertOrderedList');
+  }
+  // ⌘⇧8 / Ctrl+Shift+8 → liste à puces
+  if((e.metaKey||e.ctrlKey) && e.shiftKey && e.key==='8'){
+    e.preventDefault(); labExec('insertUnorderedList');
+  }
+  // ⌘⌥1/2/3 → headings
+  if((e.metaKey||e.ctrlKey) && e.altKey && (e.key==='1'||e.key==='2'||e.key==='3')){
+    e.preventDefault(); labFormatBlock('h'+e.key);
+  }
+});
+
+/* ===================================================================
+   PHASE 10.3 — INSERTION JURIDIQUE + TABLES + ALIGNEMENT
+   =================================================================== */
+var _lipResults = [];
+var _lipSel = 0;
+var _lipSavedRange = null;
+function _lipSaveRange(){
+  var sel = window.getSelection();
+  if(sel && sel.rangeCount){
+    var r = sel.getRangeAt(0);
+    var ed = document.getElementById('lab-editor2');
+    if(ed && ed.contains(r.commonAncestorContainer)) _lipSavedRange = r.cloneRange();
+  }
+}
+function _lipRestoreRange(){
+  var ed = document.getElementById('lab-editor2');
+  if(!ed) return;
+  ed.focus();
+  if(_lipSavedRange){
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_lipSavedRange);
+  }
+}
+function labOpenInsertPop(){
+  _lipSaveRange();
+  var pop = document.getElementById('lab-insert-pop');
+  if(!pop) return;
+  // Position : centrée verticalement sur l'éditeur, légèrement vers la gauche
+  var ed = document.getElementById('lab-editor-wrap2');
+  if(ed){
+    var rect = ed.getBoundingClientRect();
+    pop.style.top = Math.max(80, rect.top + 50) + 'px';
+    pop.style.left = (rect.left + 24) + 'px';
+  }
+  pop.classList.add('show');
+  _lipResults = []; _lipSel = 0;
+  document.getElementById('lab-insert-list').innerHTML =
+    '<div style="padding:18px;text-align:center;color:var(--t3);font-size:12px">Tapez un article ou une notion…</div>';
+  var inp = document.getElementById('lab-insert-input');
+  inp.value = ''; setTimeout(function(){ inp.focus(); }, 50);
+}
+function labCloseInsertPop(){
+  var pop = document.getElementById('lab-insert-pop');
+  if(pop) pop.classList.remove('show');
+}
+function labInsertLive(){
+  var q = (document.getElementById('lab-insert-input').value||'').trim();
+  var list = document.getElementById('lab-insert-list');
+  if(!q){
+    _lipResults = [];
+    list.innerHTML = '<div style="padding:18px;text-align:center;color:var(--t3);font-size:12px">Tapez un article ou une notion…</div>';
+    return;
+  }
+  // Recherche locale dans CORPUS (rapide, sans coût)
+  var ql = q.toLowerCase();
+  var nums = (q.match(/\d+/g)||[]).map(function(n){return n;});
+  function score(it){
+    var s = 0;
+    var ref = (it.ref||'').toLowerCase();
+    var title = (it.title||'').toLowerCase();
+    var themes = (it.themes||[]).join(' ').toLowerCase();
+    if(ref.indexOf(ql)>=0) s += 80;
+    if(title.indexOf(ql)>=0) s += 40;
+    if(themes.indexOf(ql)>=0) s += 20;
+    nums.forEach(function(n){ if(ref.indexOf(n)>=0) s += 100; });
+    return s;
+  }
+  _lipResults = (window.CORPUS||[])
+    .map(function(it){ return {it:it,s:score(it)}; })
+    .filter(function(x){ return x.s>0; })
+    .sort(function(a,b){ return b.s - a.s; })
+    .slice(0,12)
+    .map(function(x){ return x.it; });
+  if(!_lipResults.length){
+    list.innerHTML = '<div style="padding:18px;text-align:center;color:var(--t3);font-size:12px">Aucun résultat. Essaie un n° d\'article.</div>';
+    return;
+  }
+  _lipSel = 0;
+  list.innerHTML = _lipResults.map(function(it,i){
+    var ref = (it.code?it.code+' — ':'') + (it.ref||'');
+    return '<div class="lip-row'+(i===0?' sel':'')+'" data-i="'+i+'" onmousedown="event.preventDefault()" onclick="labPickInsert('+i+',false)">'
+      + '<div class="lr-ref">'+ref+'</div>'
+      + '<div>'+(it.title||'')+'</div>'
+      + '</div>';
+  }).join('');
+}
+function labInsertKey(e){
+  if(!_lipResults.length){
+    if(e.key==='Escape'){ labCloseInsertPop(); }
+    return;
+  }
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    _lipSel = (_lipSel+1) % _lipResults.length;
+    _lipPaintSel();
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    _lipSel = (_lipSel-1+_lipResults.length) % _lipResults.length;
+    _lipPaintSel();
+  } else if(e.key==='Enter'){
+    e.preventDefault();
+    labPickInsert(_lipSel, e.shiftKey);
+  } else if(e.key==='Escape'){
+    e.preventDefault();
+    labCloseInsertPop();
+  }
+}
+function _lipPaintSel(){
+  var rows = document.querySelectorAll('#lab-insert-list .lip-row');
+  for(var i=0;i<rows.length;i++) rows[i].classList.toggle('sel', i===_lipSel);
+  if(rows[_lipSel] && rows[_lipSel].scrollIntoView) rows[_lipSel].scrollIntoView({block:'nearest'});
+}
+function labPickInsert(i, refOnly){
+  var it = _lipResults[i]; if(!it) return;
+  labCloseInsertPop();
+  _lipRestoreRange();
+  var ref = (it.code?it.code+' — ':'') + (it.ref||'');
+  if(refOnly){
+    // Insertion compacte : juste la référence en gras
+    var html = '<strong>'+_esc(ref)+'</strong>'+(it.title?' <em>('+_esc(it.title)+')</em>':'')+' ';
+    document.execCommand('insertHTML', false, html);
+  } else {
+    // Insertion citée : bloc avec ref + texte (éditable pour adapter)
+    var bloc = '<div class="legal-cite">'
+      + '<span class="lc-ref">'+_esc(ref)+(it.title?' — '+_esc(it.title):'')+'</span>'
+      + '<span class="lc-text">'+_esc(it.texte||'')+'</span>'
+      + '</div><p><br></p>';
+    document.execCommand('insertHTML', false, bloc);
+  }
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+}
+function _esc(s){
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+/* Note de bas de page (numérotation auto) */
+function labInsertFootnote(){
+  var ed = _ensureLabFocus();
+  if(!ed) return;
+  var existing = ed.querySelectorAll('sup.footnote');
+  var n = existing.length + 1;
+  var html = '<sup class="footnote" data-n="'+n+'">['+n+']</sup>';
+  document.execCommand('insertHTML', false, html);
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+}
+/* Tableau */
+function labInsertTable(){
+  var ed = _ensureLabFocus();
+  if(!ed) return;
+  var rows = parseInt(prompt('Nombre de lignes (en-tête inclus) :', '3'),10);
+  var cols = parseInt(prompt('Nombre de colonnes :', '3'),10);
+  if(!rows || !cols || rows<1 || cols<1) return;
+  rows = Math.min(rows, 30); cols = Math.min(cols, 10);
+  var html = '<table>';
+  for(var r=0;r<rows;r++){
+    html += '<tr>';
+    for(var c=0;c<cols;c++){
+      var tag = (r===0) ? 'th' : 'td';
+      html += '<'+tag+'>&nbsp;</'+tag+'>';
+    }
+    html += '</tr>';
+  }
+  html += '</table><p><br></p>';
+  document.execCommand('insertHTML', false, html);
+  if(typeof onLabEditorInput==='function') onLabEditorInput();
+}
+/* Fermer popups au clic extérieur */
+document.addEventListener('mousedown', function(e){
+  var pop = document.getElementById('lab-insert-pop');
+  if(pop && pop.classList.contains('show') && !pop.contains(e.target)){
+    // Si on clique sur le bouton qui l'ouvre, ne pas fermer
+    var t = e.target;
+    if(t && t.getAttribute && (t.getAttribute('onclick')||'').indexOf('labOpenInsertPop')>=0) return;
+    labCloseInsertPop();
+  }
+  var cp = document.getElementById('lab-color-pop');
+  if(cp && cp.classList.contains('show') && !cp.contains(e.target)){
+    var t2 = e.target;
+    if(!(t2 && t2.getAttribute && (t2.getAttribute('onclick')||'').indexOf('labOpenColorPop')>=0)){
+      cp.classList.remove('show');
+    }
   }
 });
 
@@ -3862,6 +4464,13 @@ function initHubMode(){
   if(editor)  editor.innerHTML = savedContent;
   if(titleEl) titleEl.value   = savedTitle;
   updateLabWordCount();
+
+  // Phase 10.1 — restaurer la préférence Studio (primary / fullscreen)
+  if(typeof _restoreStudioMode==='function') _restoreStudioMode();
+  // Sync initial de l'état actif des boutons toolbar
+  if(typeof labUpdateToolbarState==='function'){
+    setTimeout(labUpdateToolbarState, 100);
+  }
 }
 
 /* Alias pour compatibilité si appelé depuis exitZenMode */
