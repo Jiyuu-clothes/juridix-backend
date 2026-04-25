@@ -126,6 +126,13 @@
     if (!JD.session) return null;
     try {
       JD.profile = await api('/api/action/profile');
+      // Phase 9.4 — afficher le compteur dès le chargement du profil
+      if (JD.profile && typeof JD.profile.action_count === 'number') {
+        _updateActionPill({
+          premium: !!JD.profile.is_premium,
+          action_count: JD.profile.action_count,
+        });
+      }
       return JD.profile;
     } catch (e) {
       console.warn('[JuriDix] profile fetch failed', e);
