@@ -20,10 +20,14 @@ const RUSH_EXPIRY = process.env.RUSH_ACCESS_EXPIRY || '2026-06-30';
 const stripe = STRIPE_KEY ? require('stripe')(STRIPE_KEY) : null;
 
 // ─────────────── Checkout ───────────────
+// Body (optional): { mode: 'RUSH' | 'ROUTINE' } → overrides env CONFIG_MODE so the
+// user can pick a formula from the account dashboard. Defaults to env.
 router.post('/checkout', requireAuth, async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
 
-  const configMode = (process.env.CONFIG_MODE || 'RUSH').toUpperCase();
+  const envMode = (process.env.CONFIG_MODE || 'RUSH').toUpperCase();
+  const requested = (req.body && req.body.mode || '').toString().toUpperCase();
+  const configMode = (requested === 'RUSH' || requested === 'ROUTINE') ? requested : envMode;
 
   // Hard cutoff: after RUSH_CUTOFF_DATE, RUSH purchase is no longer worth it
   const now = new Date();
@@ -50,10 +54,59 @@ router.post('/checkout', requireAuth, async (req, res) => {
       cancel_url: `${origin}/?checkout=cancel`,
       allow_promotion_codes: true,
     });
-    res.json({ url: session.url });
+    res.json({ url: session.url, mode: configMode });
   } catch (err) {
     console.error('[stripe/checkout]', err);
     res.status(500).json({ error: 'Erreur Stripe Checkout.' });
+  }
+});
+
+// ─────────────── Customer Portal ───────────────
+// Creates a Stripe Billing Portal session so the user can manage their
+// payment method, view invoices, cancel/resume the subscription, etc.
+router.post('/portal', requireAuth, async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase non configuré.' });
+
+  const origin = req.headers.origin || `http://localhost:${process.env.PORT || 3000}`;
+
+  try {
+    // 1) Find the user's Stripe customer id (set by the checkout webhook)
+    const { data: profile, error } = await supabaseAdmin
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', req.user.id)
+      .maybeSingle();
+    if (error) throw error;
+
+    let customerId = profile?.stripe_customer_id;
+
+    // 2) Fallback: lookup by email if we don't have it stored
+    //    (covers users whose webhook didn't run yet, or older profiles)
+    if (!customerId && req.user.email) {
+      const list = await stripe.customers.list({ email: req.user.email, limit: 1 });
+      if (list.data && list.data.length > 0) {
+        customerId = list.data[0].id;
+        // Persist for next time
+        await supabaseAdmin
+          .from('profiles')
+          .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
+          .eq('id', req.user.id);
+      }
+    }
+
+    if (!customerId) {
+      return res.status(404).json({ error: 'Aucun paiement trouvé. Achète d\'abord un pass.' });
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${origin}/?from=portal`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe/portal]', err);
+    res.status(500).json({ error: err.message || 'Erreur Stripe Portal.' });
   }
 });
 

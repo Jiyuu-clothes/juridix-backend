@@ -209,10 +209,12 @@
   };
 
   // ────── CHECKOUT ──────
-  JD.startCheckout = async function () {
+  // mode: 'RUSH' | 'ROUTINE' | undefined (server uses CONFIG_MODE if undefined)
+  JD.startCheckout = async function (mode) {
     if (!JD.session) { _showAuthModal(); return; }
     try {
-      const out = await api('/api/stripe/checkout', { method: 'POST', body: '{}' });
+      const body = mode ? JSON.stringify({ mode }) : '{}';
+      const out = await api('/api/stripe/checkout', { method: 'POST', body });
       if (out && out.url) {
         window.location.href = out.url;
       } else {
@@ -220,6 +222,21 @@
       }
     } catch (e) {
       alert(e.message || 'Erreur Stripe');
+    }
+  };
+
+  // Stripe Billing Portal — manage payment method, invoices, cancel sub.
+  JD.openBillingPortal = async function () {
+    if (!JD.session) { _showAuthModal(); return; }
+    try {
+      const out = await api('/api/stripe/portal', { method: 'POST', body: '{}' });
+      if (out && out.url) {
+        window.location.href = out.url;
+      } else {
+        alert('Portail indisponible — réessaie dans un instant.');
+      }
+    } catch (e) {
+      alert(e.message || 'Erreur Stripe Portal');
     }
   };
 
@@ -265,6 +282,40 @@
     #jd-paywall .jd-pw-price small{font-size:14px;color:#94a3b8;font-weight:500}
     #jd-paywall .jd-pw-cta{display:flex;gap:8px;margin-top:14px}
     #jd-paywall .jd-pw-cta button{flex:1}
+
+    /* ─── Account dashboard modal ─── */
+    #jd-account-modal .jd-card{max-width:520px}
+    #jd-account-modal .jd-acc-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    #jd-account-modal .jd-acc-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#38BDF8,#0284c7);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex-shrink:0;text-transform:uppercase}
+    #jd-account-modal .jd-acc-meta{flex:1;min-width:0}
+    #jd-account-modal .jd-acc-name{font-size:15px;font-weight:700;color:#f1f5f9;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #jd-account-modal .jd-acc-mail{font-size:12.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #jd-account-modal .jd-section-title{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px}
+    #jd-account-modal .jd-plan-box{background:rgba(15,23,42,0.55);border:1px solid rgba(56,189,248,0.18);border-radius:11px;padding:14px 16px;margin-bottom:6px}
+    #jd-account-modal .jd-plan-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    #jd-account-modal .jd-plan-name{font-size:15px;font-weight:700;color:#f1f5f9;display:flex;align-items:center;gap:8px}
+    #jd-account-modal .jd-badge{font-size:10.5px;padding:3px 8px;border-radius:999px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+    #jd-account-modal .jd-badge.on{background:rgba(56,189,248,0.18);color:#7dd3fc;border:1px solid rgba(56,189,248,0.4)}
+    #jd-account-modal .jd-badge.off{background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.3)}
+    #jd-account-modal .jd-plan-detail{font-size:12.5px;color:#94a3b8;margin-top:6px;line-height:1.5}
+    #jd-account-modal .jd-plan-detail b{color:#cbd5e1;font-weight:600}
+    #jd-account-modal .jd-formulas{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+    #jd-account-modal .jd-formula{background:rgba(15,23,42,0.55);border:1px solid rgba(148,163,184,0.18);border-radius:11px;padding:14px;cursor:pointer;text-align:left;transition:border-color .15s,transform .1s,box-shadow .15s;color:inherit;font:inherit}
+    #jd-account-modal .jd-formula:hover{border-color:rgba(56,189,248,0.45);box-shadow:0 4px 18px rgba(56,189,248,0.12)}
+    #jd-account-modal .jd-formula:active{transform:translateY(1px)}
+    #jd-account-modal .jd-formula.current{border-color:#38BDF8;background:rgba(56,189,248,0.08)}
+    #jd-account-modal .jd-formula-name{font-size:13px;font-weight:700;color:#f1f5f9;display:flex;align-items:center;gap:6px}
+    #jd-account-modal .jd-formula-price{font-size:20px;font-weight:800;color:#38BDF8;margin:6px 0 2px;letter-spacing:-.5px}
+    #jd-account-modal .jd-formula-price small{font-size:11px;color:#94a3b8;font-weight:500;letter-spacing:0}
+    #jd-account-modal .jd-formula-desc{font-size:11.5px;color:#94a3b8;line-height:1.4}
+    #jd-account-modal .jd-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+    #jd-account-modal .jd-act-row{display:flex;gap:8px}
+    #jd-account-modal .jd-act-row .jd-btn{margin-top:0}
+    #jd-account-modal .jd-meter{height:6px;background:rgba(148,163,184,0.18);border-radius:3px;overflow:hidden;margin-top:8px}
+    #jd-account-modal .jd-meter i{display:block;height:100%;background:linear-gradient(90deg,#38BDF8,#7dd3fc);border-radius:3px;transition:width .25s}
+    #jd-account-modal .jd-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;background:rgba(148,163,184,0.08);border:1px solid rgba(148,163,184,0.2);color:#94a3b8;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s}
+    #jd-account-modal .jd-close:hover{background:rgba(148,163,184,0.18);color:#f1f5f9}
+    #jd-account-modal .jd-card{position:relative}
     `;
     const s = document.createElement('style');
     s.textContent = css;
@@ -319,6 +370,48 @@
     </div>
 
     <div class="jd-pill" id="jd-pill"><span>Recherches</span><span class="jd-pill-bar"><i id="jd-pill-bar"></i></span><b id="jd-pill-num">0/10</b></div>
+
+    <div id="jd-account-modal" class="jd-modal" onclick="if(event.target===this)JuriDix._hideAccount()">
+      <div class="jd-card">
+        <button class="jd-close" onclick="JuriDix._hideAccount()" aria-label="Fermer">×</button>
+        <div class="jd-acc-head">
+          <div class="jd-acc-avatar" id="jd-acc-avatar">?</div>
+          <div class="jd-acc-meta">
+            <div class="jd-acc-name" id="jd-acc-name">—</div>
+            <div class="jd-acc-mail" id="jd-acc-mail">—</div>
+          </div>
+        </div>
+
+        <div class="jd-section-title">Mon abonnement</div>
+        <div class="jd-plan-box">
+          <div class="jd-plan-row">
+            <div class="jd-plan-name" id="jd-plan-name">Gratuit</div>
+            <div class="jd-badge off" id="jd-plan-badge">Inactif</div>
+          </div>
+          <div class="jd-plan-detail" id="jd-plan-detail">Tu utilises la version gratuite.</div>
+          <div class="jd-meter" id="jd-meter-wrap" style="display:none"><i id="jd-meter-bar"></i></div>
+        </div>
+
+        <div class="jd-section-title" id="jd-formulas-title">Choisir une formule</div>
+        <div class="jd-formulas" id="jd-formulas-grid">
+          <button type="button" class="jd-formula" data-mode="RUSH" onclick="JuriDix.startCheckout('RUSH')">
+            <div class="jd-formula-name">⚡ Pass révision</div>
+            <div class="jd-formula-price">9,90 € <small>une fois</small></div>
+            <div class="jd-formula-desc">Accès illimité jusqu'au 30 juin 2026.</div>
+          </button>
+          <button type="button" class="jd-formula" data-mode="ROUTINE" onclick="JuriDix.startCheckout('ROUTINE')">
+            <div class="jd-formula-name">📚 Abonnement</div>
+            <div class="jd-formula-price">6 € <small>/ mois</small></div>
+            <div class="jd-formula-desc">Annulable à tout moment.</div>
+          </button>
+        </div>
+
+        <div class="jd-actions">
+          <button type="button" class="jd-btn" id="jd-portal-btn" onclick="JuriDix.openBillingPortal()" style="display:none">Gérer paiement & factures</button>
+          <button type="button" class="jd-btn jd-btn-sec" onclick="JuriDix.signOut(); JuriDix._hideAccount();">Se déconnecter</button>
+        </div>
+      </div>
+    </div>
     `;
     const div = document.createElement('div');
     div.innerHTML = html;
@@ -403,9 +496,102 @@
     }
   };
 
-  JD._showAccountMenu = function () {
-    const ok = confirm('Connecté en tant que ' + (JD.session.user.email) + '\n\nSe déconnecter ?');
-    if (ok) JD.signOut();
+  JD._showAccountMenu = async function () {
+    if (!JD.session) { _showAuthModal(); return; }
+
+    // Refresh the profile so plan info is up to date when opening
+    try { await JD.refreshProfile(); } catch (_) {}
+
+    const user = JD.session.user || {};
+    const email = user.email || '';
+    const name = user.user_metadata?.name || (email.split('@')[0] || 'Utilisateur');
+    const initials = (name[0] || email[0] || '?').toUpperCase();
+
+    const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setText('jd-acc-avatar', initials);
+    setText('jd-acc-name', name);
+    setText('jd-acc-mail', email);
+
+    const profile = JD.profile || {};
+    const isPrem = !!profile.is_premium;
+    const purchased = (profile.config_mode_purchased || '').toUpperCase(); // 'RUSH' | 'ROUTINE' | ''
+    const subStatus = profile.stripe_subscription_status || null;
+    const expiry = profile.premium_expiry ? new Date(profile.premium_expiry) : null;
+
+    // Plan box
+    const nameEl = document.getElementById('jd-plan-name');
+    const badgeEl = document.getElementById('jd-plan-badge');
+    const detailEl = document.getElementById('jd-plan-detail');
+    const meterWrap = document.getElementById('jd-meter-wrap');
+    const meterBar = document.getElementById('jd-meter-bar');
+
+    const fmtDate = (d) => d ? d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+    if (isPrem && purchased === 'RUSH') {
+      nameEl.textContent = '⚡ Pass révision';
+      badgeEl.textContent = 'Actif';
+      badgeEl.className = 'jd-badge on';
+      detailEl.innerHTML = expiry
+        ? 'Accès illimité jusqu\'au <b>' + fmtDate(expiry) + '</b>.'
+        : 'Accès illimité jusqu\'à la fin de la session.';
+      meterWrap.style.display = 'none';
+    } else if (isPrem && purchased === 'ROUTINE') {
+      nameEl.textContent = '📚 Abonnement mensuel';
+      badgeEl.textContent = subStatus === 'past_due' ? 'En retard' : 'Actif';
+      badgeEl.className = 'jd-badge on';
+      detailEl.innerHTML = expiry
+        ? 'Prochain renouvellement le <b>' + fmtDate(expiry) + '</b>.'
+        : '6 € / mois — annulable à tout moment.';
+      meterWrap.style.display = 'none';
+    } else if (subStatus && subStatus !== 'active' && subStatus !== 'trialing') {
+      nameEl.textContent = '📚 Abonnement';
+      badgeEl.textContent = subStatus === 'canceled' ? 'Annulé' : subStatus;
+      badgeEl.className = 'jd-badge off';
+      detailEl.textContent = 'Ton abonnement est inactif. Choisis une formule pour reprendre.';
+      meterWrap.style.display = 'none';
+    } else {
+      nameEl.textContent = 'Gratuit';
+      badgeEl.textContent = 'Découverte';
+      badgeEl.className = 'jd-badge off';
+      const limit = JD.config?.actionLimit || 10;
+      const count = profile.action_count || 0;
+      detailEl.innerHTML = '<b>' + count + ' / ' + limit + '</b> actions consultées sur ta période en cours.';
+      meterWrap.style.display = 'block';
+      meterBar.style.width = Math.min(100, (count / limit) * 100) + '%';
+    }
+
+    // Highlight the current formula card
+    const grid = document.getElementById('jd-formulas-grid');
+    if (grid) {
+      grid.querySelectorAll('.jd-formula').forEach((card) => {
+        card.classList.toggle('current', isPrem && card.dataset.mode === purchased);
+      });
+    }
+
+    // Hide RUSH formula after the cutoff (server rejects it anyway)
+    const cutoff = JD.config?.rushCutoffDate ? new Date(JD.config.rushCutoffDate) : null;
+    if (cutoff && new Date() >= cutoff) {
+      const rushBtn = grid?.querySelector('.jd-formula[data-mode="RUSH"]');
+      if (rushBtn) rushBtn.style.display = 'none';
+    }
+
+    // Section title + formulas visibility:
+    // - If user is already premium on a plan, label becomes "Changer de formule"
+    // - Hide the "Gérer paiement" button if no Stripe customer yet
+    const formulasTitle = document.getElementById('jd-formulas-title');
+    if (formulasTitle) formulasTitle.textContent = isPrem ? 'Changer de formule' : 'Choisir une formule';
+
+    const portalBtn = document.getElementById('jd-portal-btn');
+    if (portalBtn) {
+      const hasCustomer = !!profile.stripe_customer_id;
+      portalBtn.style.display = hasCustomer ? 'block' : 'none';
+    }
+
+    document.getElementById('jd-account-modal')?.classList.add('show');
+  };
+
+  JD._hideAccount = function () {
+    document.getElementById('jd-account-modal')?.classList.remove('show');
   };
 
   function _showPaywall(out) {

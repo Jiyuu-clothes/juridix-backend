@@ -45,7 +45,7 @@ router.get('/profile', requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('id, is_premium, premium_expiry, action_count, first_action_at, config_mode_purchased')
+      .select('id, is_premium, premium_expiry, action_count, first_action_at, config_mode_purchased, stripe_customer_id, stripe_subscription_id, stripe_subscription_status')
       .eq('id', req.user.id)
       .maybeSingle();
     if (error) throw error;
