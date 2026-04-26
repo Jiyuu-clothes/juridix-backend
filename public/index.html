@@ -1669,7 +1669,7 @@ CORPUS.forEach(function(a){CIDX[a.id]=a;});
 /* ===== LIAISONS BIDIRECTIONNELLES CORPUS ===== */
 function normalizeRef(s){
   return (s||'').toLowerCase()
-    .replace(/\s+(code civil|code pénal|code du travail|constitution 1958|c\.?\s*civ\.?|c\.?\s*pen\.?)\s*$/i,'')
+    .replace(/\s+(code civil|code pénal|code du travail|constitution(?:\s+1958)?|const\.?|cja|c\.?\s*civ\.?|c\.?\s*pen\.?)\s*$/i,'')
     .replace(/\s+/g,' ').trim();
 }
 
@@ -2338,9 +2338,23 @@ function generateFiche(){
   }
 }
 function searchVoir(q){
-  document.getElementById('search-input').value=q;
-  switchTab('search');
-  doSearch();
+  // En mode hub (studio + reader visibles), la recherche secondaire (#page-search)
+  // est planquée dans un tiroir et son input n'est pas focusable. On utilise donc
+  // le topbar — son dropdown s'affiche par-dessus le reader, l'utilisateur clique
+  // un résultat (corpus ou Légifrance) qui ouvre l'article voulu dans le reader.
+  var tb = document.getElementById('topbar-search');
+  if(tb && document.body.classList.contains('hub-mode')){
+    tb.value = q;
+    tb.focus();
+    try{ tb.setSelectionRange(q.length, q.length); }catch(_){}
+    if(typeof topbarSearch === 'function') topbarSearch(q);
+    return;
+  }
+  // Fallback (mode classique) : remplir l'input principal et lancer doSearch
+  var si = document.getElementById('search-input');
+  if(si) si.value = q;
+  if(typeof switchTab === 'function') switchTab('search');
+  if(typeof doSearch === 'function') doSearch();
 }
 function citeArticle(){
   if(!_art)return;
