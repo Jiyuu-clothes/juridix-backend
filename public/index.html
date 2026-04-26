@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>JuriDix — Bibliothèque Juridique</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='2' width='20' height='2.2' rx='0.4' fill='%2338BDF8'/><rect x='4' y='4.5' width='16' height='1.4' fill='%2338BDF8'/><rect x='7' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='9.7' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='12.4' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='15.1' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='4' y='18.1' width='16' height='1.4' fill='%2338BDF8'/><rect x='2' y='19.8' width='20' height='2.2' rx='0.4' fill='%2338BDF8'/></svg>">
+<meta name="theme-color" content="#38BDF8">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script defer src="/js/juridix.js"></script>
 <style>
@@ -919,17 +921,22 @@ body.hub-mode #lab-toolbar{display:flex}
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <div class="logo" onclick="switchTab('search')" style="display:flex;align-items:center;gap:7px">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#38BDF8;flex-shrink:0">
-      <!-- Balance + éclair -->
-      <line x1="12" y1="3" x2="12" y2="21"></line>
-      <path d="M5 8 L3 14 L7 14 Z" fill="currentColor" fill-opacity="0.15"></path>
-      <path d="M19 8 L17 14 L21 14 Z" fill="currentColor" fill-opacity="0.15"></path>
-      <line x1="3" y1="21" x2="21" y2="21"></line>
-      <line x1="5" y1="8" x2="19" y2="8"></line>
-      <path d="M13 10 L10 14 L12 14 L11 17 L14 13 L12 13 Z" fill="#fbbf24" stroke="#fbbf24"></path>
+  <div class="logo" onclick="switchTab('search')" style="display:flex;align-items:center;gap:8px">
+    <svg width="22" height="22" viewBox="0 0 24 24" style="color:#38BDF8;flex-shrink:0" aria-hidden="true">
+      <!-- Pilier dorique — JuriDix -->
+      <!-- Chapiteau -->
+      <rect x="2" y="2" width="20" height="2.2" rx="0.4" fill="currentColor"/>
+      <rect x="4" y="4.5" width="16" height="1.4" fill="currentColor"/>
+      <!-- Fût cannelé (4 ribs / 3 cannelures) -->
+      <rect x="7"    y="6.3" width="1.7" height="11.4" fill="currentColor"/>
+      <rect x="9.7"  y="6.3" width="1.7" height="11.4" fill="currentColor"/>
+      <rect x="12.4" y="6.3" width="1.7" height="11.4" fill="currentColor"/>
+      <rect x="15.1" y="6.3" width="1.7" height="11.4" fill="currentColor"/>
+      <!-- Base -->
+      <rect x="4" y="18.1" width="16" height="1.4" fill="currentColor"/>
+      <rect x="2" y="19.8" width="20" height="2.2" rx="0.4" fill="currentColor"/>
     </svg>
-    <span style="font-weight:800">Juri<span style="font-weight:300;opacity:.6">Dix</span></span>
+    <span style="font-weight:800;letter-spacing:-0.3px">Juri<span style="font-weight:300;opacity:.6">Dix</span></span>
   </div>
   <input id="search-input" type="text" placeholder="Rechercher…" autocomplete="off" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
   <!-- Ancien système (maintenu pour compat JS) -->
