@@ -1737,7 +1737,8 @@ function renderLinkedJuris(items, container){
   var html='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>';
   items.forEach(function(jp){
     var excerpt=(jp.texte||'').slice(0,160)+'…';
-    html+='<div class="related-item" onclick="openArticle('+JSON.stringify(jp.id)+')">'
+    var safeId=escHtml(jp.id||'').replace(/'/g,'&#39;');
+    html+='<div class="related-item" onclick="openArticle(&quot;'+safeId+'&quot;)">'
       +'<div class="ri2-ref">'+escHtml(jp.ref)+'</div>'
       +'<div class="ri2-title">'+escHtml(jp.title)+'</div>'
       +'<div class="ri2-exc">'+escHtml(excerpt)+'</div>'
@@ -1751,7 +1752,8 @@ function renderLinkedArticles(items, container){
   if(!items.length){container.innerHTML='';return;}
   var html='<div class="art-related"><div class="art-related-title">📚 Articles appliqués</div>';
   items.forEach(function(art){
-    html+='<div class="related-item" onclick="openArticle('+JSON.stringify(art.id)+')">'
+    var safeId=escHtml(art.id||'').replace(/'/g,'&#39;');
+    html+='<div class="related-item" onclick="openArticle(&quot;'+safeId+'&quot;)">'
       +'<div class="ri2-ref">'+escHtml(art.code)+'</div>'
       +'<div class="ri2-title">'+escHtml(art.ref+' — '+art.title)+'</div>'
       +'</div>';
@@ -2152,12 +2154,14 @@ async function openArticle(id){
     var linkedArts=getLinkedArticles(a);
     renderLinkedArticles(linkedArts, relContainer);
   } else if(a.type!=='definition'){
-    // Article → jurisprudence liée (corpus d'abord, API en fallback)
+    // Article → jurisprudence liée (corpus d'abord, puis API en complément)
     var linkedJuris=getLinkedJuris(a);
     if(linkedJuris.length>0){
       renderLinkedJuris(linkedJuris, relContainer);
+      // Augmenter avec PISTE en arrière-plan
+      loadRelatedJurisprudence(a.ref, a.code, true /*append*/);
     } else {
-      loadRelatedJurisprudence(a.ref, a.code);
+      loadRelatedJurisprudence(a.ref, a.code, false);
     }
   }
 
@@ -2166,19 +2170,39 @@ async function openArticle(id){
   document.getElementById('reader-pane').scrollTop=0;
 }
 
-/* Cherche la jurisprudence liée à un article via le backend */
-async function loadRelatedJurisprudence(ref, codeName){
+/* Cherche la jurisprudence liée à un article via le backend.
+   - append=false  → remplace #ac-related (cas: pas de corpus link)
+   - append=true   → ajoute en bas du panneau corpus existant
+*/
+async function loadRelatedJurisprudence(ref, codeName, append){
   var container=document.getElementById('ac-related');
   if(!container)return;
-  container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée</div><div class="rel-loading"><div class="spinner"></div><span>Recherche en cours…</span></div></div>';
+  var artSnap=_art; // garde le contexte initial (l'utilisateur peut changer d'article)
 
-  try {
-    /* Utiliser les mots-clés du titre plutôt que la référence brute */
-    var titleWords=(_art&&_art.title?_art.title:'').toLowerCase()
+  // En mode "remplace", afficher un loader. En mode "append", on bosse en arrière-plan.
+  if(!append){
+    container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée</div><div class="rel-loading"><div class="spinner"></div><span>Recherche Légifrance en cours…</span></div></div>';
+  }
+
+  // Construit une requête plus pertinente : le numéro d'article + nom du code en priorité.
+  // Ex : "1240 code civil", "L1232-1 code travail". À défaut, fallback aux mots-clés du titre.
+  function buildQuery(){
+    var refStr=(ref||'').toString();
+    var num=refStr.match(/(\d+(?:[\-.\s]\d+)?)/);
+    num = num ? num[1].replace(/\s+/g,'-') : null;
+    var codeShort=(codeName||'').replace(/^Code\s+/i,'').toLowerCase().trim();
+    if(num){
+      return codeShort ? (num+' '+codeShort) : num;
+    }
+    var titleWords=(artSnap&&artSnap.title?artSnap.title:'').toLowerCase()
       .replace(/[^a-zàâäéèêëîïôöùûüç\s]/gi,' ')
       .split(/\s+/).filter(function(w){return w.length>4&&!['article','alinea','titre','chapitre','livre','partie','selon','toute','toutes','celui'].includes(w);})
       .slice(0,4).join(' ');
-    var query=titleWords||ref;
+    return titleWords || refStr;
+  }
+
+  try {
+    var query=buildQuery();
     var resp=await fetch('/api/search',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -2190,19 +2214,43 @@ async function loadRelatedJurisprudence(ref, codeName){
       return r.content&&r.content.length>10;
     }).slice(0,5);
 
-    if(items.length===0){container.innerHTML='';return;}
+    // L'utilisateur a navigué ailleurs entre temps → on n'écrit rien.
+    if(_art !== artSnap) return;
+
+    if(items.length===0){
+      if(append) return; // garde le panneau corpus tel quel
+      var lurl='https://www.legifrance.gouv.fr/search/juri?searchField=ALL&query='+encodeURIComponent((ref||'')+' '+(codeName||''));
+      container.innerHTML='<div class="art-related">'
+        +'<div class="art-related-title">⚖️ Jurisprudence liée</div>'
+        +'<div class="rel-empty" style="padding:14px 12px;border-radius:var(--r2);background:rgba(255,255,255,0.02);border:1px dashed var(--gb);font-size:12px;color:var(--t2);line-height:1.5">'
+        +'Aucune décision Légifrance n\'a été remontée pour cet article. '
+        +'<a href="'+lurl+'" target="_blank" rel="noopener" style="color:var(--acc2);text-decoration:none;font-weight:600">Chercher sur Légifrance →</a>'
+        +'</div></div>';
+      return;
+    }
 
     _relatedJuris=items;
-    var html='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>';
+    var safe=function(s){return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');};
+    var inner='';
     items.forEach(function(item){
       var excerpt=(item.content||'').replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim().slice(0,150)+'…';
-      var safe=function(s){return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');};
-      html+='<div class="related-item" onclick="openRelatedJuris(\''+safe(item.url||'')+'\',\''+safe(item.title||'')+'\',\''+safe(item.content||'')+'\',\''+safe(item.code||'')+'\')"><div class="ri2-ref">'+escHtml(item.code||'Légifrance')+'</div><div class="ri2-title">'+escHtml(item.title||'Décision')+'</div><div class="ri2-exc">'+escHtml(excerpt)+'</div></div>';
+      inner+='<div class="related-item" onclick="openRelatedJuris(\''+safe(item.url||'')+'\',\''+safe(item.title||'')+'\',\''+safe(item.content||'')+'\',\''+safe(item.code||'')+'\')"><div class="ri2-ref">'+escHtml(item.code||'Légifrance')+'</div><div class="ri2-title">'+escHtml(item.title||'Décision')+'</div><div class="ri2-exc">'+escHtml(excerpt)+'</div></div>';
     });
-    html+='</div>';
-    container.innerHTML=html;
+
+    if(append){
+      // Ajoute un second bloc « Légifrance » sous le bloc corpus existant.
+      var extra=document.createElement('div');
+      extra.className='art-related';
+      extra.style.marginTop='14px';
+      extra.innerHTML='<div class="art-related-title">⚖️ Légifrance · décisions associées ('+items.length+')</div>'+inner;
+      container.appendChild(extra);
+    } else {
+      container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>'+inner+'</div>';
+    }
   } catch(e){
-    container.innerHTML='';
+    if(_art !== artSnap) return;
+    if(append) return;
+    container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée</div><div class="rel-empty" style="padding:12px;color:var(--t2);font-size:12px">⚠ Service Légifrance indisponible.</div></div>';
   }
 }
 
@@ -3328,8 +3376,8 @@ async function openNavArticle(cid, el){
     if(art.url){
       document.getElementById('ac-voir').innerHTML = '<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+art.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
     }
-    // Jurisprudence liée
-    loadRelatedJurisprudence(art.title||art.article||'', art.code||'');
+    // Jurisprudence liée — préfère le numéro d'article (plus précis que le titre)
+    loadRelatedJurisprudence(art.article||art.title||'', art.code||'', false);
   } catch(err){
     document.getElementById('ac-texte').innerHTML = '<em style="color:#f87171">⚠ Impossible de charger cet article.</em>';
   }
