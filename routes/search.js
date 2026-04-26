@@ -1,7 +1,8 @@
-const express = require('express');
-const router  = express.Router();
-const piste   = require('../services/piste');
-const corpus  = require('../services/corpus');
+const express  = require('express');
+const router   = express.Router();
+const piste    = require('../services/piste');
+const corpus   = require('../services/corpus');
+const citation = require('../services/citation');
 
 // Pré-charger le cache des codes principaux au démarrage (async, non bloquant)
 const WARMUP_CODES = [
@@ -32,7 +33,8 @@ function getType(filters) {
 // POST /api/search
 router.post('/', async (req, res) => {
   try {
-    const { query, filters = {} } = req.body;
+    const { query } = req.body;
+    let filters = (req.body && req.body.filters) ? { ...req.body.filters } : {};
     if (!query || query.trim().length < 2) {
       return res.status(400).json({ error: 'La requête doit contenir au moins 2 caractères.' });
     }
@@ -42,6 +44,33 @@ router.post('/', async (req, res) => {
     let source  = 'corpus';
     let pisteError = null;
     let corrected = null;
+    let renumbered = null;
+    let synonymsAdded = null;
+
+    // ─── Pré-traitement intelligent de la requête ────────────────────
+    // 1) Citation parser : "1382" → "1240" (renumérotation 2016) + code détecté
+    // 2) Synonymes consacrés : "manoeuvres frauduleuses" → ajoute "dol"
+    let effectiveQuery = query;
+    const cit = citation.parseCitation(query);
+    if (cit) {
+      // Si renumérotation, on remplace le numéro et on prévient le front.
+      if (cit.ancien) {
+        renumbered = { from: cit.ancienNum, to: cit.num, note: cit.note };
+        effectiveQuery = query.replace(
+          new RegExp('\\b' + cit.ancienNum.replace(/[-]/g, '\\-') + '\\b'),
+          cit.num
+        );
+      }
+      // Si un code est détecté (et pas déjà filtré), on contraint le filtre.
+      if (cit.codeName && !filters.code) {
+        filters = { ...filters, code: cit.codeName };
+      }
+    }
+    const syn = citation.expandSynonyms(query);
+    if (syn) {
+      synonymsAdded = syn.added;
+      effectiveQuery = effectiveQuery + ' ' + syn.added.join(' ');
+    }
 
     const runPiste = async (q) => {
       const pisteFilters = { ...filters, type: getType(filters) };
@@ -50,7 +79,7 @@ router.post('/', async (req, res) => {
 
     if (hasCreds) {
       try {
-        results = await runPiste(query);
+        results = await runPiste(effectiveQuery);
         source = 'piste';
 
         // Si PISTE renvoie 0 résultat, on tente une correction de typo
@@ -70,36 +99,46 @@ router.post('/', async (req, res) => {
       } catch (err) {
         pisteError = err.detail || err.message;
         console.warn('[PISTE] Indisponible, fallback corpus —', pisteError);
-        results = corpus.search(query, filters);
+        results = corpus.search(effectiveQuery, filters);
       }
     } else {
-      results = corpus.search(query, filters);
+      results = corpus.search(effectiveQuery, filters);
     }
 
-    // Boost numérique : si la query est un numéro d'article (ex. "1240" ou "221-1"),
-    // on fait remonter les résultats qui matchent exactement ce numéro.
-    const numMatch = query.trim().match(/^(\d{1,4}(?:[-\s]\d+)?)$/);
-    if (numMatch && Array.isArray(results) && results.length > 1) {
-      const num = numMatch[1].replace(/\s+/g, '-');
+    // Boost numérique : si la query (ou la citation parsée) cible un numéro
+    // d'article (ex. "1240", "221-1", "L121-3"), on fait remonter les résultats
+    // qui matchent exactement ce numéro.
+    const targetNum = cit
+      ? cit.num
+      : (query.trim().match(/^(\d{1,4}(?:[-\s]\d+)?)$/) || [])[1]?.replace(/\s+/g, '-');
+    if (targetNum && Array.isArray(results) && results.length > 1) {
+      const num = String(targetNum);
       const refOf = (s) => (s || '').toString();
+      // Strip "Art. " / "Article " prefix to compare numéros bruts.
+      const stripArt = (s) => refOf(s).replace(/^art(?:icle|\.)?\s*/i, '').trim();
       const isExactNum = (a) => {
-        const r = refOf(a.ref);
-        const art = refOf(a.article);
+        const r   = refOf(a.ref);
+        const art = stripArt(a.article);
         return art === num
           || r === num
           || r.endsWith(' ' + num)
           || r.endsWith('.' + num)
-          || r.endsWith('art. ' + num);
+          || r.endsWith('art. ' + num)
+          || r.toLowerCase().endsWith('art. ' + num.toLowerCase());
       };
       results.sort((a, b) => (isExactNum(b) ? 1 : 0) - (isExactNum(a) ? 1 : 0));
     }
 
     return res.json({
       query,
+      effectiveQuery: effectiveQuery !== query ? effectiveQuery : undefined,
       results,
       source,
       total: Array.isArray(results) ? results.length : 0,
       ...(corrected ? { corrected } : {}),
+      ...(renumbered ? { renumbered } : {}),
+      ...(synonymsAdded ? { synonyms: synonymsAdded } : {}),
+      ...(cit ? { citation: { num: cit.num, code: cit.codeName, alinea: cit.alinea } } : {}),
       credits_remaining: null,
       ...(pisteError && process.env.NODE_ENV !== 'production' ? { piste_error: pisteError } : {})
     });

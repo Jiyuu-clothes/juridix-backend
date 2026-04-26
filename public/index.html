@@ -138,6 +138,14 @@ body.light .tbdd{background:rgba(255,255,255,0.98);border-color:rgba(0,0,0,0.08)
 .tbdd-corrected{padding:9px 16px;font-size:12px;color:#fbbf24;background:rgba(251,191,36,.06);border-bottom:1px solid rgba(255,255,255,0.06)}
 .tbdd-corrected b{color:#fde68a;font-weight:700}
 body.light .tbdd-corrected{color:#92400e;background:rgba(251,191,36,.10)}
+.tbdd-renumbered{padding:9px 16px;font-size:12px;color:#7dd3fc;background:rgba(56,189,248,.07);border-bottom:1px solid rgba(56,189,248,.14);display:flex;align-items:center;gap:6px}
+.tbdd-renumbered b{color:#bae6fd;font-weight:700}
+.tbdd-renumbered .arrow{opacity:.7;margin:0 2px}
+.tbdd-renumbered .note{opacity:.65;font-size:11px;margin-left:auto;font-style:italic}
+body.light .tbdd-renumbered{color:#075985;background:rgba(14,165,233,.10);border-bottom-color:rgba(14,165,233,.18)}
+body.light .tbdd-renumbered b{color:#0c4a6e}
+.tbdd-citation-pill{display:inline-block;font-size:10px;font-weight:700;background:rgba(56,189,248,.15);color:#7dd3fc;border:1px solid rgba(56,189,248,.3);padding:2px 7px;border-radius:5px;letter-spacing:.3px;margin-left:6px;vertical-align:middle}
+body.light .tbdd-citation-pill{background:rgba(14,165,233,.12);color:#0369a1;border-color:rgba(14,165,233,.3)}
 .tbdd-loading{padding:18px 20px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:10px}
 .tbdd-loading .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.15);border-top-color:#38BDF8;border-radius:50%;animation:tbddSpin .7s linear infinite}
 @keyframes tbddSpin{to{transform:rotate(360deg)}}
@@ -3455,17 +3463,30 @@ function openTopbarDD(html){var dd=tbDD();if(!dd)return;dd.innerHTML=html;dd.cla
 
 function tbEscapeHtml(s){return (s||'').toString().replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
-function renderTopbarDD(items, q, corrected){
+function renderTopbarDD(items, q, corrected, renumbered, citation){
   if(!items || items.length===0){
     var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
     openTopbarDD('<div class="tbdd-empty">Aucun résultat pour « '+tbEscapeHtml(q)+' ».<br><a href="'+lurl+'" target="_blank" style="color:#38BDF8;text-decoration:none;font-size:12px;display:inline-block;margin-top:8px">🔗 Chercher sur Légifrance →</a></div>');
     return;
   }
   var html='';
+  if(renumbered){
+    html+='<div class="tbdd-renumbered" title="Réforme du droit des obligations — Ord. 2016-131">'
+        + '<span>📜 Ancien art. <b>'+tbEscapeHtml(renumbered.from)+'</b></span>'
+        + '<span class="arrow">→</span>'
+        + '<span>nouvel art. <b>'+tbEscapeHtml(renumbered.to)+'</b></span>'
+        + (renumbered.note?'<span class="note">'+tbEscapeHtml(renumbered.note)+'</span>':'')
+        + '</div>';
+  }
   if(corrected){
     html+='<div class="tbdd-corrected">Aucun résultat pour « '+tbEscapeHtml(q)+' ». Voici <b>'+tbEscapeHtml(corrected)+'</b> :</div>';
   }
-  html+='<div class="tbdd-section">Résultats ('+items.length+')</div>';
+  var citPill = '';
+  if(citation && (citation.code || citation.num)){
+    var lbl = (citation.code?citation.code+' ':'') + 'art. ' + citation.num + (citation.alinea?' al. '+citation.alinea:'');
+    citPill = '<span class="tbdd-citation-pill">📍 '+tbEscapeHtml(lbl)+'</span>';
+  }
+  html+='<div class="tbdd-section">Résultats ('+items.length+')'+citPill+'</div>';
   items.slice(0,8).forEach(function(a,i){
     var pill = a._fromAPI ? '<span class="pill">PISTE</span>' : (a.type==='jurisprudence' ? '<span class="pill">JURIS</span>' : '');
     var exc=(a.texte||'').replace(/\n/g,' ').slice(0,140);
@@ -3548,7 +3569,7 @@ async function topbarSearch(q){
       if(!seen.has(k)){seen.add(k);merged.push(a);}
     });
     _tbItems=merged.slice(0,8);
-    renderTopbarDD(_tbItems, q, data.corrected||null);
+    renderTopbarDD(_tbItems, q, data.corrected||null, data.renumbered||null, data.citation||null);
   }catch(e){
     if(ver!==_tbVer)return;
     if(localItems.length>0){
