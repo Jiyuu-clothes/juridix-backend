@@ -2071,7 +2071,7 @@ function renderResults(items, q){
     div.setAttribute('data-id',a.id);
     div.style.animationDelay=(i*0.04)+'s';
     var badge=a._fromAPI?'<span class="api-badge">PISTE</span>':'';
-    div.innerHTML='<div class="ri-ref">'+a.ref+' · '+a.code+badge+'</div><div class="ri-title">'+a.title+'</div><div class="ri-excerpt">'+exc+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+'</div>';
+    div.innerHTML='<div class="ri-ref">'+escHtml(a.ref)+' · '+escHtml(a.code)+badge+'</div><div class="ri-title">'+escHtml(a.title)+'</div><div class="ri-excerpt">'+escHtml(exc)+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+escHtml(t)+'</span>';}).join('')+'</div>';
     div.addEventListener('click',function(){openArticle(a.id);});
     list.appendChild(div);
   });
@@ -2128,7 +2128,7 @@ async function doSearch(){
 
     if(merged.length===0){
       var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
-      document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+q+' ».</p><br><a href="'+lurl+'" target="_blank" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
+      document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+escHtml(q)+' ».</p><br><a href="'+escHtml(lurl)+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
       return;
     }
     renderResults(merged, q);
@@ -2138,7 +2138,7 @@ async function doSearch(){
     if(version!==_searchVersion)return;
     if(localRes.length===0){
       var lurl='https://www.legifrance.gouv.fr/search/all?tab_selection=all&searchField=ALL&query='+encodeURIComponent(q);
-      document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+q+' ».</p><br><a href="'+lurl+'" target="_blank" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
+      document.getElementById('results-list').innerHTML='<div class="search-empty"><span class="ico">🔍</span><p>Aucun résultat pour « '+escHtml(q)+' ».</p><br><a href="'+escHtml(lurl)+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 18px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px;color:var(--acc2);font-size:13px;font-weight:600;text-decoration:none;">🔗 Chercher sur Légifrance →</a></div>';
     }
   }
 }
@@ -2291,11 +2291,13 @@ async function loadRelatedJurisprudence(ref, codeName, append){
     }
 
     _relatedJuris=items;
-    var safe=function(s){return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');};
+    // Pass the array index instead of inlining attacker-influenceable strings into onclick.
+    // Caller looks up _relatedJuris[i] via openRelatedJurisIdx().
+    window._relatedJurisItems = items;
     var inner='';
-    items.forEach(function(item){
+    items.forEach(function(item, idx){
       var excerpt=(item.content||'').replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim().slice(0,150)+'…';
-      inner+='<div class="related-item" onclick="openRelatedJuris(\''+safe(item.url||'')+'\',\''+safe(item.title||'')+'\',\''+safe(item.content||'')+'\',\''+safe(item.code||'')+'\')"><div class="ri2-ref">'+escHtml(item.code||'Légifrance')+'</div><div class="ri2-title">'+escHtml(item.title||'Décision')+'</div><div class="ri2-exc">'+escHtml(excerpt)+'</div></div>';
+      inner+='<div class="related-item" onclick="openRelatedJurisIdx('+idx+')"><div class="ri2-ref">'+escHtml(item.code||'Légifrance')+'</div><div class="ri2-title">'+escHtml(item.title||'Décision')+'</div><div class="ri2-exc">'+escHtml(excerpt)+'</div></div>';
     });
 
     if(append){
@@ -2319,6 +2321,25 @@ function escHtml(s){
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// safeUrl — n'autorise QUE les schémas http/https/relatif, sinon retourne '#'.
+// Bloque les javascript:, data:, vbscript: en injection via <a href="...">.
+function safeUrl(u){
+  if(!u) return '#';
+  var s = String(u).trim();
+  if(s.startsWith('/') || s.startsWith('#')) return escHtml(s);
+  if(/^https?:\/\//i.test(s)) return escHtml(s);
+  return '#';
+}
+
+/* Wrapper sûr — récupère l'item via index plutôt que via paramètres inline.
+   Évite toute injection via les valeurs PISTE dans l'attribut onclick. */
+function openRelatedJurisIdx(i){
+  var arr = window._relatedJurisItems || [];
+  var item = arr[i];
+  if(!item) return;
+  openRelatedJuris(item.url||'', item.title||'', item.content||'', item.code||'');
+}
+
 /* Ouvre une décision de jurisprudence depuis le panneau lié */
 function openRelatedJuris(url, title, content, source){
   /* Créer un pseudo-article temporaire */
@@ -2338,7 +2359,7 @@ function openRelatedJuris(url, title, content, source){
   document.getElementById('ac-type').textContent='Jurisprudence';
   setArticleText(document.getElementById('ac-texte'), fakeArt.texte||'');
   document.getElementById('ac-related').innerHTML='';
-  document.getElementById('ac-voir').innerHTML=url?'<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>':'';
+  document.getElementById('ac-voir').innerHTML=url?'<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+safeUrl(url)+'" target="_blank" rel="noopener noreferrer" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>':'';
   document.getElementById('reader-pane').scrollTop=0;
 }
 
@@ -3235,7 +3256,7 @@ function openRedacResult(i){
   setArticleText(document.getElementById('ac-texte'), texte || '(Texte non disponible)');
   document.getElementById('ac-pedagogy').innerHTML='';
   document.getElementById('ac-related').innerHTML='';
-  if(item.url) document.getElementById('ac-voir').innerHTML='<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+item.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
+  if(item.url) document.getElementById('ac-voir').innerHTML='<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
   else document.getElementById('ac-voir').innerHTML='';
 }
 
@@ -3427,7 +3448,7 @@ async function openNavArticle(cid, el){
     else{setArticleText(el,'(Contenu non disponible)');};
     // Lien Légifrance dans ac-voir
     if(art.url){
-      document.getElementById('ac-voir').innerHTML = '<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+art.url+'" target="_blank" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
+      document.getElementById('ac-voir').innerHTML = '<div class="art-voir-title">Source</div><div class="art-voir-chips"><a href="'+safeUrl(art.url)+'" target="_blank" rel="noopener noreferrer" class="voir-chip" style="text-decoration:none">🔗 Légifrance →</a></div>';
     }
     // Jurisprudence liée — préfère le numéro d'article (plus précis que le titre)
     loadRelatedJurisprudence(art.article||art.title||'', art.code||'', false);
@@ -4424,8 +4445,8 @@ function labInsertLive(){
   list.innerHTML = _lipResults.map(function(it,i){
     var ref = (it.code?it.code+' — ':'') + (it.ref||'');
     return '<div class="lip-row'+(i===0?' sel':'')+'" data-i="'+i+'" onmousedown="event.preventDefault()" onclick="labPickInsert('+i+',false)">'
-      + '<div class="lr-ref">'+ref+'</div>'
-      + '<div>'+(it.title||'')+'</div>'
+      + '<div class="lr-ref">'+escHtml(ref)+'</div>'
+      + '<div>'+escHtml(it.title||'')+'</div>'
       + '</div>';
   }).join('');
 }

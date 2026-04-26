@@ -17,6 +17,20 @@ const PRICE_ROUTINE = process.env.STRIPE_PRICE_ID_ROUTINE;
 const RUSH_CUTOFF = process.env.RUSH_CUTOFF_DATE || '2026-06-01';
 const RUSH_EXPIRY = process.env.RUSH_ACCESS_EXPIRY || '2026-06-30';
 
+// Base URL serveur-side — JAMAIS dérivée du header Origin (attaquant-contrôlable).
+// Configurer en prod: PUBLIC_URL=https://juridix-backend.onrender.com
+const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.BASE_URL || '').replace(/\/$/, '');
+
+function trustedBaseUrl(req) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  if (process.env.NODE_ENV !== 'production') {
+    return `http://localhost:${process.env.PORT || 3000}`;
+  }
+  // En prod sans PUBLIC_URL configurée : on déduit depuis l'host serveur (jamais Origin/Referer)
+  const host = req.get('host');
+  return host ? `https://${host}` : '';
+}
+
 const stripe = STRIPE_KEY ? require('stripe')(STRIPE_KEY) : null;
 
 // ─────────────── Checkout ───────────────
@@ -38,7 +52,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
   const priceId = configMode === 'RUSH' ? PRICE_RUSH : PRICE_ROUTINE;
   if (!priceId) return res.status(503).json({ error: 'Prix Stripe non configuré.' });
 
-  const origin = req.headers.origin || `http://localhost:${process.env.PORT || 3000}`;
+  const origin = trustedBaseUrl(req);
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -68,7 +82,7 @@ router.post('/portal', requireAuth, async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
   if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase non configuré.' });
 
-  const origin = req.headers.origin || `http://localhost:${process.env.PORT || 3000}`;
+  const origin = trustedBaseUrl(req);
 
   try {
     // 1) Find the user's Stripe customer id (set by the checkout webhook)
