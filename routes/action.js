@@ -5,12 +5,26 @@
 //
 // We call the RPC through a USER-scoped client so auth.uid() inside the
 // SECURITY DEFINER function resolves to the calling user.
+//
+// ADMIN BYPASS — emails listed in ADMIN_EMAILS env var (comma-separated)
+// reçoivent un accès illimité côté API (premium:true) sans toucher la DB.
+// Pratique pour tester la version live sans buter sur le paywall.
 // ─────────────────────────────────────────────────────────────
 
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/supabase-auth');
 const { userClient, supabaseAdmin } = require('../lib/supabase');
+
+// Liste des emails admin (lue à chaque requête pour permettre changement à chaud)
+function isAdminEmail(email) {
+  if (!email) return false;
+  const list = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+  return list.includes(email.toLowerCase());
+}
 
 router.post('/', requireAuth, async (req, res) => {
   const { type: rawType = 'open', ref = null } = req.body || {};
@@ -19,6 +33,15 @@ router.post('/', requireAuth, async (req, res) => {
   const type = typeMap[rawType];
   if (!type) {
     return res.status(400).json({ error: 'Type d\'action invalide' });
+  }
+  // ─── ADMIN BYPASS ───
+  if (isAdminEmail(req.user && req.user.email)) {
+    return res.json({
+      allowed: true,
+      premium: true,
+      action_count: 0,
+      admin: true,
+    });
   }
   const configMode = (process.env.CONFIG_MODE || 'RUSH').toUpperCase();
 
@@ -49,6 +72,15 @@ router.get('/profile', requireAuth, async (req, res) => {
       .eq('id', req.user.id)
       .maybeSingle();
     if (error) throw error;
+    // ─── ADMIN BYPASS ─── force le premium côté UI sans toucher à la DB
+    if (isAdminEmail(req.user && req.user.email)) {
+      const adminProfile = Object.assign({}, data || {}, {
+        is_premium: true,
+        admin: true,
+        action_count: 0,
+      });
+      return res.json(adminProfile);
+    }
     res.json(data || null);
   } catch (err) {
     console.error('[action/profile]', err);
