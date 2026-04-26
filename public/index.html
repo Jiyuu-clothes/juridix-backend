@@ -4002,15 +4002,19 @@ function renderSearchLoader(){
 /* ===== SPOTLIGHT ZEN ===== */
 var _zenActive = true;
 
-function exitZenMode(){
+function exitZenMode(targetTab){
   if(!_zenActive) return;
   _zenActive = false;
   var sp = document.getElementById('spotlight');
   if(!sp) return;
   sp.classList.add('fade-out');
   setTimeout(function(){ sp.classList.add('gone'); }, 420);
-  // Activer le Hub Mode (interface multi-outils)
-  setTimeout(function(){ initHubMode(); }, 250);
+  // Activer le Hub Mode (interface multi-outils) puis basculer sur l'onglet par défaut.
+  // Sans argument explicite, on ouvre la bibliothèque des Codes (page d'accueil naturelle).
+  setTimeout(function(){
+    initHubMode();
+    if(typeof switchTab === 'function') switchTab(targetTab || 'codes');
+  }, 250);
 }
 
 function spotlightLive(){
@@ -4020,12 +4024,11 @@ function spotlightLive(){
 function spotlightKey(e){
   var q = document.getElementById('spotlight-input').value.trim();
   if(e.key === 'Enter' && q){
-    exitZenMode();
-    switchTab('search');
+    exitZenMode('search');
     document.getElementById('search-input').value = q;
     doSearch(q);
   } else if(e.key === 'Escape'){
-    exitZenMode();
+    exitZenMode('codes');
   }
 }
 
