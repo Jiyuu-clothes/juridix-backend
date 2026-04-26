@@ -272,9 +272,8 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 /* V3.1 — animation halo violet sur citation */
 @keyframes citeGlow{0%{box-shadow:0 0 0 0 rgba(124,107,255,0.7)}50%{box-shadow:0 0 0 8px rgba(124,107,255,0.2)}100%{box-shadow:0 0 0 0 rgba(124,107,255,0)}}
 #art-content.cite-flash{animation:citeGlow .6s ease}
-/* V3.1 — transition douce mode focus */
+/* V3.1 — transition douce des panneaux */
 #panel-l,#panel-r,#reader-pane,#redac-sidebar{transition:opacity .4s ease}
-body.focus-mode #panel-l,body.focus-mode #panel-r{opacity:1}
 .art-voir{margin-bottom:20px}
 .art-voir-title{font-size:11px;font-family:sans-serif;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
 .art-voir-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -498,17 +497,6 @@ body.focus-mode #panel-l,body.focus-mode #panel-r{opacity:1}
 .pw-feats li::before{content:'✦';color:var(--acc2)}
 .pw-btns{display:flex;gap:8px;justify-content:center}
 
-/* FOCUS MODE — masque les onglets dans tous les cas */
-body.focus-mode #topbar #tabs{display:none}
-body.focus-mode .resizer{display:none}
-/* FOCUS droite : Recherche & Codes → article en plein écran */
-body.focus-mode.focus-right #panel-l{display:none}
-body.focus-mode.focus-right #notes-pane{display:none}
-body.focus-mode.focus-right #reader-pane{padding:40px 15%;font-size:18px}
-/* FOCUS gauche : Rédaction, Fiches, Quiz → section en plein écran */
-body.focus-mode.focus-left #panel-r{display:none}
-body.focus-mode.focus-left #panel-l{width:100%!important;max-width:100%!important}
-body.focus-mode.focus-left #redac-sidebar{display:none}
 /* REDAC MODE — cache le panneau notes de droite */
 body.redac-mode #notes-pane{display:none}
 
@@ -967,10 +955,9 @@ body.hub-mode #lab-toolbar{display:flex}
     <div id="topbar-search-dd" class="tbdd"></div>
   </div>
   <div class="tb-right">
-    <div class="btn-icon" id="studio-mode-btn" onclick="toggleStudioMode()" title="Studio en tâche principale">📝</div>
+    <div class="btn-icon" id="studio-mode-btn" onclick="toggleStudioMode()" title="Studio en tâche principale">✍️</div>
     <div class="btn-icon" id="studio-full-btn" onclick="toggleStudioFullscreen()" title="Studio plein écran">⛶</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
-    <div class="btn-icon" id="focus-btn" onclick="toggleFocus()" title="Mode focus">🎯</div>
   </div>
 </div>
 
@@ -998,7 +985,6 @@ body.hub-mode #lab-toolbar{display:flex}
     <div id="sidebar-bottom">
       <div class="nav-icon" id="ni-studio" onclick="toggleStudio()" title="Studio de Rédaction">✍️<span class="ni-tip">Studio de Rédaction</span></div>
       <div style="width:28px;height:1px;background:var(--gb);margin:4px auto;flex-shrink:0"></div>
-      <div class="nav-icon" onclick="toggleFocus()" id="ni-focus" title="Mode focus">🎯<span class="ni-tip">Mode focus</span></div>
       <div class="nav-icon" onclick="toggleTheme()" id="ni-theme" title="Mode clair/sombre">☀️<span class="ni-tip">Mode clair/sombre</span></div>
     </div>
   </div>
@@ -1884,7 +1870,6 @@ var PEDAGOGY={
 var MAX_CRED=9999,_cred=MAX_CRED,_filter='all',_art=null,_tab='search';
 var _notes=[],_noteIdx=-1;
 var _ficheFilter='all';
-var _focusOn=false;
 
 /* ===== STORAGE ===== */
 function loadStorage(){
@@ -2471,7 +2456,6 @@ function switchTab(tab){
   document.body.classList.toggle('on-search', tab==='search');
   // Largeur panel gauche (mode classique uniquement)
   if(!_hubInited && typeof applyPanelWidth==='function') applyPanelWidth(tab);
-  if(_focusOn) applyFocusClass();
   if(tab==='codes' && !_codesInited){initCodes();}
   if(tab==='redac' && !_redacInited){initRedac();}
   if(tab!=='fiches'){
@@ -2479,27 +2463,6 @@ function switchTab(tab){
     if(!_art && tab!=='redac'){document.getElementById('art-empty').style.display='flex';}
   }
 }
-function toggleFocus(){
-  _focusOn=!_focusOn;
-  document.body.classList.toggle('focus-mode',_focusOn);
-  document.getElementById('focus-btn').classList.toggle('on',_focusOn);
-  var niFocus = document.getElementById('ni-focus');
-  if(niFocus) niFocus.classList.toggle('on',_focusOn);
-  applyFocusClass();
-}
-
-function applyFocusClass(){
-  document.body.classList.remove('focus-left','focus-right');
-  if(!_focusOn) return;
-  // Gauche = contenu principal dans panel-l (Rédaction, Fiches, Quiz)
-  if(_tab==='redac'||_tab==='fiches'||_tab==='quiz'){
-    document.body.classList.add('focus-left');
-  } else {
-    // Droite = article reader (Recherche, Codes)
-    document.body.classList.add('focus-right');
-  }
-}
-
 /* ===== NOTES ===== */
 function renderNotes(){
   var html=_notes.map(function(n,i){
@@ -3457,9 +3420,9 @@ function topbarPick(i){
   closeTopbarDD();
   var tb=document.getElementById('topbar-search');
   if(tb)tb.blur();
-  if(typeof switchTab==='function' && typeof _tab!=='undefined' && _tab!=='search'){
-    switchTab('search');
-  }
+  // Préserver l'onglet actif (Codes/Fiches/Quiz). On ne bascule sur Recherche
+  // que si l'utilisateur n'a pas encore choisi d'onglet ou s'il y est déjà.
+  // Le reader-pane est de toute façon visible en hub-mode, donc l'article s'ouvrira.
   if(typeof openArticle==='function') openArticle(a.id);
 }
 
