@@ -280,8 +280,8 @@ BEGIN
     v_reset := true;
   END IF;
 
-  -- Limite atteinte ?
-  IF v_profile.action_count >= 10 THEN
+  -- Limite atteinte ? (10 actions gratuites → la 11ᵉ déclenche le paywall)
+  IF v_profile.action_count >= 11 THEN
     RETURN jsonb_build_object(
       'allowed', false,
       'reason', 'paywall',

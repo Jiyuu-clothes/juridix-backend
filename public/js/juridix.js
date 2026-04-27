@@ -206,12 +206,21 @@
         body: JSON.stringify({ content_html: content }),
       });
       JD._studioLastSaved = content;
-      const el = document.getElementById('lab-autosave2');
-      if (el) el.textContent = '☁ Synchronisé';
+      // Defer to the global state helper if present, fallback to legacy text.
+      if (typeof window._setSaveState === 'function') {
+        window._setSaveState('saved');
+      } else {
+        const el = document.getElementById('lab-autosave2');
+        if (el) el.textContent = '☁ Synchronisé';
+      }
     } catch (e) {
       console.warn('[JuriDix] studio sync', e);
-      const el = document.getElementById('lab-autosave2');
-      if (el) el.textContent = '⚠ Sauvegarde locale';
+      if (typeof window._setSaveState === 'function') {
+        window._setSaveState('error');
+      } else {
+        const el = document.getElementById('lab-autosave2');
+        if (el) el.textContent = '⚠ Sauvegarde locale';
+      }
     }
   };
 
@@ -280,15 +289,34 @@
     #jd-account .jd-acc-dot{width:7px;height:7px;border-radius:50%;background:#38BDF8;box-shadow:0 0 8px #38BDF8}
     #jd-account.guest{color:#94a3b8;background:rgba(148,163,184,0.08);border-color:rgba(148,163,184,0.25)}
     #jd-account.guest .jd-acc-dot{background:#64748b;box-shadow:none}
-    #jd-paywall .jd-card{max-width:480px;text-align:center}
-    #jd-paywall .jd-pw-icon{font-size:48px;margin-bottom:14px}
-    #jd-paywall .jd-pw-feats{list-style:none;text-align:left;margin:18px 0;padding:14px 18px;background:rgba(15,23,42,0.6);border-radius:10px}
-    #jd-paywall .jd-pw-feats li{padding:5px 0;font-size:13px;color:#cbd5e1;display:flex;align-items:center;gap:9px}
-    #jd-paywall .jd-pw-feats li::before{content:'✓';color:#38BDF8;font-weight:800}
-    #jd-paywall .jd-pw-price{font-size:34px;font-weight:800;color:#38BDF8;margin:8px 0 4px;letter-spacing:-1px}
-    #jd-paywall .jd-pw-price small{font-size:14px;color:#94a3b8;font-weight:500}
-    #jd-paywall .jd-pw-cta{display:flex;gap:8px;margin-top:14px}
-    #jd-paywall .jd-pw-cta button{flex:1}
+    /* ─── Paywall premium — full-page modal with cyan glow + gold/cyan CTA ─── */
+    #jd-paywall{background:radial-gradient(ellipse at center,rgba(8,15,30,.92) 0%,rgba(0,0,0,.96) 70%);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);overflow-y:auto;padding:24px}
+    @keyframes jdPwBoxIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes jdPwGlow{0%,100%{box-shadow:0 0 0 1px rgba(56,189,248,.18),0 0 80px rgba(56,189,248,.18),0 30px 80px rgba(0,0,0,.55)}50%{box-shadow:0 0 0 1px rgba(56,189,248,.28),0 0 120px rgba(56,189,248,.26),0 30px 80px rgba(0,0,0,.55)}}
+    #jd-paywall .jd-card{position:relative;max-width:520px;text-align:center;background:linear-gradient(180deg,rgba(15,23,42,.96) 0%,rgba(8,15,30,.98) 100%);border:1px solid rgba(56,189,248,.22);border-radius:20px;padding:44px 44px 32px;animation:jdPwBoxIn .45s cubic-bezier(.2,.7,.3,1),jdPwGlow 4s ease-in-out 1s infinite;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    #jd-paywall .jd-card::before{content:'';position:absolute;inset:-1px;border-radius:20px;padding:1px;background:linear-gradient(135deg,rgba(56,189,248,.45) 0%,rgba(56,189,248,0) 35%,rgba(244,200,99,.35) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    #jd-paywall .jd-card h2{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+    #jd-paywall .jd-pw-icon{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(56,189,248,.2) 0%,rgba(56,189,248,.06) 100%);border:1px solid rgba(56,189,248,.28);font-size:30px;margin:0 auto 18px;box-shadow:0 0 32px rgba(56,189,248,.22),inset 0 0 16px rgba(56,189,248,.08)}
+    #jd-paywall .jd-pw-eyebrow{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#38BDF8;background:rgba(56,189,248,.10);border:1px solid rgba(56,189,248,.22);padding:5px 12px;border-radius:999px;margin-bottom:14px}
+    #jd-paywall .jd-sub{color:#94a3b8;font-size:14.5px;line-height:1.6;margin:0 auto 24px;max-width:420px}
+    #jd-paywall .jd-pw-feats{list-style:none;text-align:left;margin:0 auto 22px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;max-width:440px;background:transparent;border:none}
+    #jd-paywall .jd-pw-feats li{padding:0;font-size:13px;color:#cbd5e1;display:flex;align-items:flex-start;gap:9px;line-height:1.45}
+    #jd-paywall .jd-pw-feats li::before{content:'';flex-shrink:0;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,rgba(56,189,248,.22),rgba(56,189,248,.08));border:1px solid rgba(56,189,248,.32);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338BDF8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");background-size:11px 11px;background-position:center;background-repeat:no-repeat;margin-top:1px;font-weight:400}
+    #jd-paywall .jd-pw-price{font-size:34px;font-weight:700;color:#f1f5f9;margin:0 0 18px;letter-spacing:-.02em;display:flex;align-items:baseline;justify-content:center;gap:6px}
+    #jd-paywall .jd-pw-price small{font-size:13px;color:#94a3b8;font-weight:500;letter-spacing:0}
+    #jd-paywall .jd-pw-cta{display:flex;flex-direction:column;gap:10px;margin-top:6px;align-items:center}
+    #jd-paywall .jd-pw-cta button{width:100%;max-width:340px;margin:0}
+    #jd-paywall .jd-pw-cta .jd-btn-pw{position:relative;padding:14px 22px;border:none;border-radius:12px;font-size:15px;font-weight:700;letter-spacing:.01em;cursor:pointer;color:#0B1220;background:linear-gradient(135deg,#F4C863 0%,#FFE49B 45%,#38BDF8 100%);box-shadow:0 0 0 1px rgba(244,200,99,.4),0 8px 24px rgba(244,200,99,.18),0 0 32px rgba(56,189,248,.22),inset 0 1px 0 rgba(255,255,255,.45);transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s,filter .2s;overflow:hidden}
+    #jd-paywall .jd-pw-cta .jd-btn-pw::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%);transform:translateX(-100%);transition:transform .65s}
+    #jd-paywall .jd-pw-cta .jd-btn-pw:hover{transform:translateY(-1px);filter:brightness(1.03);box-shadow:0 0 0 1px rgba(244,200,99,.5),0 12px 28px rgba(244,200,99,.26),0 0 40px rgba(56,189,248,.32),inset 0 1px 0 rgba(255,255,255,.55)}
+    #jd-paywall .jd-pw-cta .jd-btn-pw:hover::after{transform:translateX(100%)}
+    #jd-paywall .jd-pw-cta .jd-btn-pw:active{transform:translateY(0)}
+    #jd-paywall .jd-pw-secondary{background:none;border:none;color:#94a3b8;font-size:12.5px;cursor:pointer;padding:6px 16px;letter-spacing:.01em;transition:color .2s}
+    #jd-paywall .jd-pw-secondary:hover{color:#f1f5f9}
+    #jd-paywall .jd-pw-trust{margin-top:18px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:11px;color:#64748b;letter-spacing:.02em;flex-wrap:wrap}
+    #jd-paywall .jd-pw-trust span{display:inline-flex;align-items:center;gap:5px}
+    #jd-paywall .jd-pw-trust svg{width:11px;height:11px;opacity:.7}
+    @media(max-width:560px){#jd-paywall .jd-card{padding:32px 22px 26px}#jd-paywall .jd-pw-feats{grid-template-columns:1fr}#jd-paywall .jd-card h2{font-size:22px}}
 
     /* ─── Account dashboard modal ─── */
     #jd-account-modal .jd-card{max-width:520px}
@@ -357,21 +385,28 @@
       </div>
     </div>
 
-    <div id="jd-paywall" class="jd-modal" onclick="if(event.target===this)JuriDix._hidePaywall()">
+    <div id="jd-paywall" class="jd-modal" role="dialog" aria-modal="true" aria-labelledby="jd-paywall-title" onclick="if(event.target===this)JuriDix._hidePaywall()">
       <div class="jd-card">
-        <div class="jd-pw-icon">⚖️</div>
-        <h2 id="jd-paywall-title">Tu touches du doigt l'illimité</h2>
-        <p class="jd-sub" id="jd-paywall-sub">10 articles consultés. Pour continuer ta révision sans limite, débloque le pass.</p>
+        <div class="jd-pw-icon">⚡</div>
+        <div class="jd-pw-eyebrow">Limite atteinte</div>
+        <h2 id="jd-paywall-title">Continue avec JuriDix Premium</h2>
+        <p class="jd-sub" id="jd-paywall-sub">10 articles consultés. Passe à l'illimité pour continuer ta révision sans interruption.</p>
         <ul class="jd-pw-feats">
-          <li>Recherches illimitées sur 5 codes</li>
-          <li>Studio cloud avec sauvegarde automatique</li>
-          <li>Insertion d'articles dans tes fiches</li>
-          <li>Navigation Précédent / Suivant entre articles</li>
+          <li>Recherches Légifrance illimitées</li>
+          <li>6 codes officiels à jour</li>
+          <li>Jurisprudence Cass. & CE en direct</li>
+          <li>Studio rédac' avec auto-citation</li>
+          <li>Export PDF haute qualité</li>
+          <li>Notes synchronisées entre appareils</li>
         </ul>
         <div class="jd-pw-price" id="jd-pw-price">9,90 € <small id="jd-pw-price-sub">— accès jusqu'au 30 juin</small></div>
         <div class="jd-pw-cta">
-          <button class="jd-btn jd-btn-sec" onclick="JuriDix._hidePaywall()">Plus tard</button>
-          <button class="jd-btn" onclick="JuriDix.startCheckout()">Débloquer maintenant</button>
+          <button class="jd-btn-pw" onclick="JuriDix.startCheckout()" aria-label="Passer Premium via Stripe">✨ Passer Premium</button>
+          <button class="jd-pw-secondary" onclick="JuriDix._hidePaywall()">Plus tard</button>
+        </div>
+        <div class="jd-pw-trust">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Paiement sécurisé Stripe</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="m9 12 2 2 4-4"/></svg>Annulation 1 clic</span>
         </div>
       </div>
     </div>
@@ -603,12 +638,27 @@
 
   function _showPaywall(out) {
     const isRush = JD.config?.configMode === 'RUSH';
+    const limit = JD.config?.actionLimit || 10;
+    // Pricing — read from server config so changes flow without code update.
+    const rushAmount = JD.config?.pricing?.RUSH?.amount ?? 9.90;
+    const routineAmount = JD.config?.pricing?.ROUTINE?.amount ?? 6.00;
+    const fmt = (n) => n.toFixed(2).replace('.', ',').replace(',00', '');
+    const expiry = JD.config?.rushAccessExpiry || '';
+    let expiryFr = 'la fin de la session';
+    if (expiry) {
+      try {
+        const d = new Date(expiry);
+        if (!isNaN(d)) {
+          expiryFr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+        }
+      } catch (_) { /* fallback */ }
+    }
     document.getElementById('jd-pw-price').innerHTML = isRush
-      ? '9,90 € <small>— accès jusqu\'au 30 juin</small>'
-      : '6 € <small>/ mois — annulable à tout moment</small>';
+      ? `${fmt(rushAmount)} € <small>— accès jusqu'au ${expiryFr}</small>`
+      : `${fmt(routineAmount)} € <small>/ mois — sans engagement</small>`;
     document.getElementById('jd-paywall-sub').textContent = isRush
-      ? '10 articles consultés. Le pass JuriDix te donne un accès illimité jusqu\'à la fin de la session.'
-      : '10 articles consultés sur les dernières 4h. Passe en illimité ou attends le reset.';
+      ? `${limit} recherches consultées. Passe à l'illimité pour continuer ta révision jusqu'au ${expiryFr}.`
+      : `${limit} recherches consultées sur les 4 dernières heures. Passe à l'illimité ou attends le reset.`;
     document.getElementById('jd-paywall').classList.add('show');
   }
   JD._hidePaywall = function () {

@@ -127,13 +127,20 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;backgroun
 .tb-right{display:flex;align-items:center;gap:6px;margin-left:auto}
 /* ===== COMMAND BAR PERSISTANTE (Phase 9) ===== */
 #topbar{position:relative}
-#topbar-search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,46vw);min-width:300px;z-index:210}
-#topbar-search-wrap .tb-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.55;pointer-events:none}
+#topbar-search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,46vw);min-width:300px;z-index:210;transition:width .25s cubic-bezier(.4,0,.2,1)}
+/* Au focus du child input → wrap s'élargit légèrement (effet "ouverture") + icône s'active.
+   :focus-within = CSS pur, zéro JS, aucun listener à brancher. */
+#topbar-search-wrap:focus-within{width:min(560px,50vw)}
+#topbar-search-wrap .tb-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.55;pointer-events:none;transition:opacity .2s,color .2s,transform .2s}
+#topbar-search-wrap:focus-within .tb-icon{opacity:1;color:var(--acc);transform:translateY(-50%) scale(1.05)}
 #topbar-search-wrap .tb-kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:5px;padding:2px 7px;font-size:10px;color:var(--t3);font-family:ui-monospace,Menlo,monospace;letter-spacing:.5px;pointer-events:none;transition:opacity .15s}
-#topbar-search{width:100%;height:34px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:0 52px 0 36px;color:var(--t1);font-size:13px;outline:none;transition:all .2s cubic-bezier(.4,0,.2,1)}
-#topbar-search::placeholder{color:var(--t3);opacity:.65}
-#topbar-search:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.16)}
-#topbar-search:focus{background:rgba(15,23,42,0.85);border-color:#38BDF8;box-shadow:0 0 0 3px rgba(56,189,248,.18),0 0 30px rgba(56,189,248,.18)}
+/* L'input — base ronde + transition fluide. Au focus : élargissement du wrap (cf. .focused),
+   glow cyan persistant, légère élévation (transform: scale 1.015) pour signaler l'activation. */
+#topbar-search{width:100%;height:36px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:999px;padding:0 52px 0 36px;color:var(--t1);font-size:13px;outline:none;transition:all .25s cubic-bezier(.4,0,.2,1);font-family:var(--font-ui);font-weight:500}
+#topbar-search::placeholder{color:var(--t3);opacity:.65;transition:opacity .25s}
+#topbar-search:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.20)}
+#topbar-search:focus{background:rgba(15,23,42,0.92);border-color:#38BDF8;box-shadow:0 0 0 3px rgba(56,189,248,.22),0 0 32px rgba(56,189,248,.28),inset 0 0 0 1px rgba(56,189,248,.15);transform:scale(1.015)}
+#topbar-search:focus::placeholder{opacity:.45}
 #topbar-search:focus + .tb-kbd{opacity:0}
 body.light #topbar-search{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.10);color:#0F172A}
 body.light #topbar-search:focus{background:#fff;border-color:#0EA5E9;box-shadow:0 0 0 3px rgba(14,165,233,.18),0 0 30px rgba(14,165,233,.15)}
@@ -430,7 +437,29 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 /* CODES PAGE */
 #page-codes{display:none;flex-direction:column;height:100%;overflow:hidden}
 #page-codes.active{display:flex}
-.code-selector{padding:10px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--gb)}
+.code-selector{padding:10px 10px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--gb);font-family:var(--font-ui)}
+.code-picker-label{font-size:10.5px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase}
+.code-picker{position:relative}
+.code-picker-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-radius:9px;border:1px solid var(--gb);background:rgba(255,255,255,.04);color:var(--t1);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s,box-shadow .15s}
+.code-picker-btn:hover{border-color:rgba(56,189,248,.3);background:rgba(255,255,255,.06)}
+.code-picker-btn.open{border-color:var(--acc);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+.code-picker-btn .cp-name{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.code-picker-btn .cp-chev{font-size:9px;color:var(--t3);transition:transform .2s}
+.code-picker-btn.open .cp-chev{transform:rotate(180deg)}
+.code-picker-menu{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;box-shadow:0 16px 32px rgba(0,0,0,.35);max-height:280px;overflow-y:auto;z-index:25;display:none;padding:4px}
+.code-picker-menu.show{display:block;animation:cpmIn .18s ease}
+@keyframes cpmIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.code-picker-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12.5px;color:var(--t2);cursor:pointer;transition:background .12s,color .12s;font-family:inherit;font-weight:500}
+.code-picker-item:hover{background:rgba(56,189,248,.08);color:var(--t1)}
+.code-picker-item.active{background:var(--acc3);color:var(--acc2);font-weight:600}
+.code-picker-item .cpi-check{width:10px;color:var(--acc);font-size:11px;flex-shrink:0;visibility:hidden}
+.code-picker-item.active .cpi-check{visibility:visible}
+.code-nav-filter{position:relative}
+.code-nav-filter input{width:100%;padding:7px 10px 7px 28px;border-radius:7px;border:1px solid var(--gb);background:rgba(255,255,255,.03);color:var(--t1);font-size:12px;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+.code-nav-filter input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(56,189,248,.13)}
+.code-nav-filter::before{content:'🔎';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:11px;opacity:.55;pointer-events:none}
+.code-nav-filter input::placeholder{color:var(--t3);opacity:.7}
+.nav-hidden{display:none!important}
 .code-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--gb);background:rgba(255,255,255,0.04);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
 .code-btn:hover{background:rgba(124,107,255,0.1);color:var(--t1)}
 .code-btn.on{background:var(--acc3);border-color:var(--acc);color:var(--acc2);font-weight:600}
@@ -577,17 +606,7 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 #qz-score{font-size:15px;color:var(--t2);line-height:1.8}
 .qe-btns{display:flex;gap:8px;justify-content:center}
 
-/* PAYWALL */
-#paywall{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center}
-#paywall.show{display:flex}
-.pw-box{background:var(--bg3);border:1px solid var(--gb);border-radius:16px;padding:32px;max-width:380px;text-align:center;box-shadow:var(--shadow)}
-.pw-ico{font-size:40px;margin-bottom:12px}
-.pw-title{font-size:20px;font-weight:800;margin-bottom:8px}
-.pw-sub{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:20px}
-.pw-feats{list-style:none;text-align:left;margin-bottom:20px;display:flex;flex-direction:column;gap:7px}
-.pw-feats li{font-size:13px;color:var(--t2);display:flex;align-items:center;gap:8px}
-.pw-feats li::before{content:'✦';color:var(--acc2)}
-.pw-btns{display:flex;gap:8px;justify-content:center}
+/* PAYWALL — legacy CSS (the active modal lives in juridix.js as #jd-paywall) */
 
 /* REDAC MODE — cache le panneau notes de droite */
 body.redac-mode #notes-pane{display:none}
@@ -709,8 +728,16 @@ body.lab-mode .home-omni-btn{padding:10px 18px;font-size:13px;margin-bottom:0}
 #lab-editor2 strong{color:var(--t1);font-weight:700}
 #lab-editor2 em{color:var(--acc2)}
 #lab-editor-wrap2.cite-flash{animation:citeGlow .6s ease}
-#lab-status2{padding:5px 28px;font-size:11px;color:var(--t3);font-family:-apple-system,sans-serif;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.01);flex-shrink:0}
-#lab-autosave2{color:var(--green)}
+#lab-status2{padding:5px 28px;font-size:11px;color:var(--t3);font-family:var(--font-ui);border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.01);flex-shrink:0}
+#lab-autosave2{color:var(--green);display:inline-flex;align-items:center;gap:6px;transition:color .25s}
+#lab-autosave2.saving{color:var(--t3)}
+#lab-autosave2 .as-ico{display:inline-flex;width:12px;height:12px;align-items:center;justify-content:center;font-size:11px}
+#lab-autosave2.saving .as-ico{color:var(--acc)}
+#lab-autosave2.saved .as-ico{animation:asPop .35s cubic-bezier(.2,.7,.3,1)}
+#lab-autosave2 .as-time{color:var(--t3);font-weight:400;letter-spacing:.01em}
+@keyframes asPop{0%{transform:scale(.6);opacity:.4}60%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes asPulse{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
+#lab-autosave2.saving .as-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px rgba(56,189,248,.55);animation:asPulse 1s ease-in-out infinite}
 
 /* ===================================================================
    HUB MODE — INTERFACE MULTI-OUTILS (remplace lab-mode)
@@ -933,8 +960,14 @@ body.studio-fullscreen .studio-exit-hint{display:block}
   display:none;align-items:center;gap:2px;flex-wrap:wrap;
   padding:6px 18px;border-bottom:1px solid rgba(255,255,255,0.06);
   background:rgba(255,255,255,0.02);flex-shrink:0;
-  font-family:-apple-system,sans-serif;
+  font-family:var(--font-ui);
+  opacity:.55;transition:opacity .25s cubic-bezier(.2,.7,.3,1),background .25s;
 }
+/* Toolbar reste discrète tant que l'éditeur n'a pas le focus / la souris ;
+   se révèle pleinement au focus-within de la zone studio. */
+#lab-studio:hover #lab-toolbar,
+#lab-studio:focus-within #lab-toolbar,
+#lab-toolbar:hover{opacity:1;background:rgba(255,255,255,.035)}
 body.hub-mode #lab-toolbar{display:flex}
 .tb-group{display:flex;align-items:center;gap:1px;padding:0 4px;border-right:1px solid rgba(255,255,255,0.07)}
 .tb-group:last-child{border-right:none}
@@ -1227,7 +1260,17 @@ body.hub-mode #lab-toolbar{display:flex}
     <!-- CODES PAGE -->
     <div id="page-codes">
       <div class="code-selector" id="code-selector">
-        <div style="width:100%;padding:2px 4px 6px;font-size:11px;color:var(--t3)">Sélectionne un code pour parcourir ses articles :</div>
+        <span class="code-picker-label">Code consulté</span>
+        <div class="code-picker" id="code-picker">
+          <button class="code-picker-btn" id="code-picker-btn" type="button" aria-haspopup="listbox" aria-expanded="false" onclick="toggleCodePicker(event)">
+            <span class="cp-name" id="code-picker-name">Choisir un code…</span>
+            <span class="cp-chev">▾</span>
+          </button>
+          <div class="code-picker-menu" id="code-picker-menu" role="listbox"></div>
+        </div>
+        <div class="code-nav-filter" id="code-nav-filter" style="display:none">
+          <input id="code-nav-filter-in" type="text" placeholder="Filtrer par titre ou n° d'article…" autocomplete="off" oninput="filterCodeNav(this.value)">
+        </div>
       </div>
       <div id="code-nav">
         <div class="code-nav-loading" id="code-nav-placeholder">
@@ -1404,7 +1447,9 @@ body.hub-mode #lab-toolbar{display:flex}
              data-placeholder="Commence à rédiger ton plan, ta dissertation, ta fiche…&#10;&#10;Ouvre un article à gauche, puis clique sur &quot;📎 Injecter l'article&quot; pour le coller ici."></div>
       </div>
       <div id="lab-status2">
-        <span id="lab-autosave2">✓ Sauvegardé</span>
+        <span id="lab-autosave2" class="saved" aria-live="polite">
+          <span class="as-ico">✓</span><span class="as-label">Sauvegardé</span>
+        </span>
         <span id="lab-charcount2">0 caractères</span>
       </div>
     </div>
@@ -1435,24 +1480,8 @@ body.hub-mode #lab-toolbar{display:flex}
 
 </div><!-- /main -->
 
-<!-- PAYWALL -->
-<div id="paywall">
-  <div class="pw-box">
-    <div class="pw-ico">⚡</div>
-    <div class="pw-title">Limite quotidienne atteinte</div>
-    <div class="pw-sub">Tu as utilisé tes 20 recherches gratuites aujourd'hui. Reviens demain ou passe en Premium.</div>
-    <ul class="pw-feats">
-      <li>Recherches illimitées</li>
-      <li>Export PDF haute qualité</li>
-      <li>Mode Focus plein écran</li>
-      <li>Partage de fiches par lien</li>
-    </ul>
-    <div class="pw-btns">
-      <button class="btn btn-outline" onclick="closePaywall()">Demain peut-être</button>
-      <button class="btn btn-primary" onclick="if(window.JuriDix)JuriDix.startCheckout()">✨ Passer Premium</button>
-    </div>
-  </div>
-</div>
+<!-- PAYWALL — legacy markup retained as a no-op anchor; the active paywall is #jd-paywall (injected by juridix.js). -->
+<div id="paywall" hidden></div>
 
 <!-- BULLE AUTO-CITATION -->
 <div id="cite-bubble">
@@ -2012,7 +2041,11 @@ function updateCreditsUI(){
   document.getElementById('cred-txt').textContent='∞';
   document.getElementById('cred-bar').style.background='linear-gradient(90deg,#7c6bff,#a89fff)';
 }
-function closePaywall(){document.getElementById('paywall').classList.remove('show');}
+function closePaywall(){
+  // Active paywall lives in juridix.js (#jd-paywall). Legacy #paywall is a no-op anchor.
+  if(window.JuriDix && JuriDix._hidePaywall) JuriDix._hidePaywall();
+  var el=document.getElementById('paywall');if(el)el.classList.remove('show');
+}
 
 /* ===== SEARCH ENGINE ===== */
 /* Correspondances langage naturel → mots-clés juridiques */
@@ -3350,37 +3383,105 @@ var _codesInited = false;
 var _codeLoading = false;
 var _activeCode  = null;
 var _openSections = {};
+var _CODE_KEY_CODES = {
+  'LEGITEXT000006070721': 'Code civil',
+  'LEGITEXT000006069414': 'Code pénal',
+  'LEGITEXT000005634379': 'Code de commerce',
+  'LEGITEXT000006072050': 'Code du travail',
+  'LEGITEXT000006074233': 'Code de procédure civile',
+  'LEGITEXT000006071154': 'Code de procédure pénale'
+};
+
+function _codeShortName(name){
+  return name.replace(/^Code (?:de la |de l'|de |du )/, '').trim();
+}
+function _openSectionsKey(textId){ return 'jdx_codenav_open_' + textId; }
+function _loadOpenSections(textId){
+  try {
+    var raw = localStorage.getItem(_openSectionsKey(textId));
+    return raw ? JSON.parse(raw) : {};
+  } catch(_){ return {}; }
+}
+function _saveOpenSections(textId){
+  try {
+    if(!textId) return;
+    localStorage.setItem(_openSectionsKey(textId), JSON.stringify(_openSections));
+  } catch(_){}
+}
 
 async function initCodes(){
   _codesInited = true;
-  var sel = document.getElementById('code-selector');
-  // Affiche les codes définis en dur côté client (mêmes que le backend KEY_CODES)
-  var KEY_CODES = {
-    'LEGITEXT000006070721': 'Code civil',
-    'LEGITEXT000006069414': 'Code pénal',
-    'LEGITEXT000005634379': 'Code de commerce',
-    'LEGITEXT000006072050': 'Code du travail',
-    'LEGITEXT000006074233': 'Code de procédure civile',
-    'LEGITEXT000006071154': 'Code de procédure pénale'
-  };
-  var html = '<div style="width:100%;padding:2px 4px 6px;font-size:11px;color:var(--t3)">Sélectionne un code pour parcourir ses articles :</div>';
-  Object.entries(KEY_CODES).forEach(function(e){
-    html += '<div class="code-btn" id="cbtn-'+e[0]+'" onclick="loadCode(\''+e[0]+'\',\''+e[1]+'\')">'
-      + e[1].replace('Code de ','').replace('Code du ','').replace('Code ','') + '</div>';
+  var menu = document.getElementById('code-picker-menu');
+  if(!menu) return;
+  // Build dropdown items
+  var html = '';
+  Object.entries(_CODE_KEY_CODES).forEach(function(e){
+    html += '<div class="code-picker-item" role="option" data-textid="'+e[0]+'" data-name="'+escHtml(e[1])+'" onclick="selectCode(\''+e[0]+'\')">'
+      + '<span class="cpi-check">✓</span>'
+      + '<span>'+escHtml(e[1])+'</span>'
+      + '</div>';
   });
-  sel.innerHTML = html;
+  menu.innerHTML = html;
+  // Restore last selected code
+  try {
+    var last = localStorage.getItem('jdx_codenav_active');
+    if(last && _CODE_KEY_CODES[last]){
+      selectCode(last, /*silent*/false);
+    }
+  } catch(_){}
+  // Close picker on outside click
+  document.addEventListener('click', function(ev){
+    var pk = document.getElementById('code-picker');
+    if(!pk) return;
+    if(!pk.contains(ev.target)) _closeCodePicker();
+  });
+}
+
+function toggleCodePicker(ev){
+  if(ev) ev.stopPropagation();
+  var btn = document.getElementById('code-picker-btn');
+  var menu = document.getElementById('code-picker-menu');
+  if(!btn || !menu) return;
+  var open = !menu.classList.contains('show');
+  menu.classList.toggle('show', open);
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function _closeCodePicker(){
+  var btn = document.getElementById('code-picker-btn');
+  var menu = document.getElementById('code-picker-menu');
+  if(menu) menu.classList.remove('show');
+  if(btn){ btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+}
+
+function selectCode(textId){
+  var name = _CODE_KEY_CODES[textId];
+  if(!name) return;
+  _closeCodePicker();
+  // Update picker label
+  var nameEl = document.getElementById('code-picker-name');
+  if(nameEl) nameEl.textContent = name;
+  // Update active item
+  document.querySelectorAll('.code-picker-item').forEach(function(it){
+    it.classList.toggle('active', it.getAttribute('data-textid')===textId);
+  });
+  // Persist last code
+  try { localStorage.setItem('jdx_codenav_active', textId); } catch(_){}
+  loadCode(textId, name);
 }
 
 async function loadCode(textId, codeName){
   if(_codeLoading) return;
   _codeLoading = true;
   _activeCode  = textId;
-  _openSections = {};
+  // Restore previously-open sections for THIS code (don't blow away on re-entry)
+  _openSections = _loadOpenSections(textId);
 
-  // Mise à jour UI boutons
-  document.querySelectorAll('.code-btn').forEach(function(b){b.classList.remove('on');});
-  var btn = document.getElementById('cbtn-'+textId);
-  if(btn) btn.classList.add('on');
+  // Show filter input now that a code is selected
+  var filt = document.getElementById('code-nav-filter');
+  if(filt) filt.style.display = '';
+  var filtIn = document.getElementById('code-nav-filter-in');
+  if(filtIn) filtIn.value = '';
 
   var nav = document.getElementById('code-nav');
   nav.innerHTML = '<div class="code-nav-loading"><div class="spinner" style="width:24px;height:24px;border-width:3px"></div><span>Chargement du '+codeName+' …</span></div>';
@@ -3396,6 +3497,60 @@ async function loadCode(textId, codeName){
     console.error('[CodeNav]', err);
   }
   _codeLoading = false;
+}
+
+/* In-tree filter — masks sections + articles whose title/numéro doesn't match.
+   Auto-opens sections that contain matches so the user sees results. */
+function filterCodeNav(qRaw){
+  var nav = document.getElementById('code-nav');
+  if(!nav) return;
+  var q = (qRaw||'').trim().toLowerCase();
+  var arts = nav.querySelectorAll('.nav-article');
+  var secs = nav.querySelectorAll('.nav-section');
+  if(!q){
+    arts.forEach(function(a){ a.classList.remove('nav-hidden'); });
+    secs.forEach(function(s){ s.classList.remove('nav-hidden'); });
+    return;
+  }
+  // First: mark articles
+  arts.forEach(function(a){
+    var t = a.textContent.toLowerCase();
+    a.classList.toggle('nav-hidden', t.indexOf(q) < 0);
+  });
+  // Then: walk sections bottom-up; visible if any descendant article OR own title matches
+  function visit(sec){
+    var hdr = sec.querySelector(':scope > .nav-section-hdr');
+    var body = sec.querySelector(':scope > .nav-section-body');
+    var titleMatch = hdr && hdr.textContent.toLowerCase().indexOf(q) >= 0;
+    var anyChildVisible = false;
+    if(body){
+      // recurse into nested sections first
+      body.querySelectorAll(':scope > .nav-section').forEach(function(c){
+        if(visit(c)) anyChildVisible = true;
+      });
+      // direct article children
+      body.querySelectorAll(':scope > .nav-article').forEach(function(a){
+        if(!a.classList.contains('nav-hidden') || (titleMatch)) {
+          if(titleMatch) a.classList.remove('nav-hidden');
+          anyChildVisible = true;
+        }
+      });
+    }
+    var visible = titleMatch || anyChildVisible;
+    sec.classList.toggle('nav-hidden', !visible);
+    // Auto-open matching sections
+    if(visible && hdr && body){
+      hdr.classList.add('open');
+      var arrow = hdr.querySelector('.nav-arrow'); if(arrow) arrow.classList.add('open');
+      body.classList.add('open');
+    }
+    return visible;
+  }
+  nav.querySelectorAll(':scope > #code-nav > .nav-section, :scope > .nav-section').forEach(visit);
+  // The above selector might miss top-level when nav is the root — handle:
+  Array.prototype.slice.call(nav.children).forEach(function(child){
+    if(child.classList && child.classList.contains('nav-section')) visit(child);
+  });
 }
 
 /**
@@ -3468,6 +3623,7 @@ function toggleSection(hdr, sIdx){
   var body = hdr.nextElementSibling;
   if(body) body.classList.toggle('open', !isOpen);
   _openSections[sIdx] = !isOpen;
+  _saveOpenSections(_activeCode);
 }
 
 async function openNavArticle(cid, el){
@@ -3677,9 +3833,10 @@ function tbHighlight(idx){
 
     // Placeholder rotatif
     var phs=[
+      "Rechercher Art. 1103 Civil…",
+      "Responsabilité délictuelle…",
+      "Chercher Meurtre dans Pénal…",
       "Chercher l'art. 1240 Civil…",
-      "Chercher l'art. 221-1 Pénal…",
-      "Chercher « responsabilité contractuelle »…",
       "Chercher l'arrêt Blieck…",
       "Tape « 1382 » → art. exact en 1ʳᵉ position…"
     ];
@@ -4859,6 +5016,25 @@ async function injectArticleToLab(){
   }
 }
 
+function _setSaveState(state){
+  var as = document.getElementById('lab-autosave2');
+  if(!as) return;
+  as.classList.remove('saving','saved','error');
+  if(state === 'saving'){
+    as.classList.add('saving');
+    as.innerHTML = '<span class="as-ico"><span class="as-dot"></span></span><span class="as-label">Enregistrement…</span>';
+  } else if(state === 'saved'){
+    as.classList.add('saved');
+    var t = new Date();
+    var hh = String(t.getHours()).padStart(2,'0');
+    var mm = String(t.getMinutes()).padStart(2,'0');
+    as.innerHTML = '<span class="as-ico">✓</span><span class="as-label">Sauvegardé</span><span class="as-time">· ' + hh + ':' + mm + '</span>';
+  } else if(state === 'error'){
+    as.classList.add('error');
+    as.innerHTML = '<span class="as-ico">⚠</span><span class="as-label">Sauvegarde locale</span>';
+  }
+}
+
 function onLabEditorInput(){
   var editor = document.getElementById('lab-editor2');
   if(!editor) return;
@@ -4870,12 +5046,15 @@ function onLabEditorInput(){
   if(cc) cc.textContent = text.length + ' caractères';
   // Autosave
   clearTimeout(_labTimer);
-  var as = document.getElementById('lab-autosave2');
-  if(as) as.textContent = '…';
+  _setSaveState('saving');
   _labTimer = setTimeout(function(){
-    localStorage.setItem('jdx_lab_content', editor.innerHTML);
-    if(as) as.textContent = '✓ Sauvegardé';
-  }, 1200);
+    try {
+      localStorage.setItem('jdx_lab_content', editor.innerHTML);
+      _setSaveState('saved');
+    } catch(e) {
+      _setSaveState('error');
+    }
+  }, 800);
   /* Cloud sync: 30s debounce when authenticated */
   if(window.JuriDix && JuriDix.scheduleStudioSync) JuriDix.scheduleStudioSync();
 }
