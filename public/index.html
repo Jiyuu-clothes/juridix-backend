@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script defer src="/js/juridix.js"></script>
+<script defer src="/js/carte.js"></script>
 <style>
 :root{
   /* Dark Mode JuriDix V2 — Slate + Sky */
@@ -1024,6 +1025,109 @@ body.hub-mode #lab-toolbar{display:flex}
 .tb-color-pop.show{display:flex;flex-wrap:wrap;gap:4px;width:152px}
 .tb-color-swatch{width:20px;height:20px;border-radius:4px;cursor:pointer;border:1px solid rgba(255,255,255,0.15)}
 .tb-color-swatch:hover{transform:scale(1.15)}
+
+/* =========================================================================
+   CARTE MENTALE — overlay full-screen avec canvas drag-drop
+   Activé via body.carte-mode (cache panel-l, panel-r, resizers)
+   ========================================================================= */
+#carte-overlay{position:absolute;inset:0;display:none;flex-direction:row;background:var(--bg);z-index:5;font-family:var(--font-ui)}
+body.carte-mode #carte-overlay{display:flex}
+body.carte-mode #panel-l,
+body.carte-mode #panel-r,
+body.carte-mode #main-resizer,
+body.carte-mode #right-resizer,
+body.carte-mode #studio-expand-tab{display:none!important}
+
+#carte-sidebar{flex:0 0 220px;display:flex;flex-direction:column;background:rgba(15,23,42,0.6);border-right:1px solid var(--gb)}
+body.light #carte-sidebar{background:rgba(241,245,249,0.6)}
+#carte-sidebar-hdr{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--gb)}
+#carte-sidebar-hdr > span{flex:1;font-size:13px;font-weight:700;color:var(--t1)}
+#carte-new-btn{background:var(--acc3);border:1px solid var(--gb);color:var(--acc2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .15s}
+#carte-new-btn:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
+#carte-list{flex:1;overflow-y:auto;padding:8px}
+.carte-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t1);margin-bottom:2px;border:1px solid transparent;transition:all .12s;position:relative}
+.carte-item:hover{background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.1)}
+.carte-item.on{background:var(--acc3);border-color:var(--gb);color:var(--acc2);font-weight:600}
+.carte-item-title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.carte-item-del{opacity:0;background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:opacity .15s}
+.carte-item:hover .carte-item-del{opacity:1}
+.carte-item-del:hover{color:var(--red);background:rgba(248,113,113,0.1)}
+.carte-empty-list{padding:20px 12px;font-size:12px;color:var(--t3);text-align:center;line-height:1.5}
+
+#carte-resizer{flex:0 0 6px;background:transparent;cursor:col-resize;transition:background .15s}
+#carte-resizer:hover{background:rgba(56,189,248,0.25)}
+#carte-resizer.dragging{background:rgba(56,189,248,0.5)}
+
+#carte-canvas-wrap{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+
+#carte-toolbar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(15,23,42,0.6);border-bottom:1px solid var(--gb);flex-shrink:0}
+body.light #carte-toolbar{background:rgba(241,245,249,0.6)}
+#carte-title-in{flex:0 1 320px;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:600;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
+#carte-title-in:hover{background:rgba(56,189,248,0.05);border-color:rgba(56,189,248,0.1)}
+#carte-title-in:focus{background:rgba(56,189,248,0.08);border-color:var(--acc)}
+.ct-spacer{flex:1}
+.ct-btn{background:transparent;border:1px solid var(--gb);color:var(--t2);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.ct-btn:hover{background:var(--acc3);color:var(--acc2);border-color:var(--acc)}
+.ct-btn.danger:hover{background:rgba(248,113,113,0.12);color:var(--red);border-color:var(--red)}
+
+#carte-canvas{flex:1;position:relative;overflow:hidden;background:radial-gradient(circle at 1px 1px, rgba(56,189,248,0.08) 1px, transparent 0) 0 0/24px 24px,radial-gradient(ellipse at center, rgba(56,189,248,0.03) 0%, transparent 70%),var(--bg);cursor:grab;user-select:none}
+#carte-canvas.panning{cursor:grabbing}
+#carte-canvas.connecting{cursor:crosshair}
+
+#carte-edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;transform-origin:0 0}
+.cm-edge{stroke:var(--acc);stroke-width:2;fill:none;pointer-events:stroke;cursor:pointer;transition:stroke-width .15s,stroke .15s}
+.cm-edge:hover{stroke-width:3;stroke:var(--acc2)}
+.cm-edge.selected{stroke:var(--gold);stroke-width:3}
+.cm-edge-tmp{stroke:var(--acc);stroke-width:2;fill:none;stroke-dasharray:4 4;opacity:.6}
+.cm-edge-label{fill:var(--t1);font-size:11px;font-family:var(--font-ui);font-weight:500;pointer-events:auto;cursor:pointer;paint-order:stroke;stroke:var(--bg);stroke-width:3;stroke-linejoin:round}
+
+#carte-nodes{position:absolute;inset:0;transform-origin:0 0;pointer-events:none}
+.cm-node{position:absolute;min-width:140px;max-width:280px;padding:10px 14px;background:rgba(30,41,59,0.95);border:1.5px solid var(--gb);border-radius:10px;color:var(--t1);font-family:var(--font-ui);font-size:13px;line-height:1.4;cursor:grab;pointer-events:auto;user-select:none;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:border-color .15s,box-shadow .15s;word-wrap:break-word}
+body.light .cm-node{background:rgba(255,255,255,0.98);box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.cm-node.dragging{cursor:grabbing;z-index:50}
+.cm-node.selected{border-color:var(--gold);box-shadow:0 0 0 2px rgba(251,191,36,0.25),0 6px 20px rgba(0,0,0,0.4)}
+.cm-node[data-color="cyan"]{border-color:var(--acc);background:rgba(56,189,248,0.1)}
+.cm-node[data-color="green"]{border-color:var(--green);background:rgba(52,211,153,0.1)}
+.cm-node[data-color="gold"]{border-color:var(--gold);background:rgba(251,191,36,0.1)}
+.cm-node[data-color="red"]{border-color:var(--red);background:rgba(248,113,113,0.1)}
+.cm-node[data-type="ref"]:hover{border-color:var(--acc2)}
+.cm-node-eyebrow{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--acc2);margin-bottom:3px}
+.cm-node-title{font-weight:600;color:var(--t1)}
+.cm-node-snippet{font-size:11px;color:var(--t2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cm-node-edit{width:100%;background:transparent;border:none;outline:none;color:var(--t1);font-family:inherit;font-size:13px;line-height:1.4;resize:none;min-height:1.4em;font-weight:600}
+
+.cm-handle{position:absolute;width:11px;height:11px;background:var(--acc);border:2px solid var(--bg);border-radius:50%;cursor:crosshair;opacity:0;transition:opacity .15s,transform .12s;pointer-events:auto;z-index:2}
+.cm-node:hover .cm-handle,
+.cm-node.selected .cm-handle{opacity:1}
+.cm-handle:hover{transform:scale(1.4);background:var(--acc2)}
+.cm-handle[data-side="top"]{top:-6px;left:50%;margin-left:-6px}
+.cm-handle[data-side="bottom"]{bottom:-6px;left:50%;margin-left:-6px}
+.cm-handle[data-side="left"]{left:-6px;top:50%;margin-top:-6px}
+.cm-handle[data-side="right"]{right:-6px;top:50%;margin-top:-6px}
+
+.cm-node-colors{position:absolute;top:-32px;left:0;display:none;gap:4px;padding:4px 6px;background:rgba(15,23,42,0.95);border:1px solid var(--gb);border-radius:6px;z-index:3}
+.cm-node.selected .cm-node-colors{display:flex}
+.cm-color-dot{width:14px;height:14px;border-radius:50%;cursor:pointer;border:1.5px solid rgba(255,255,255,0.2);transition:transform .12s}
+.cm-color-dot:hover{transform:scale(1.2)}
+.cm-color-dot[data-c="default"]{background:var(--bg2)}
+.cm-color-dot[data-c="cyan"]{background:var(--acc)}
+.cm-color-dot[data-c="green"]{background:var(--green)}
+.cm-color-dot[data-c="gold"]{background:var(--gold)}
+.cm-color-dot[data-c="red"]{background:var(--red)}
+
+#carte-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t2);text-align:center;padding:32px;pointer-events:none}
+#carte-empty p{margin:0;max-width:380px;line-height:1.5}
+
+#carte-canvas.drop-target::before{content:"";position:absolute;inset:8px;border:2px dashed var(--acc);border-radius:14px;background:rgba(56,189,248,0.05);pointer-events:none;z-index:1;animation:cmDrop .8s ease-in-out infinite alternate}
+@keyframes cmDrop{from{opacity:.5}to{opacity:1}}
+
+#carte-zoom-ind{position:absolute;bottom:14px;right:14px;background:rgba(15,23,42,0.85);border:1px solid var(--gb);padding:6px 10px;border-radius:6px;font-size:11px;color:var(--t2);font-family:var(--font-ui);display:flex;align-items:center;gap:8px;pointer-events:auto;user-select:none;z-index:10}
+.zind-btn{background:transparent;border:none;color:var(--t2);cursor:pointer;font-size:14px;padding:0 4px;font-family:inherit;line-height:1}
+.zind-btn:hover{color:var(--acc2)}
+
+#results-list .result-item[draggable="true"]{cursor:grab}
+#results-list .result-item[draggable="true"]:active{cursor:grabbing}
+
 </style>
 </head>
 <body>
@@ -1115,6 +1219,9 @@ body.hub-mode #lab-toolbar{display:flex}
     </div>
     <div class="nav-icon" id="ni-quiz" onclick="switchTab('quiz')" title="Quiz">
       ⚡<span class="ni-tip">Quiz</span>
+    </div>
+    <div class="nav-icon" id="ni-carte" onclick="openCarte()" title="Carte mentale">
+      🧠<span class="ni-tip">Carte mentale</span>
     </div>
     <!-- ni-redac maintenu pour compat JS mais caché -->
     <div class="nav-icon" id="ni-redac" onclick="switchTab('redac')" style="display:none">
@@ -1477,6 +1584,42 @@ body.hub-mode #lab-toolbar{display:flex}
     <div class="studio-exit-hint">Échap pour quitter le plein écran</div>
 
   </div><!-- /panel-r -->
+
+  <!-- CARTE MENTALE — overlay full-screen (active via body.carte-mode) -->
+  <div id="carte-overlay" hidden>
+    <div id="carte-sidebar">
+      <div id="carte-sidebar-hdr">
+        <span>🧠 Cartes mentales</span>
+        <button id="carte-new-btn" onclick="newCarte()" title="Nouvelle carte">+</button>
+      </div>
+      <div id="carte-list"></div>
+    </div>
+    <div id="carte-resizer" title="Redimensionner"></div>
+    <div id="carte-canvas-wrap">
+      <div id="carte-toolbar">
+        <input id="carte-title-in" placeholder="Titre de la carte…" oninput="renameCarte()" autocomplete="off" />
+        <div class="ct-spacer"></div>
+        <button class="ct-btn" onclick="addTextNode()" title="Ajouter un node texte (ou double-clique le canvas)">+ Texte</button>
+        <button class="ct-btn" onclick="resetCarteView()" title="Recentrer la vue">⊕ Recentrer</button>
+        <button class="ct-btn danger" onclick="exitCarte()" title="Fermer">✕ Fermer</button>
+      </div>
+      <div id="carte-canvas">
+        <svg id="carte-edges" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="carte-nodes"></div>
+        <div id="carte-empty">
+          <span style="font-size:48px">🧠</span>
+          <p style="margin:0;font-size:14px;color:var(--t1)"><strong>Carte mentale</strong></p>
+          <p>Double-clique sur le canvas pour créer un node texte.</p>
+          <p style="font-size:12px;color:var(--t3)">Astuce : drag-drop un résultat de la recherche pour créer un node lié.</p>
+        </div>
+        <div id="carte-zoom-ind">
+          <button class="zind-btn" onclick="zoomCarteOut()" title="Zoom −">−</button>
+          <span id="cz-pct">100%</span>
+          <button class="zind-btn" onclick="zoomCarteIn()" title="Zoom +">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div><!-- /main -->
 
