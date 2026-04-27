@@ -79,10 +79,12 @@ function flattenArticles(node, path = []) {
   for (const art of node.articles || []) {
     if (art.id && art.etat === 'VIGUEUR') {
       result.push({
-        id:   art.id,
-        cid:  art.cid || art.id,
-        num:  art.num || '',
-        path: currentPath
+        id:        art.id,
+        cid:       art.cid || art.id,
+        num:       art.num || '',
+        path:      currentPath,
+        dateDebut: art.dateDebut || art.dateDebutVersion || null,
+        dateFin:   art.dateFin   || art.dateFinVersion   || null,
       });
     }
   }
@@ -155,7 +157,14 @@ async function searchCodeArticles(textId, query, maxResults = 5) {
       candidates.slice(0, maxResults).map(async (art) => {
         try {
           const full = await getArticle(art.id);
-          if (full) return { ...full, code: codeName };
+          if (full) {
+            // Récupérer la date depuis la table des matières si getArticle ne l'a pas remontée
+            return {
+              ...full,
+              code: codeName,
+              date: full.date || art.dateDebut || null,
+            };
+          }
         } catch {}
         return null;
       })
@@ -295,6 +304,14 @@ function formatItem(item, query) {
     JORF:      'Journal Officiel'
   }[fond] || fond || 'Légifrance';
 
+  // Extraction de la date pertinente :
+  //  • Jurisprudence (CETAT/CASS/CONSTIT) → date de la décision
+  //  • Article de code (LEGIARTI) → date d'entrée en vigueur de la version
+  const isJuris = fond === 'CETAT' || fond === 'CASS' || fond === 'CONSTIT';
+  const rawDate = isJuris
+    ? (item.datePublication || item.dateText || mainTitle?.dateText || mainTitle?.datePubli || null)
+    : (item.dateDebut || mainTitle?.dateDebut || mainTitle?.dateVersion || null);
+
   return {
     id:      cid,
     title:   mainTitle?.title || item.titre || item.title || 'Document Légifrance',
@@ -302,8 +319,27 @@ function formatItem(item, query) {
     article: item.num || '',
     content,
     url,
+    date:    normalizeDate(rawDate),
+    dateKind: isJuris ? 'decision' : 'envigueur',
     source:  'piste'
   };
+}
+
+// Normalise une date PISTE (ms epoch, ISO, "YYYY-MM-DD", "DD/MM/YYYY") en YYYY-MM-DD.
+function normalizeDate(d) {
+  if (!d) return null;
+  if (typeof d === 'number') {
+    try { return new Date(d).toISOString().slice(0, 10); } catch { return null; }
+  }
+  const s = String(d).trim();
+  if (!s) return null;
+  // Déjà en YYYY-MM-DD ou ISO
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  // DD/MM/YYYY
+  const fr = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (fr) return `${fr[3]}-${fr[2]}-${fr[1]}`;
+  return s;
 }
 
 function buildFilters(filters) {
@@ -333,6 +369,8 @@ async function getArticle(cid) {
         article: art.num || '',
         content: art.texteHtml || art.texte || '',
         url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id || cid}`,
+        date:    normalizeDate(art.dateDebut || art.dateDebutVersion || null),
+        dateKind: 'envigueur',
         source:  'piste'
       };
     }

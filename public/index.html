@@ -282,6 +282,7 @@ body.on-search.hub-mode #main-resizer{display:none!important}
 .ri-ref{font-size:11px;color:var(--acc2);font-weight:600;letter-spacing:.3px;margin-bottom:3px}
 .ri-title{font-weight:600;font-size:13px;margin-bottom:4px;color:var(--t1)}
 .ri-excerpt{font-size:12px;color:var(--t2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ri-date{font-size:11px;color:var(--t3,#9ca3af);margin:2px 0 6px;font-weight:500;letter-spacing:.01em}
 .ri-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .tag{font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,0.07);color:var(--t3)}
 
@@ -2058,8 +2059,30 @@ function normalizeAPIResult(item){
     vigeur: 'En vigueur',
     type: isJuris?'jurisprudence':'code',
     url: item.url||null,
+    date: item.date||null,
+    dateKind: item.dateKind||(isJuris?'decision':'envigueur'),
     _fromAPI: true
   };
+}
+
+/* Format YYYY-MM-DD → "12 mars 2024" en français.
+   Renvoie null si la date est invalide (on ne veut pas afficher "Invalid Date"). */
+function formatFrDate(s){
+  if(!s) return null;
+  var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return null;
+  var months = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  var y = m[1], mo = parseInt(m[2],10)-1, d = parseInt(m[3],10);
+  if(mo<0||mo>11||!d) return null;
+  return d+' '+months[mo]+' '+y;
+}
+
+/* Construit le libellé date à afficher sous un résultat. */
+function dateBadge(a){
+  var f = formatFrDate(a.date);
+  if(!f) return '';
+  var prefix = a.dateKind==='decision' ? 'Décision du ' : 'En vigueur depuis le ';
+  return '<div class="ri-date">'+prefix+f+'</div>';
 }
 
 /* Render a list of article objects into #results-list */
@@ -2075,7 +2098,7 @@ function renderResults(items, q){
     div.setAttribute('data-id',a.id);
     div.style.animationDelay=(i*0.04)+'s';
     var badge=a._fromAPI?'<span class="api-badge">PISTE</span>':'';
-    div.innerHTML='<div class="ri-ref">'+escHtml(a.ref)+' · '+escHtml(a.code)+badge+'</div><div class="ri-title">'+escHtml(a.title)+'</div><div class="ri-excerpt">'+escHtml(exc)+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+escHtml(t)+'</span>';}).join('')+'</div>';
+    div.innerHTML='<div class="ri-ref">'+escHtml(a.ref)+' · '+escHtml(a.code)+badge+'</div><div class="ri-title">'+escHtml(a.title)+'</div>'+dateBadge(a)+'<div class="ri-excerpt">'+escHtml(exc)+'</div><div class="ri-tags">'+(a.themes||[]).slice(0,3).map(function(t){return '<span class="tag">'+escHtml(t)+'</span>';}).join('')+'</div>';
     div.addEventListener('click',function(){openArticle(a.id);});
     list.appendChild(div);
   });
@@ -2177,7 +2200,15 @@ async function openArticle(id){
   document.getElementById('ac-code').textContent=a.code;
   document.getElementById('ac-ref').textContent=a.ref;
   document.getElementById('ac-title').textContent=a.title;
-  document.getElementById('ac-vigeur').textContent=a.vigeur||'En vigueur';
+  // Si la date est connue, on enrichit le badge "En vigueur" avec la date —
+  // crucial pour les étudiants : version du Code civil, date de l'arrêt, etc.
+  var fd = formatFrDate(a.date);
+  if(fd){
+    var prefix = a.dateKind==='decision' ? 'Décision du ' : 'En vigueur depuis le ';
+    document.getElementById('ac-vigeur').textContent = prefix + fd;
+  } else {
+    document.getElementById('ac-vigeur').textContent = a.vigeur||'En vigueur';
+  }
   document.getElementById('ac-type').textContent=a.type==='jurisprudence'?'Jurisprudence':a.type==='definition'?'Doctrine':'Article de code';
   setArticleText(document.getElementById('ac-texte'), a.texte||'');
 
