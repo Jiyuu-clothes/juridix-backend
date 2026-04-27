@@ -6,6 +6,10 @@
 <title>JuriDix — Bibliothèque Juridique</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='2' width='20' height='2.2' rx='0.4' fill='%2338BDF8'/><rect x='4' y='4.5' width='16' height='1.4' fill='%2338BDF8'/><rect x='7' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='9.7' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='12.4' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='15.1' y='6.3' width='1.7' height='11.4' fill='%2338BDF8'/><rect x='4' y='18.1' width='16' height='1.4' fill='%2338BDF8'/><rect x='2' y='19.8' width='20' height='2.2' rx='0.4' fill='%2338BDF8'/></svg>">
 <meta name="theme-color" content="#38BDF8">
+<!-- Inter — police produit, optimisée écran. preconnect réduit la latence DNS. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script defer src="/js/juridix.js"></script>
 <style>
@@ -17,6 +21,9 @@
   --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;
   --green:#34d399;--red:#f87171;--gold:#fbbf24;--blue:#60a5fa;
   --r:12px;--r2:8px;--shadow:0 8px 32px rgba(0,0,0,0.45);
+  /* Police produit — Inter (UI) + Georgia (texte de loi, pour la légitimité juridique) */
+  --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-serif:Georgia,'Newsreader','Times New Roman',serif;
 }
 /* ===== MODE CLAIR — V2 propre, vraies couleurs claires ===== */
 body.light{
@@ -100,7 +107,7 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(15,23,42,0.18)}
 body.light ::-webkit-scrollbar-thumb:hover{background:rgba(15,23,42,0.28)}
 *{box-sizing:border-box;margin:0;padding:0}
 *{transition-timing-function:cubic-bezier(0.4,0,0.2,1)}
-body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+body{background:var(--bg);color:var(--t1);font-family:var(--font-ui);font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column;font-feature-settings:'cv11','ss01','ss03';-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 
 /* BARRE LUMINEUSE VIOLETTE — 2px top */
 body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--acc) 30%,#a89fff 60%,transparent 100%);z-index:9999;opacity:.7;pointer-events:none}
@@ -261,10 +268,20 @@ body.on-search.hub-mode #main-resizer{display:none!important}
 
 /* LEFT PANEL — Search/Fiches/Quiz */
 #panel-l{width:42%;min-width:240px;max-width:72%;display:flex;flex-direction:column;overflow:hidden}
-.resizer{width:5px;background:transparent;cursor:col-resize;flex-shrink:0;position:relative;z-index:10;transition:background .2s}
-.resizer:hover,.resizer.dragging{background:var(--acc)}
-.resizer::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:40px;border-radius:2px;background:var(--gb);transition:background .2s}
-.resizer:hover::after,.resizer.dragging::after{background:var(--acc2)}
+/* RESIZER — séparateur entre panneaux. 6px de hit-area au repos, 1px de barre visible.
+   Au hover : élargit l'indicateur central + lueur cyan + tooltip "Glisser pour redimensionner".
+   Double-click → reset. */
+.resizer{width:6px;background:transparent;cursor:col-resize;flex-shrink:0;position:relative;z-index:10;transition:background .25s}
+/* Barre verticale centrale très fine, visible en permanence pour signaler la séparation */
+.resizer::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:var(--gb);transition:background .25s,width .25s}
+/* Indicateur "poignée" au centre (3 dots verticaux) — apparaît au hover pour montrer que c'est draggable */
+.resizer::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:48px;border-radius:3px;background:transparent;transition:background .2s,box-shadow .2s;background-image:radial-gradient(circle,var(--t3) 1px,transparent 1px);background-size:4px 8px;background-repeat:repeat-y;background-position:center;opacity:0}
+.resizer:hover::before,.resizer.dragging::before{background:var(--acc);width:2px;box-shadow:0 0 8px rgba(56,189,248,0.4)}
+.resizer:hover::after,.resizer.dragging::after{opacity:.8;background-image:radial-gradient(circle,var(--acc2) 1.4px,transparent 1.4px)}
+/* Tooltip au hover — instructif, pas intrusif */
+.resizer[data-hint]:hover{position:relative}
+.resizer[data-hint]:hover::after{opacity:.9}
+/* Note : tooltip texte géré via attr title natif (pas de custom HTML), assez sobre */
 /* Resizer interne redac sidebar */
 .resizer-inner{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;transition:background .2s}
 .resizer-inner:hover,.resizer-inner.dragging{background:var(--acc)}
@@ -316,14 +333,17 @@ body.on-search.hub-mode #main-resizer{display:none!important}
 #art-empty p{font-size:13px;max-width:220px;line-height:1.6}
 #art-content{display:none;animation:fadeUp .25s ease forwards;max-width:720px;margin:0 auto}
 /* V3.1 — sticky title en haut du lecteur pendant le scroll */
-.art-header{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--gb);position:sticky;top:-32px;z-index:10;background:#0a0a1a;padding-top:8px}
-.art-code{font-size:11px;font-weight:700;color:var(--acc2);letter-spacing:1px;text-transform:uppercase;font-family:sans-serif;margin-bottom:4px}
-.art-ref{font-size:22px;font-weight:700;color:var(--t1);font-family:sans-serif;margin-bottom:6px}
-.art-title{font-size:15px;color:var(--t2);font-style:italic;margin-bottom:12px}
-.art-meta{font-size:11px;color:var(--t3);font-family:sans-serif;display:flex;gap:12px;flex-wrap:wrap}
+/* Header sticky avec séparateur cyan progressif (60% largeur, fade transparent) —
+   crée une vraie hiérarchie visuelle au-dessus du texte de loi. */
+.art-header{margin-bottom:28px;padding-bottom:22px;position:sticky;top:-32px;z-index:10;background:#0a0a1a;padding-top:8px;border-bottom:none}
+.art-header::after{content:'';display:block;position:absolute;left:0;bottom:0;height:1px;width:60%;background:linear-gradient(90deg,rgba(56,189,248,0.45) 0%,rgba(56,189,248,0.18) 50%,transparent 100%)}
+.art-code{font-size:10.5px;font-weight:700;color:var(--acc2);letter-spacing:1.4px;text-transform:uppercase;font-family:var(--font-ui);margin-bottom:6px;opacity:.85}
+.art-ref{font-size:32px;font-weight:700;color:var(--acc);font-family:var(--font-ui);margin-bottom:8px;letter-spacing:-0.02em;line-height:1.1}
+.art-title{font-size:15.5px;color:var(--t2);font-style:italic;margin-bottom:14px;font-family:var(--font-ui);font-weight:400;line-height:1.45}
+.art-meta{font-size:11px;color:var(--t3);font-family:var(--font-ui);display:flex;gap:14px;flex-wrap:wrap;font-weight:500}
 .art-meta span{display:flex;align-items:center;gap:4px}
 /* READER TYPOGRAPHIE */
-.art-texte{font-size:1.1rem;line-height:1.75;color:var(--t1);margin-bottom:24px;font-family:Georgia,'Newsreader','Times New Roman',serif}
+.art-texte{font-size:1.08rem;line-height:1.85;color:var(--t1);margin-bottom:28px;font-family:var(--font-serif);max-width:68ch;letter-spacing:.005em}
 /* Hover highlight alinéas */
 .art-para{display:block;margin-bottom:.85em;transition:opacity .25s;cursor:default;border-radius:4px;padding:2px 4px;margin-left:-4px}
 .art-texte.has-paras:hover .art-para{opacity:.38}
@@ -591,13 +611,17 @@ body.redac-mode #notes-pane{display:none}
 .analyse-hdr{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .analyse-hdr span{background:rgba(124,107,255,0.15);border:1px solid rgba(124,107,255,0.25);border-radius:4px;padding:1px 7px;font-size:9px;color:var(--acc2)}
 .analyse-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
-.acard{border-radius:var(--r2);padding:11px 13px;border:1px solid var(--gb);background:rgba(255,255,255,0.025);font-family:sans-serif}
+/* Cards d'analyse — R-14 (vs R-8), padding plus généreux, transition douce au hover */
+.acard{border-radius:14px;padding:14px 16px;border:1px solid var(--gb);background:rgba(255,255,255,0.025);font-family:var(--font-ui);transition:transform .25s,box-shadow .25s,border-color .25s}
 .acard.full{grid-column:1/-1}
-.acard.green{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.05)}
+/* "Conditions à prouver" — la card centrale en termes pédagogiques.
+   Lueur verte interne très diffuse + gradient subtil pour adoucir et la mettre en valeur. */
+.acard.green{border-color:rgba(52,211,153,.32);background:linear-gradient(180deg,rgba(52,211,153,.07) 0%,rgba(52,211,153,.025) 100%);box-shadow:inset 0 0 40px rgba(52,211,153,.04),0 0 0 1px rgba(52,211,153,.06)}
+.acard.green:hover{box-shadow:inset 0 0 48px rgba(52,211,153,.07),0 8px 24px rgba(52,211,153,.10);transform:translateY(-1px)}
 .acard.warn{border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.05)}
 .acard.purple{border-color:rgba(124,107,255,.3);background:rgba(124,107,255,.07)}
 .acard.blue{border-color:rgba(96,165,250,.3);background:rgba(96,165,250,.05)}
-.acard-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;color:var(--t3)}
+.acard-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;color:var(--t3)}
 .acard.green .acard-lbl{color:var(--green)}
 .acard.warn .acard-lbl{color:var(--gold)}
 .acard.purple .acard-lbl{color:var(--acc2)}
@@ -1216,10 +1240,10 @@ body.hub-mode #lab-toolbar{display:flex}
   </div><!-- /panel-l -->
 
   <!-- SÉPARATEUR REDIMENSIONNABLE (drawer ↔ centre) -->
-  <div class="resizer" id="main-resizer"></div>
+  <div class="resizer" id="main-resizer" title="Glisser pour redimensionner • Double-clic pour réinitialiser"></div>
 
   <!-- SÉPARATEUR REDIMENSIONNABLE (centre ↔ droite, hub-mode uniquement) -->
-  <div class="resizer" id="right-resizer"></div>
+  <div class="resizer" id="right-resizer" title="Glisser pour redimensionner • Double-clic pour réinitialiser"></div>
 
   <!-- RIGHT PANEL -->
   <div id="panel-r">
@@ -4653,6 +4677,12 @@ function initHubMode(){
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     }, {capture:false});
+    // Double-clic → reset à la largeur par défaut (290px), comme le right-resizer
+    resEl.addEventListener('dblclick', function(){
+      panelL.style.width = '290px';
+      panelL.style.maxWidth = '290px';
+      localStorage.removeItem('jdx_hub_drawer_w');
+    });
   })();
 
   // 4bis. Brancher le resizer central/droit (entre reader-pane et panel-r)

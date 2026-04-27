@@ -36,9 +36,10 @@ app.use(helmet({
         "'unsafe-inline'",
         'https://cdn.jsdelivr.net',
       ],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // Google Fonts servi via fonts.googleapis.com (CSS) + fonts.gstatic.com (woff2)
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       imgSrc: ["'self'", 'data:', 'https:'],
-      fontSrc: ["'self'", 'data:'],
+      fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
       // connect-src restreint les fetch/XHR/WebSocket (anti-exfiltration)
       connectSrc: [
         "'self'",
