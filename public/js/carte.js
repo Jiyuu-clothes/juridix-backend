@@ -16,6 +16,8 @@
     panStart: null,
     nodeDrag: null,
     edgeDrag: null,
+    nodeResize: null,
+    sidebarPane: 'maps',
     initialized: false,
   };
 
@@ -81,7 +83,6 @@
     document.querySelectorAll('#icon-sidebar .nav-icon').forEach(function(el){ el.classList.remove('on'); });
     var ni = document.getElementById('ni-carte');
     if (ni) ni.classList.add('on');
-    // Sync top-tabs (.ttab) — used in hub-mode
     document.querySelectorAll('.ttab').forEach(function(el){ el.classList.remove('on'); });
     var tt = document.querySelector('.ttab[data-tab="carte"]');
     if (tt) tt.classList.add('on');
@@ -94,6 +95,7 @@
     if (!state.active && state.maps[0]) state.active = state.maps[0].id;
     renderList();
     renderActive();
+    renderSidebarPane(ui.sidebarPane);
   }
   function exit(){
     document.body.classList.remove('carte-mode');
@@ -117,16 +119,122 @@
     bindKeyboard();
     bindDragDrop();
     bindResizer();
+    bindSidebarTabs();
     load();
     ui.initialized = true;
   }
 
-  // ---------- Render: maps list ----------
+  // ---------- Sidebar: tabs ----------
+  function bindSidebarTabs(){
+    var tabs = document.getElementById('carte-sidebar-tabs');
+    if (!tabs) return;
+    tabs.addEventListener('click', function(ev){
+      var btn = ev.target.closest('.cs-tab');
+      if (!btn) return;
+      var pane = btn.getAttribute('data-pane');
+      ui.sidebarPane = pane;
+      tabs.querySelectorAll('.cs-tab').forEach(function(t){ t.classList.toggle('on', t === btn); });
+      var allPanes = document.querySelectorAll('#carte-sidebar .cs-pane');
+      allPanes.forEach(function(p){ p.hidden = p.getAttribute('data-pane') !== pane; });
+      var newBtn = document.getElementById('carte-new-btn');
+      if (newBtn) newBtn.style.display = (pane === 'maps' ? '' : 'none');
+      renderSidebarPane(pane);
+    });
+  }
+
+  function renderSidebarPane(pane){
+    if (pane === 'notes') renderNotesPane();
+    else if (pane === 'fiches') renderFichesPane();
+    else renderList();
+  }
+
+  function renderNotesPane(){
+    var box = document.getElementById('carte-notes-list');
+    if (!box) return;
+    var notes = (window._notes && Array.isArray(window._notes)) ? window._notes : [];
+    if (notes.length === 0){
+      box.innerHTML = '<div class="cs-empty">Aucune note.<br>Crée des notes depuis Studio puis glisse-les ici.</div>';
+      return;
+    }
+    box.innerHTML = notes.map(function(n, i){
+      var title = (n.title || 'Note ' + (i + 1)).slice(0, 80);
+      var body  = (n.body || '').slice(0, 120);
+      return '<div class="cs-item" draggable="true" data-source="note" data-idx="' + i + '">'
+        +   '<div class="cs-item-eyebrow">📝 Note</div>'
+        +   '<div class="cs-item-title">' + esc(title) + '</div>'
+        +   (body ? '<div class="cs-item-meta">' + esc(body) + '</div>' : '')
+        + '</div>';
+    }).join('');
+    box.querySelectorAll('.cs-item').forEach(function(el){
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var n = notes[idx]; if (!n) return;
+      el.addEventListener('dragstart', function(de){
+        var payload = {
+          type: 'ref', kind: 'note',
+          title: (n.title || 'Note').slice(0, 140),
+          body:  (n.body  || '').slice(0, 600),
+          ref: '', codeLabel: '', date: n.date || '',
+        };
+        de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
+        de.dataTransfer.setData('text/plain', payload.title);
+        de.dataTransfer.effectAllowed = 'copy';
+      });
+      el.addEventListener('dblclick', function(){
+        addRefNodeAtCenter({
+          type: 'ref', kind: 'note',
+          title: (n.title || 'Note').slice(0, 140),
+          body:  (n.body  || '').slice(0, 600),
+          date: n.date || '',
+        });
+      });
+    });
+  }
+
+  function renderFichesPane(){
+    var box = document.getElementById('carte-fiches-list');
+    if (!box) return;
+    var fiches = (window.FICHES && Array.isArray(window.FICHES)) ? window.FICHES : [];
+    if (fiches.length === 0){
+      box.innerHTML = '<div class="cs-empty">Aucune fiche disponible.</div>';
+      return;
+    }
+    box.innerHTML = fiches.map(function(f, i){
+      return '<div class="cs-item" draggable="true" data-source="fiche" data-idx="' + i + '">'
+        +   '<div class="cs-item-eyebrow">📋 ' + esc(f.mat || 'Fiche') + '</div>'
+        +   '<div class="cs-item-title">' + esc((f.ico || '') + ' ' + (f.titre || '')) + '</div>'
+        +   '<div class="cs-item-meta">' + ((f.arts && f.arts.length) || 0) + ' article(s)</div>'
+        + '</div>';
+    }).join('');
+    box.querySelectorAll('.cs-item').forEach(function(el){
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var f = fiches[idx]; if (!f) return;
+      el.addEventListener('dragstart', function(de){
+        var payload = {
+          type: 'ref', kind: 'fiche',
+          title: (f.titre || 'Fiche').slice(0, 140),
+          body: (f.def || '').slice(0, 600),
+          ref: f.id || '', codeLabel: f.mat || '',
+        };
+        de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
+        de.dataTransfer.setData('text/plain', payload.title);
+        de.dataTransfer.effectAllowed = 'copy';
+      });
+      el.addEventListener('dblclick', function(){
+        addRefNodeAtCenter({
+          type: 'ref', kind: 'fiche',
+          title: (f.titre || 'Fiche').slice(0, 140),
+          body: (f.def || '').slice(0, 600),
+          ref: f.id || '', codeLabel: f.mat || '',
+        });
+      });
+    });
+  }
+
   function renderList(){
     var box = document.getElementById('carte-list');
     if (!box) return;
     if (state.maps.length === 0){
-      box.innerHTML = '<div class="carte-empty-list">Aucune carte. Clique « + » pour en créer une.</div>';
+      box.innerHTML = '<div class="carte-empty-list">Aucune carte.<br>Clique « + » pour en créer une.</div>';
       return;
     }
     box.innerHTML = state.maps.map(function(m){
@@ -180,23 +288,44 @@
     m.nodes.forEach(function(n){ bindNode(n.id); });
   }
 
+  function nodeEyebrow(n){
+    if (n.type !== 'ref') return '';
+    if (n.kind === 'jurisprudence') return '⚖ ' + (n.date || 'Jurisprudence');
+    if (n.kind === 'note')          return '📝 Note';
+    if (n.kind === 'fiche')         return '📋 ' + (n.codeLabel || 'Fiche');
+    return '📚 ' + (n.codeLabel || 'Article');
+  }
+
   function nodeHtml(n){
     var color = n.color ? ' data-color="' + esc(n.color) + '"' : '';
+    var styleParts = ['left:' + (n.x | 0) + 'px', 'top:' + (n.y | 0) + 'px'];
+    if (n.w) styleParts.push('width:' + (n.w | 0) + 'px');
+    if (n.h) styleParts.push('height:' + (n.h | 0) + 'px');
+    if (n.h) styleParts.push('overflow:hidden');
+    var style = ' style="' + styleParts.join(';') + '"';
+
     var inner = '';
-    if (n.type === 'ref'){
-      var eyebrow = n.kind === 'jurisprudence'
-        ? '⚖ ' + (n.date || 'Jurisprudence')
-        : '📚 ' + (n.codeLabel || 'Article');
-      inner = '<div class="cm-node-eyebrow">' + esc(eyebrow.trim()) + '</div>'
-        + '<div class="cm-node-title">' + esc(n.title || '') + '</div>'
-        + (n.snippet ? '<div class="cm-node-snippet">' + esc(n.snippet) + '</div>' : '');
-    } else {
-      inner = '<div class="cm-node-title">' + esc(n.title || 'Sans titre') + '</div>';
-    }
+    var eyebrow = nodeEyebrow(n);
+    if (eyebrow) inner += '<div class="cm-node-eyebrow">' + esc(eyebrow.trim()) + '</div>';
+    inner += '<div class="cm-node-title">' + esc(n.title || (n.type === 'ref' ? '' : 'Sans titre')) + '</div>';
+    var body = n.body || n.snippet;
+    if (body) inner += '<div class="cm-node-snippet">' + esc(body) + '</div>';
+
     var sel = (ui.selected && ui.selected.type === 'node' && ui.selected.id === n.id) ? ' selected' : '';
-    return '<div class="cm-node' + sel + '" data-id="' + esc(n.id) + '" data-type="' + esc(n.type || 'text') + '"' + color
-      + ' style="left:' + (n.x | 0) + 'px;top:' + (n.y | 0) + 'px">'
-      +   inner
+    var openBtn = (n.type === 'ref' && n.ref)
+      ? '<button class="cm-tb-btn" data-act="open" title="Ouvrir la référence">🔗</button>'
+        + '<div class="cm-tb-sep"></div>'
+      : '';
+
+    return '<div class="cm-node' + sel + '" data-id="' + esc(n.id) + '" data-type="' + esc(n.type || 'text') + '"' + color + style + '>'
+      +   '<div class="cm-node-toolbar">'
+      +     '<button class="cm-tb-btn" data-act="edit-title" title="Modifier le titre">✏</button>'
+      +     '<button class="cm-tb-btn" data-act="edit-body" title="Modifier la note">📝</button>'
+      +     openBtn
+      +     '<button class="cm-tb-btn" data-act="color" title="Couleur">🎨</button>'
+      +     '<div class="cm-tb-sep"></div>'
+      +     '<button class="cm-tb-btn danger" data-act="delete" title="Supprimer (Suppr)">🗑</button>'
+      +   '</div>'
       +   '<div class="cm-node-colors">'
       +     '<div class="cm-color-dot" data-c="default" title="Défaut"></div>'
       +     '<div class="cm-color-dot" data-c="cyan" title="Cyan"></div>'
@@ -204,10 +333,12 @@
       +     '<div class="cm-color-dot" data-c="gold" title="Or"></div>'
       +     '<div class="cm-color-dot" data-c="red" title="Rouge"></div>'
       +   '</div>'
+      +   inner
       +   '<div class="cm-handle" data-side="top"></div>'
       +   '<div class="cm-handle" data-side="right"></div>'
       +   '<div class="cm-handle" data-side="bottom"></div>'
       +   '<div class="cm-handle" data-side="left"></div>'
+      +   '<div class="cm-resize" title="Redimensionner"></div>'
       + '</div>';
   }
 
@@ -216,47 +347,117 @@
     if (!el) return;
     var n = findNode(id); if (!n) return;
     el.addEventListener('mousedown', function(ev){
+      // Toolbar buttons
+      var tbBtn = ev.target.closest && ev.target.closest('.cm-tb-btn');
+      if (tbBtn && el.contains(tbBtn)){
+        var act = tbBtn.getAttribute('data-act');
+        ev.stopPropagation(); ev.preventDefault();
+        ui.selected = { type: 'node', id: id };
+        if (act === 'edit-title')      startEditField(id, 'title');
+        else if (act === 'edit-body')  startEditField(id, 'body');
+        else if (act === 'open')       openRef(n);
+        else if (act === 'color')      el.classList.toggle('colors-open');
+        else if (act === 'delete')     { deleteNode(id); }
+        return;
+      }
+      // Resize handle
+      if (ev.target.classList.contains('cm-resize')){
+        startNodeResize(id, ev);
+        ev.stopPropagation(); ev.preventDefault();
+        return;
+      }
+      // Edge handle
       if (ev.target.classList.contains('cm-handle')){
         startEdgeDrag(id, ev.target.getAttribute('data-side'), ev);
         ev.stopPropagation(); ev.preventDefault();
         return;
       }
+      // Color dot
       if (ev.target.classList.contains('cm-color-dot')){
         var c = ev.target.getAttribute('data-c');
         n.color = (c === 'default' ? null : c);
         touchMap(); renderNodes();
         ev.stopPropagation(); return;
       }
+      // Drag the node
       startNodeDrag(id, ev);
       ui.selected = { type: 'node', id: id };
       renderNodes(); renderEdges();
       ev.stopPropagation();
     });
     el.addEventListener('dblclick', function(ev){
-      if (n.type === 'ref'){ openRef(n); return; }
-      startEditNode(id, el);
+      // For ref nodes, double-click opens the link unless on title/body (which edits).
+      var onText = ev.target.closest('.cm-node-title') || ev.target.closest('.cm-node-snippet');
+      if (n.type === 'ref' && !onText){ openRef(n); return; }
+      if (onText){
+        var field = ev.target.closest('.cm-node-snippet') ? 'body' : 'title';
+        startEditField(id, field);
+        ev.stopPropagation();
+        return;
+      }
+      startEditField(id, 'title');
       ev.stopPropagation();
     });
   }
 
-  function startEditNode(id, el){
+  function startEditField(id, field){
+    var el = ui.nodes.querySelector('.cm-node[data-id="' + id + '"]');
+    if (!el) return;
     var n = findNode(id); if (!n) return;
-    var t = el.querySelector('.cm-node-title');
-    if (!t) return;
+    var sel = field === 'body' ? '.cm-node-snippet' : '.cm-node-title';
+    var target = el.querySelector(sel);
+
+    if (!target && field === 'body'){
+      // Insert a body slot under the title (or eyebrow if no title)
+      var anchor = el.querySelector('.cm-node-title') || el.querySelector('.cm-node-eyebrow') || null;
+      target = document.createElement('div');
+      target.className = 'cm-node-snippet';
+      target.textContent = n.body || n.snippet || '';
+      if (anchor && anchor.nextSibling) anchor.parentNode.insertBefore(target, anchor.nextSibling);
+      else el.insertBefore(target, el.querySelector('.cm-handle'));
+    }
+    if (!target) return;
+
     var ta = document.createElement('textarea');
-    ta.className = 'cm-node-edit';
-    ta.value = n.title || '';
-    t.replaceWith(ta);
+    ta.className = field === 'body' ? 'cm-node-edit-body' : 'cm-node-edit';
+    ta.value = field === 'body' ? (n.body || n.snippet || '') : (n.title || '');
+    ta.setAttribute('data-field', field);
+    target.replaceWith(ta);
     ta.focus(); ta.select();
+
     var commit = function(){
-      n.title = ta.value.trim() || 'Sans titre';
-      touchMap(); renderNodes();
+      var v = ta.value.trim();
+      if (field === 'body'){
+        n.body = v;
+        if (n.snippet && !v) delete n.snippet;
+      } else {
+        n.title = v || (n.type === 'ref' ? '(Sans titre)' : 'Sans titre');
+      }
+      touchMap(); renderNodes(); renderEdges();
     };
     ta.addEventListener('blur', commit);
     ta.addEventListener('keydown', function(ev){
-      if (ev.key === 'Escape'){ ta.value = n.title; ta.blur(); }
-      else if (ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); ta.blur(); }
+      if (ev.key === 'Escape'){
+        ta.value = field === 'body' ? (n.body || n.snippet || '') : (n.title || '');
+        ta.removeEventListener('blur', commit);
+        renderNodes(); renderEdges();
+      } else if (ev.key === 'Enter' && !ev.shiftKey && field === 'title'){
+        ev.preventDefault(); ta.blur();
+      } else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey) && field === 'body'){
+        ev.preventDefault(); ta.blur();
+      }
     });
+  }
+
+  function deleteNode(id){
+    var m = activeMap(); if (!m) return;
+    m.nodes = m.nodes.filter(function(n){ return n.id !== id; });
+    m.edges = m.edges.filter(function(e){ return e.from !== id && e.to !== id; });
+    if (ui.selected && ui.selected.id === id) ui.selected = null;
+    touchMap();
+    renderNodes(); renderEdges();
+    var emp = document.getElementById('carte-empty');
+    if (emp) emp.style.display = (m.nodes.length === 0 ? 'flex' : 'none');
   }
 
   function openRef(n){
@@ -264,6 +465,10 @@
     if (n.kind === 'jurisprudence'){
       if (typeof window.openJuris === 'function') window.openJuris(n.ref);
       else if (typeof window.openArticle === 'function') window.openArticle(n.ref);
+    } else if (n.kind === 'fiche'){
+      if (typeof window.openFiche === 'function') window.openFiche(n.ref);
+    } else if (n.kind === 'note'){
+      // Notes don't have a reference; nothing to open.
     } else {
       if (typeof window.openArticle === 'function') window.openArticle(n.ref);
     }
@@ -312,8 +517,8 @@
 
   function nodeAnchor(n, side){
     var el = ui.nodes && ui.nodes.querySelector('.cm-node[data-id="' + n.id + '"]');
-    var w = el ? el.offsetWidth : 160;
-    var h = el ? el.offsetHeight : 40;
+    var w = (n.w | 0) || (el ? el.offsetWidth : 160);
+    var h = (n.h | 0) || (el ? el.offsetHeight : 40);
     var cx = n.x + w / 2, cy = n.y + h / 2;
     if (side === 'right')  return { x: n.x + w, y: cy };
     if (side === 'left')   return { x: n.x,     y: cy };
@@ -347,6 +552,8 @@
       ui.panStart = { mx: ev.clientX, my: ev.clientY, vx: view.x, vy: view.y };
       c.classList.add('panning');
       ui.selected = null;
+      // Close any open color picker
+      ui.nodes.querySelectorAll('.cm-node.colors-open').forEach(function(el){ el.classList.remove('colors-open'); });
       renderNodes(); renderEdges();
     });
     document.addEventListener('mousemove', onMouseMove);
@@ -391,6 +598,21 @@
       renderEdges();
       return;
     }
+    if (ui.nodeResize){
+      var nr = findNode(ui.nodeResize.id); if (!nr) return;
+      var dx = (ev.clientX - ui.nodeResize.sx) / view.scale;
+      var dy = (ev.clientY - ui.nodeResize.sy) / view.scale;
+      nr.w = clamp(ui.nodeResize.w + dx, 120, 540);
+      nr.h = clamp(ui.nodeResize.h + dy, 40, 480);
+      var rEl = ui.nodes.querySelector('.cm-node[data-id="' + nr.id + '"]');
+      if (rEl){
+        rEl.style.width = (nr.w | 0) + 'px';
+        rEl.style.height = (nr.h | 0) + 'px';
+        rEl.style.overflow = 'hidden';
+      }
+      renderEdges();
+      return;
+    }
     if (ui.edgeDrag){
       ui.edgeDrag.mouseX = ev.clientX;
       ui.edgeDrag.mouseY = ev.clientY;
@@ -406,6 +628,10 @@
       var el = ui.nodes.querySelector('.cm-node[data-id="' + ui.nodeDrag.id + '"]');
       if (el) el.classList.remove('dragging');
       ui.nodeDrag = null;
+      touchMap();
+    }
+    if (ui.nodeResize){
+      ui.nodeResize = null;
       touchMap();
     }
     if (ui.edgeDrag){
@@ -438,6 +664,13 @@
     ui.nodeDrag = { id: id, sx: ev.clientX, sy: ev.clientY, nx: n.x, ny: n.y };
     var el = ui.nodes.querySelector('.cm-node[data-id="' + id + '"]');
     if (el) el.classList.add('dragging');
+  }
+  function startNodeResize(id, ev){
+    var n = findNode(id); if (!n) return;
+    var el = ui.nodes.querySelector('.cm-node[data-id="' + id + '"]');
+    var w = n.w || (el ? el.offsetWidth : 200);
+    var h = n.h || (el ? el.offsetHeight : 60);
+    ui.nodeResize = { id: id, sx: ev.clientX, sy: ev.clientY, w: w, h: h };
   }
   function startEdgeDrag(fromId, side, ev){
     ui.edgeDrag = { fromId: fromId, side: side, mouseX: ev.clientX, mouseY: ev.clientY };
@@ -497,7 +730,7 @@
     renderNodes(); renderEdges();
   }
 
-  // ---------- Drag-drop from search results ----------
+  // ---------- Drag-drop from external sources ----------
   function bindDragDrop(){
     var c = ui.canvas;
     c.addEventListener('dragover', function(ev){
@@ -529,23 +762,91 @@
         addNodeAt(x - 70, y - 18, raw.slice(0, 80));
       }
     });
-    // Make search results draggable on hover
+
+    // Make external sources draggable on hover
     document.addEventListener('mouseover', function(ev){
-      var item = ev.target.closest && ev.target.closest('#results-list .result-item');
-      if (item && !item.hasAttribute('draggable')){
-        item.setAttribute('draggable', 'true');
-        item.addEventListener('dragstart', function(de){
-          var titleEl = item.querySelector('.ri-title') || item.querySelector('.r-title') || item;
-          var snippetEl = item.querySelector('.ri-snippet') || item.querySelector('.r-snippet');
+      if (!ev.target || !ev.target.closest) return;
+
+      // Search results
+      var resultItem = ev.target.closest('#results-list .result-item');
+      if (resultItem && !resultItem.hasAttribute('draggable')){
+        resultItem.setAttribute('draggable', 'true');
+        resultItem.addEventListener('dragstart', function(de){
+          var titleEl = resultItem.querySelector('.ri-title') || resultItem.querySelector('.r-title') || resultItem;
+          var snippetEl = resultItem.querySelector('.ri-snippet') || resultItem.querySelector('.r-snippet');
           var payload = {
-            id: item.getAttribute('data-id') || '',
+            id: resultItem.getAttribute('data-id') || '',
             type: 'ref',
-            kind: item.getAttribute('data-kind') || (item.classList.contains('juris') ? 'jurisprudence' : 'article'),
+            kind: resultItem.getAttribute('data-kind') || (resultItem.classList.contains('juris') ? 'jurisprudence' : 'article'),
             title: (titleEl.textContent || '').trim().slice(0, 140),
-            snippet: snippetEl ? snippetEl.textContent.trim().slice(0, 200) : '',
-            ref: item.getAttribute('data-id') || '',
-            codeLabel: item.getAttribute('data-code') || '',
-            date: item.getAttribute('data-date') || '',
+            body: snippetEl ? snippetEl.textContent.trim().slice(0, 400) : '',
+            ref: resultItem.getAttribute('data-id') || '',
+            codeLabel: resultItem.getAttribute('data-code') || '',
+            date: resultItem.getAttribute('data-date') || '',
+          };
+          de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
+          de.dataTransfer.setData('text/plain', payload.title);
+          de.dataTransfer.effectAllowed = 'copy';
+        });
+      }
+
+      // Studio notes (sidebar chips)
+      var noteChip = ev.target.closest('.note-chip');
+      if (noteChip && !noteChip.hasAttribute('data-cm-drag')){
+        noteChip.setAttribute('data-cm-drag', '1');
+        noteChip.setAttribute('draggable', 'true');
+        noteChip.addEventListener('dragstart', function(de){
+          // Find the index by matching with window._notes
+          var titleEl = noteChip.querySelector('.nc-title');
+          var dateEl  = noteChip.querySelector('.nc-date');
+          var title = titleEl ? titleEl.textContent.trim() : 'Note';
+          // Try to retrieve body from window._notes by title match
+          var body = '';
+          try {
+            var notes = window._notes || [];
+            for (var i = 0; i < notes.length; i++){
+              if ((notes[i].title || '') === title){ body = (notes[i].body || ''); break; }
+            }
+          } catch(e){}
+          var payload = {
+            type: 'ref', kind: 'note',
+            title: title.slice(0, 140),
+            body: body.slice(0, 600),
+            ref: '', codeLabel: '',
+            date: dateEl ? dateEl.textContent.trim() : '',
+          };
+          de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
+          de.dataTransfer.setData('text/plain', payload.title);
+          de.dataTransfer.effectAllowed = 'copy';
+        });
+      }
+
+      // Fiches cards
+      var ficheCard = ev.target.closest('.fiche-card');
+      if (ficheCard && !ficheCard.hasAttribute('data-cm-drag')){
+        ficheCard.setAttribute('data-cm-drag', '1');
+        ficheCard.setAttribute('draggable', 'true');
+        ficheCard.addEventListener('dragstart', function(de){
+          var titleEl = ficheCard.querySelector('.fc-title');
+          var matEl   = ficheCard.querySelector('.fc-mat');
+          var title = titleEl ? titleEl.textContent.trim() : 'Fiche';
+          var mat   = matEl ? matEl.textContent.trim() : '';
+          // Try to extract id from the onclick attribute
+          var oc = ficheCard.getAttribute('onclick') || '';
+          var idMatch = oc.match(/openFiche\(['"]([^'"]+)['"]/);
+          var id = idMatch ? idMatch[1] : '';
+          var body = '';
+          try {
+            var fiches = window.FICHES || [];
+            for (var i = 0; i < fiches.length; i++){
+              if (fiches[i].id === id){ body = (fiches[i].def || ''); break; }
+            }
+          } catch(e){}
+          var payload = {
+            type: 'ref', kind: 'fiche',
+            title: title.slice(0, 140),
+            body: body.slice(0, 600),
+            ref: id, codeLabel: mat,
           };
           de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
           de.dataTransfer.setData('text/plain', payload.title);
@@ -588,10 +889,11 @@
   }
   function addRefNode(x, y, data){
     var m = ensureMap();
+    var body = data.body || data.snippet || '';
     m.nodes.push({
       id: uid(), type: 'ref', x: x, y: y,
       title: data.title || data.ref || 'Référence',
-      snippet: data.snippet || '',
+      body: body,
       ref: data.ref || data.id || '',
       kind: data.kind || 'article',
       codeLabel: data.codeLabel || '',
@@ -600,6 +902,13 @@
     touchMap();
     renderNodes(); renderEdges();
     var emp = document.getElementById('carte-empty'); if (emp) emp.style.display = 'none';
+  }
+  function addRefNodeAtCenter(data){
+    if (!ui.canvas) return;
+    var rect = ui.canvas.getBoundingClientRect();
+    var x = (rect.width / 2 - view.x) / view.scale - 90;
+    var y = (rect.height / 2 - view.y) / view.scale - 30;
+    addRefNode(x, y, data);
   }
   function addTextNode(){
     if (!ui.canvas) return;
