@@ -81,6 +81,10 @@
     document.querySelectorAll('#icon-sidebar .nav-icon').forEach(function(el){ el.classList.remove('on'); });
     var ni = document.getElementById('ni-carte');
     if (ni) ni.classList.add('on');
+    // Sync top-tabs (.ttab) — used in hub-mode
+    document.querySelectorAll('.ttab').forEach(function(el){ el.classList.remove('on'); });
+    var tt = document.querySelector('.ttab[data-tab="carte"]');
+    if (tt) tt.classList.add('on');
     if (state.maps.length === 0){
       var m = newMapObj('Ma première carte');
       state.maps.push(m);
@@ -99,6 +103,9 @@
     document.querySelectorAll('#icon-sidebar .nav-icon').forEach(function(el){ el.classList.remove('on'); });
     var ni = document.getElementById('ni-' + lastTab);
     if (ni) ni.classList.add('on');
+    document.querySelectorAll('.ttab').forEach(function(el){ el.classList.remove('on'); });
+    var tt = document.querySelector('.ttab[data-tab="' + lastTab + '"]');
+    if (tt) tt.classList.add('on');
   }
 
   function init(){
