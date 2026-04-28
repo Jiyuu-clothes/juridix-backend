@@ -21,6 +21,56 @@
     initialized: false,
   };
 
+  // ---------- Smooth pan animation (rAF lerp + release inertia) ----------
+  var anim = {
+    target: null,        // { x, y } position que view.x/y essaie de rejoindre pendant le pan
+    velocity: null,      // { vx, vy } px/s appliqué au relâchement
+    running: false,
+    lastT: 0
+  };
+  var panSamples = [];   // historique récent { x, y, t } pour calculer la vélocité au relâchement
+
+  function ensureAnim(){
+    if (anim.running) return;
+    anim.running = true;
+    anim.lastT = performance.now();
+    requestAnimationFrame(tickAnim);
+  }
+  function tickAnim(t){
+    var dt = Math.min(50, t - anim.lastT) / 1000; // s, plafonné pour éviter les sauts au tab inactif
+    anim.lastT = t;
+    var keepGoing = false;
+
+    if (anim.target){
+      // Smooth follow : view.x/y se rapproche exponentiellement de la cible
+      var k = 1 - Math.exp(-30 * dt); // ~halving every ~23ms
+      var dx = anim.target.x - view.x;
+      var dy = anim.target.y - view.y;
+      view.x += dx * k;
+      view.y += dy * k;
+      if (Math.abs(dx) > 0.15 || Math.abs(dy) > 0.15) keepGoing = true;
+      applyViewTransform();
+    } else if (anim.velocity){
+      // Inertie : décélération exponentielle après relâchement
+      view.x += anim.velocity.vx * dt;
+      view.y += anim.velocity.vy * dt;
+      var decay = Math.exp(-4.5 * dt); // ~10% velocité après 0.5s
+      anim.velocity.vx *= decay;
+      anim.velocity.vy *= decay;
+      var spd = Math.hypot(anim.velocity.vx, anim.velocity.vy);
+      if (spd > 12) keepGoing = true;
+      else anim.velocity = null;
+      applyViewTransform();
+    }
+
+    if (keepGoing) requestAnimationFrame(tickAnim);
+    else anim.running = false;
+  }
+  function stopAnim(){
+    anim.target = null;
+    anim.velocity = null;
+  }
+
   // ---------- Utils ----------
   function uid(){ return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
@@ -729,7 +779,10 @@
       if (ev.target.closest('.cm-edge,.cm-edge-hit,.cm-edge-label,.cm-edge-del')) return;
       var onCanvas = (ev.target === c) || ev.target.closest('#carte-edges') || ev.target.closest('#carte-empty');
       if (!onCanvas) return;
+      // Stop toute inertie en cours quand on re-clique → on attrape la carte sec
+      stopAnim();
       ui.panStart = { mx: ev.clientX, my: ev.clientY, vx: view.x, vy: view.y };
+      panSamples = [{ x: ev.clientX, y: ev.clientY, t: performance.now() }];
       c.classList.add('panning');
       ui.selected = null;
       // Close any open color picker
@@ -771,9 +824,17 @@
 
   function onMouseMove(ev){
     if (ui.panStart){
-      view.x = ui.panStart.vx + (ev.clientX - ui.panStart.mx);
-      view.y = ui.panStart.vy + (ev.clientY - ui.panStart.my);
-      applyViewTransform();
+      // Smooth pan : on définit une CIBLE — la boucle rAF anime view.x/y vers cette cible
+      anim.target = {
+        x: ui.panStart.vx + (ev.clientX - ui.panStart.mx),
+        y: ui.panStart.vy + (ev.clientY - ui.panStart.my)
+      };
+      // On garde un historique court pour calculer la vélocité au relâchement
+      var nowT = performance.now();
+      panSamples.push({ x: ev.clientX, y: ev.clientY, t: nowT });
+      var cutoff = nowT - 80;
+      while (panSamples.length > 2 && panSamples[0].t < cutoff) panSamples.shift();
+      ensureAnim();
       return;
     }
     if (ui.nodeDrag){
@@ -809,6 +870,26 @@
     if (ui.panStart){
       ui.panStart = null;
       ui.canvas.classList.remove('panning');
+      // Vélocité = ratio (Δposition / Δtemps) sur la fenêtre récente, en px de l'ÉCRAN
+      // → on pousse view.x/y dans la même direction (la transform applique le décalage écran)
+      if (panSamples.length >= 2){
+        var last = panSamples[panSamples.length - 1];
+        var first = panSamples[0];
+        var dt = (last.t - first.t) / 1000;
+        if (dt > 0.012){
+          var vx = (last.x - first.x) / dt;
+          var vy = (last.y - first.y) / dt;
+          // Plafond + seuil minimal pour éviter les micro-glissements parasites
+          var spd = Math.hypot(vx, vy);
+          if (spd > 80){
+            var capped = Math.min(spd, 2400) / spd;
+            anim.velocity = { vx: vx * capped, vy: vy * capped };
+          }
+        }
+      }
+      anim.target = null;
+      panSamples = [];
+      if (anim.velocity) ensureAnim();
     }
     if (ui.nodeDrag){
       var el = ui.nodes.querySelector('.cm-node[data-id="' + ui.nodeDrag.id + '"]');
