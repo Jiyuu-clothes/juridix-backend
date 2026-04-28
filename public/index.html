@@ -1092,7 +1092,8 @@ body.light #carte-toolbar{background:rgba(241,245,249,0.6)}
 .cm-edge{stroke:var(--acc);stroke-width:2;fill:none;pointer-events:stroke;cursor:pointer;transition:stroke-width .15s,stroke .15s}
 .cm-edge:hover{stroke-width:3;stroke:var(--acc2)}
 .cm-edge.selected{stroke:var(--gold);stroke-width:3}
-.cm-edge-tmp{stroke:var(--acc);stroke-width:2;fill:none;stroke-dasharray:4 4;opacity:.6}
+.cm-edge-hit{stroke:transparent;stroke-width:18;fill:none;pointer-events:stroke;cursor:pointer}
+.cm-edge-tmp{stroke:var(--acc);stroke-width:2;fill:none;stroke-dasharray:4 4;opacity:.6;pointer-events:none}
 .cm-edge-label{fill:var(--t1);font-size:11px;font-family:var(--font-ui);font-weight:500;pointer-events:auto;cursor:pointer;paint-order:stroke;stroke:var(--bg);stroke-width:3;stroke-linejoin:round}
 
 #carte-nodes{position:absolute;inset:0;transform-origin:0 0;pointer-events:none}

@@ -488,15 +488,31 @@
       var pa = paFrom;
       var pb = nodeAnchor(b, toSide);
       var path = bezierPath(pa, pb, fromSide, toSide);
-      var sel = (ui.selected && ui.selected.type === 'edge' && ui.selected.id === e.id) ? ' selected' : '';
+      var isSel = (ui.selected && ui.selected.type === 'edge' && ui.selected.id === e.id);
+      var sel = isSel ? ' selected' : '';
+      // Hit zone (wide invisible) for easy clicking
+      html += '<path class="cm-edge-hit" d="' + path + '" data-id="' + esc(e.id) + '"></path>';
+      // Visible edge
       html += '<path class="cm-edge' + sel + '" d="' + path + '" data-id="' + esc(e.id) + '" marker-end="url(#cm-arrow)"></path>';
       if (e.label){
         var mid = bezierMid(pa, pb);
         html += '<text class="cm-edge-label" x="' + mid.x + '" y="' + mid.y + '" text-anchor="middle" data-id="' + esc(e.id) + '">' + esc(e.label) + '</text>';
       }
+      // Delete button when selected
+      if (isSel){
+        var midPt = bezierMid(pa, pb);
+        html += '<g class="cm-edge-del" data-id="' + esc(e.id) + '" transform="translate(' + (midPt.x + 12) + ',' + (midPt.y - 4) + ')" style="cursor:pointer">'
+              + '<circle r="10" fill="#dc2626" stroke="#fff" stroke-width="1.5"/>'
+              + '<path d="M -4 -4 L 4 4 M -4 4 L 4 -4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'
+              + '</g>';
+      }
     });
     ui.edges.innerHTML = html;
-    ui.edges.querySelectorAll('.cm-edge,.cm-edge-label').forEach(function(el){
+    // Selection / dblclick on edges (visible, hit-zone, label)
+    ui.edges.querySelectorAll('.cm-edge,.cm-edge-hit,.cm-edge-label').forEach(function(el){
+      el.addEventListener('mousedown', function(ev){
+        ev.stopPropagation();
+      });
       el.addEventListener('click', function(ev){
         var id = el.getAttribute('data-id');
         ui.selected = { type: 'edge', id: id };
@@ -514,6 +530,18 @@
           touchMap(); renderEdges();
         }
         ev.stopPropagation();
+      });
+    });
+    // Delete button on selected edge
+    ui.edges.querySelectorAll('.cm-edge-del').forEach(function(el){
+      el.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
+      el.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var id = el.getAttribute('data-id');
+        var m3 = activeMap(); if (!m3) return;
+        m3.edges = m3.edges.filter(function(x){ return x.id !== id; });
+        if (ui.selected && ui.selected.type === 'edge' && ui.selected.id === id) ui.selected = null;
+        touchMap(); renderEdges();
       });
     });
   }
@@ -573,6 +601,8 @@
   function bindCanvas(){
     var c = ui.canvas;
     c.addEventListener('mousedown', function(ev){
+      // Don't pan/deselect when clicking on an edge (path or hit zone) or its label/delete button
+      if (ev.target.closest('.cm-edge,.cm-edge-hit,.cm-edge-label,.cm-edge-del')) return;
       var onCanvas = (ev.target === c) || ev.target.closest('#carte-edges') || ev.target.closest('#carte-empty');
       if (!onCanvas) return;
       ui.panStart = { mx: ev.clientX, my: ev.clientY, vx: view.x, vy: view.y };
