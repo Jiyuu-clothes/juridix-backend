@@ -482,9 +482,12 @@
       var a = m.nodes.find(function(n){ return n.id === e.from; });
       var b = m.nodes.find(function(n){ return n.id === e.to; });
       if (!a || !b) return;
-      var pa = nodeAnchor(a, e.fromSide || 'right');
-      var pb = nodeAnchor(b, e.toSide || 'left');
-      var path = bezierPath(pa, pb);
+      var fromSide = e.fromSide || 'right';
+      var paFrom = nodeAnchor(a, fromSide);
+      var toSide = e.toSide || pickClosestSide(paFrom, b);
+      var pa = paFrom;
+      var pb = nodeAnchor(b, toSide);
+      var path = bezierPath(pa, pb, fromSide, toSide);
       var sel = (ui.selected && ui.selected.type === 'edge' && ui.selected.id === e.id) ? ' selected' : '';
       html += '<path class="cm-edge' + sel + '" d="' + path + '" data-id="' + esc(e.id) + '" marker-end="url(#cm-arrow)"></path>';
       if (e.label){
@@ -526,13 +529,36 @@
     if (side === 'bottom') return { x: cx,      y: n.y + h };
     return { x: cx, y: cy };
   }
-  function bezierPath(a, b){
-    var dx = b.x - a.x;
-    var cx1 = a.x + dx * 0.5, cy1 = a.y;
-    var cx2 = b.x - dx * 0.5, cy2 = b.y;
+  // Pick the side of `toNode` whose anchor is closest to `fromAnchor`.
+  function pickClosestSide(fromAnchor, toNode){
+    var sides = ['left', 'right', 'top', 'bottom'];
+    var best = 'left', bestD = Infinity;
+    for (var i = 0; i < sides.length; i++){
+      var p = nodeAnchor(toNode, sides[i]);
+      var d = Math.hypot(p.x - fromAnchor.x, p.y - fromAnchor.y);
+      if (d < bestD){ bestD = d; best = sides[i]; }
+    }
+    return best;
+  }
+  function sideOffset(side, dist){
+    if (side === 'left')   return { dx: -dist, dy: 0 };
+    if (side === 'right')  return { dx:  dist, dy: 0 };
+    if (side === 'top')    return { dx: 0, dy: -dist };
+    if (side === 'bottom') return { dx: 0, dy:  dist };
+    return { dx: 0, dy: 0 };
+  }
+  function bezierPath(a, b, sideA, sideB){
+    var d = Math.max(48, Math.hypot(b.x - a.x, b.y - a.y) * 0.42);
+    var oa = sideOffset(sideA || 'right', d);
+    var ob = sideOffset(sideB || 'left',  d);
+    var cx1 = a.x + oa.dx, cy1 = a.y + oa.dy;
+    var cx2 = b.x + ob.dx, cy2 = b.y + ob.dy;
     return 'M ' + a.x + ' ' + a.y + ' C ' + cx1 + ' ' + cy1 + ' ' + cx2 + ' ' + cy2 + ' ' + b.x + ' ' + b.y;
   }
   function bezierMid(a, b){ return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 6 }; }
+  function inverseSide(s){
+    return { left:'right', right:'left', top:'bottom', bottom:'top' }[s] || 'left';
+  }
 
   // ---------- Pan & zoom ----------
   function applyViewTransform(){
@@ -641,12 +667,16 @@
         var toId = nodeEl.getAttribute('data-id');
         if (toId !== ui.edgeDrag.fromId){
           var m = activeMap();
+          var fromN = findNode(ui.edgeDrag.fromId);
+          var toN = findNode(toId);
+          var fromAnchor = fromN ? nodeAnchor(fromN, ui.edgeDrag.side) : null;
+          var smartToSide = (fromAnchor && toN) ? pickClosestSide(fromAnchor, toN) : 'left';
           m.edges.push({
             id: uid(),
             from: ui.edgeDrag.fromId,
             fromSide: ui.edgeDrag.side,
             to: toId,
-            toSide: 'left',
+            toSide: smartToSide,
             label: '',
           });
           touchMap();
@@ -686,7 +716,7 @@
       x: (ui.edgeDrag.mouseX - rect.left - view.x) / view.scale,
       y: (ui.edgeDrag.mouseY - rect.top - view.y) / view.scale,
     };
-    var d = bezierPath(a, b);
+    var d = bezierPath(a, b, ui.edgeDrag.side, inverseSide(ui.edgeDrag.side));
     var existing = ui.edges.querySelector('.cm-edge-tmp');
     if (existing){ existing.setAttribute('d', d); return; }
     var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
