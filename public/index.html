@@ -3134,6 +3134,7 @@ var FICHES=[
 
 var _ficheCache={};
 FICHES.forEach(function(f){_ficheCache[f.id]=f;});
+window.FICHES = FICHES;
 
 function initFiches(){
   var mats=[...new Set(FICHES.map(function(f){return f.mat;}))];
