@@ -301,7 +301,6 @@
     var styleParts = ['left:' + (n.x | 0) + 'px', 'top:' + (n.y | 0) + 'px'];
     if (n.w) styleParts.push('width:' + (n.w | 0) + 'px');
     if (n.h) styleParts.push('height:' + (n.h | 0) + 'px');
-    if (n.h) styleParts.push('overflow:hidden');
     var style = ' style="' + styleParts.join(';') + '"';
 
     var inner = '';
@@ -664,7 +663,6 @@
       if (rEl){
         rEl.style.width = (nr.w | 0) + 'px';
         rEl.style.height = (nr.h | 0) + 'px';
-        rEl.style.overflow = 'hidden';
       }
       renderEdges();
       return;
