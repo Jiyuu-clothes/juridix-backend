@@ -2829,6 +2829,11 @@ var DRAWER_TITLES = {
 };
 
 function switchTab(tab){
+  // Si on est en mode carte, sortir d'abord — sinon panel-l reste cache
+  if(document.body.classList.contains('carte-mode')){
+    if(typeof window.closeCarte==='function') window.closeCarte();
+    else document.body.classList.remove('carte-mode');
+  }
   // Hub-mode: clic sur onglet actif → toggle le tiroir
   if(_hubInited && _tab === tab && !document.body.classList.contains('drawer-closed')){
     toggleDrawer(); return;

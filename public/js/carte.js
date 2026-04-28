@@ -28,6 +28,31 @@
   function now(){ return new Date().toISOString(); }
   function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 
+  // Build a rich text body from a fiche object (def + cond + eff + jur + arts)
+  function ficheBodyText(f){
+    if (!f) return '';
+    var parts = [];
+    if (f.def) parts.push('📖 ' + f.def);
+    if (f.cond && f.cond.length){
+      parts.push('\n✅ Conditions :\n' + f.cond.map(function(c){ return '• ' + c; }).join('\n'));
+    }
+    if (f.eff && f.eff.length){
+      parts.push('\n⚡ Effets :\n' + f.eff.map(function(e){ return '• ' + e; }).join('\n'));
+    }
+    if (f.jur && f.jur.length){
+      parts.push('\n⚖️ Jurisprudence :\n' + f.jur.map(function(j){ return '• ' + j; }).join('\n'));
+    }
+    if (f.arts && f.arts.length){
+      parts.push('\n📚 Articles : ' + f.arts.join(', '));
+    }
+    return parts.join('\n');
+  }
+  function findFicheById(id){
+    var fiches = window.FICHES || [];
+    for (var i = 0; i < fiches.length; i++){ if (fiches[i].id === id) return fiches[i]; }
+    return null;
+  }
+
   function load(){
     try {
       var raw = localStorage.getItem(STORE_KEY);
@@ -233,7 +258,7 @@
         var payload = {
           type: 'ref', kind: 'fiche',
           title: (f.titre || 'Fiche').slice(0, 140),
-          body: (f.def || '').slice(0, 600),
+          body: ficheBodyText(f).slice(0, 4000),
           ref: f.id || '', codeLabel: f.mat || '',
         };
         de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
@@ -244,7 +269,7 @@
         addRefNodeAtCenter({
           type: 'ref', kind: 'fiche',
           title: (f.titre || 'Fiche').slice(0, 140),
-          body: (f.def || '').slice(0, 600),
+          body: ficheBodyText(f).slice(0, 4000),
           ref: f.id || '', codeLabel: f.mat || '',
         });
       });
@@ -1002,15 +1027,13 @@
           var id = idMatch ? idMatch[1] : '';
           var body = '';
           try {
-            var fiches = window.FICHES || [];
-            for (var i = 0; i < fiches.length; i++){
-              if (fiches[i].id === id){ body = (fiches[i].def || ''); break; }
-            }
+            var f = findFicheById(id);
+            if (f) body = ficheBodyText(f);
           } catch(e){}
           var payload = {
             type: 'ref', kind: 'fiche',
             title: title.slice(0, 140),
-            body: body.slice(0, 600),
+            body: body.slice(0, 4000),
             ref: id, codeLabel: mat,
           };
           de.dataTransfer.setData('application/x-juridix-result', JSON.stringify(payload));
@@ -1146,6 +1169,7 @@
   // ---------- Expose ----------
   window.openCarte    = open;
   window.exitCarte    = exit;
+  window.closeCarte   = exit;
   window.newCarte     = newCarte;
   window.renameCarte  = renameActive;
   window.addTextNode  = addTextNode;
