@@ -1096,6 +1096,8 @@ body.light #atelier-toolbar-row{background:rgba(241,245,249,0.6)}
 .at-btn{background:transparent;border:1px solid var(--gb);color:var(--t2);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
 .at-btn:hover{background:var(--acc3);color:var(--acc2);border-color:var(--acc)}
 .at-btn.danger:hover{background:rgba(248,113,113,0.12);color:var(--red);border-color:var(--red)}
+.at-btn.at-btn-primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.at-btn.at-btn-primary:hover{background:var(--acc2);border-color:var(--acc2);color:#fff}
 #atelier-autosave{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);transition:opacity .2s}
 #atelier-autosave .aas-ico{font-size:12px}
 #atelier-autosave.saving{color:var(--acc)}
@@ -1363,7 +1365,6 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   </div>
   <div class="tb-right">
     <div class="btn-icon" id="notes-quick-btn" onclick="toggleNotesQuick(event)" title="Mes notes">📝</div>
-    <div class="btn-icon" id="studio-mode-btn" onclick="toggleStudioMode()" title="Studio en tâche principale">✍️</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
   </div>
   <!-- Notes quick panel (popover) -->
@@ -1404,7 +1405,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       ✍️<span class="ni-tip">Rédaction avancée</span>
     </div>
     <div id="sidebar-bottom">
-      <div class="nav-icon" id="ni-studio" onclick="toggleStudio()" title="Studio de Rédaction">✍️<span class="ni-tip">Studio de Rédaction</span></div>
+      <div class="nav-icon" id="ni-studio" onclick="openAtelier()" title="Atelier — page de rédaction">✍️<span class="ni-tip">Atelier</span></div>
       <div style="width:28px;height:1px;background:var(--gb);margin:4px auto;flex-shrink:0"></div>
       <div class="nav-icon" onclick="toggleTheme()" id="ni-theme" title="Mode clair/sombre">☀️<span class="ni-tip">Mode clair/sombre</span></div>
     </div>
@@ -1782,6 +1783,8 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
         <span id="atelier-autosave" class="saved" aria-live="polite"><span class="aas-ico">✓</span><span class="aas-label">Sauvegardé</span></span>
         <span id="atelier-wcount">0 mot</span>
         <div class="at-spacer"></div>
+        <button class="at-btn at-btn-primary" onclick="newAtelierDoc()" title="Créer un nouveau document">＋ Nouveau</button>
+        <button class="at-btn" onclick="duplicateAtelierDoc()" title="Dupliquer ce document">⎘ Dupliquer</button>
         <button class="at-btn" onclick="injectArticleToAtelier()" title="Coller le dernier article ouvert">📎 Article</button>
         <button class="at-btn" onclick="exportAtelierDoc()" title="Exporter en .html">⬇ Export</button>
         <button class="at-btn danger" onclick="exitAtelier()" title="Fermer">✕ Fermer</button>
@@ -1936,9 +1939,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 </div>
 
 <!-- STUDIO EXPAND TAB (visible quand studio réduit) -->
-<div id="studio-expand-tab" onclick="expandStudio()">
+<div id="studio-expand-tab" onclick="openAtelier()" title="Ouvrir l'Atelier">
   <span class="set-icon">✍️</span>
-  <span class="set-label">Studio</span>
+  <span class="set-label">Atelier</span>
 </div>
 
 <script>
@@ -2123,6 +2126,27 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       if(ti) ti.value=d.title;
     }
   }
+  function duplicateDoc(){
+    persistCurrent();
+    var src=findDoc(atActive);
+    if(!src){ alert('Aucun document actif à dupliquer.'); return; }
+    var copy={
+      id:uid(),
+      title:(src.title||'Sans titre')+' (copie)',
+      html:src.html||'',
+      updated:Date.now(),
+      created:Date.now()
+    };
+    atDocs.unshift(copy);
+    atActive=copy.id;
+    saveDocs();
+    renderList();
+    bindCurrentDocToUI();
+    setTimeout(function(){
+      var ti=document.getElementById('atelier-doc-title');
+      if(ti){ ti.focus(); ti.select(); }
+    },50);
+  }
 
   function onInput(){ debouncedSave(); updateWordCount(); }
   function onTitle(){ debouncedSave(); }
@@ -2245,7 +2269,8 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   // expose globally
   window.openAtelier        = open;
   window.exitAtelier        = exit;
-  window.newAtelierDoc      = function(){ var d=newDoc('Nouveau document'); renderList(); bindCurrentDocToUI(); setTimeout(function(){ var ti=document.getElementById('atelier-doc-title'); if(ti) ti.focus(); },40); };
+  window.newAtelierDoc      = function(){ persistCurrent(); var d=newDoc('Nouveau document'); renderList(); bindCurrentDocToUI(); setTimeout(function(){ var ti=document.getElementById('atelier-doc-title'); if(ti){ ti.focus(); ti.select(); } },40); };
+  window.duplicateAtelierDoc= duplicateDoc;
   window.loadAtelierDoc     = loadDoc;
   window.deleteAtelierDoc   = deleteDoc;
   window.renameAtelierDoc   = renameDoc;
