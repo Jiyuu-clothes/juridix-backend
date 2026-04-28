@@ -1050,6 +1050,103 @@ body.hub-mode #lab-toolbar{display:flex}
 .tb-color-swatch:hover{transform:scale(1.15)}
 
 /* =========================================================================
+   ATELIER — page de rédaction full-screen (Word-like)
+   Activé via body.atelier-mode (cache panel-l, panel-r, resizers, studio)
+   ========================================================================= */
+#atelier-overlay{position:absolute;inset:0;display:none;flex-direction:row;background:var(--bg);z-index:5;font-family:var(--font-ui)}
+body.atelier-mode #atelier-overlay{display:flex}
+body.atelier-mode #panel-l,
+body.atelier-mode #panel-r,
+body.atelier-mode #main-resizer,
+body.atelier-mode #right-resizer,
+body.atelier-mode #studio-expand-tab,
+body.atelier-mode #lab-studio{display:none!important}
+
+#atelier-sidebar{flex:0 0 240px;display:flex;flex-direction:column;background:rgba(15,23,42,0.6);border-right:1px solid var(--gb);min-width:0}
+body.light #atelier-sidebar{background:rgba(241,245,249,0.6)}
+#atelier-sidebar-hdr{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--gb)}
+#atelier-sidebar-hdr > span{flex:1;font-size:13px;font-weight:700;color:var(--t1)}
+#atelier-new-btn{background:var(--acc3);border:1px solid var(--gb);color:var(--acc2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .15s}
+#atelier-new-btn:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+#atelier-doc-list{flex:1;overflow-y:auto;padding:8px}
+.at-doc-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t1);margin-bottom:3px;border:1px solid transparent;transition:all .12s;position:relative;line-height:1.3}
+.at-doc-item:hover{background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.1)}
+.at-doc-item.on{background:var(--acc3);border-color:var(--gb);color:var(--acc2);font-weight:600}
+.at-doc-item-title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.at-doc-item-meta{font-size:10px;color:var(--t3);margin-top:2px;font-weight:400}
+.at-doc-item-rn,.at-doc-item-del{opacity:0;background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px;transition:opacity .15s,color .15s,background .15s}
+.at-doc-item:hover .at-doc-item-rn,.at-doc-item:hover .at-doc-item-del{opacity:1}
+.at-doc-item-rn:hover{color:var(--acc);background:rgba(56,189,248,0.12)}
+.at-doc-item-del:hover{color:var(--red);background:rgba(248,113,113,0.1)}
+.at-doc-empty{padding:18px 12px;font-size:12px;color:var(--t3);text-align:center;line-height:1.5}
+
+#atelier-resizer{flex:0 0 6px;background:transparent;cursor:col-resize;transition:background .15s}
+#atelier-resizer:hover{background:rgba(56,189,248,0.25)}
+#atelier-resizer.dragging{background:rgba(56,189,248,0.5)}
+
+#atelier-main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;background:var(--bg)}
+
+#atelier-toolbar-row{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(15,23,42,0.6);border-bottom:1px solid var(--gb);flex-shrink:0}
+body.light #atelier-toolbar-row{background:rgba(241,245,249,0.6)}
+#atelier-doc-title{flex:0 1 360px;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:600;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
+#atelier-doc-title:hover{background:rgba(56,189,248,0.05);border-color:rgba(56,189,248,0.1)}
+#atelier-doc-title:focus{background:rgba(56,189,248,0.08);border-color:var(--acc)}
+.at-spacer{flex:1}
+.at-btn{background:transparent;border:1px solid var(--gb);color:var(--t2);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.at-btn:hover{background:var(--acc3);color:var(--acc2);border-color:var(--acc)}
+.at-btn.danger:hover{background:rgba(248,113,113,0.12);color:var(--red);border-color:var(--red)}
+#atelier-autosave{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);transition:opacity .2s}
+#atelier-autosave .aas-ico{font-size:12px}
+#atelier-autosave.saving{color:var(--acc)}
+#atelier-autosave.saved{color:var(--green)}
+#atelier-autosave.saved .aas-ico{color:var(--green)}
+#atelier-wcount{font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+#atelier-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 16px;background:rgba(15,23,42,0.45);border-bottom:1px solid var(--gb);flex-shrink:0}
+body.light #atelier-toolbar{background:rgba(241,245,249,0.6)}
+#atelier-toolbar .tb-group{display:flex;gap:2px;align-items:center;padding:0 6px;border-right:1px solid var(--gb)}
+#atelier-toolbar .tb-group:last-child{border-right:none}
+#atelier-toolbar .tb-btn{background:transparent;border:1px solid transparent;border-radius:5px;color:var(--t2);font-size:13px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;transition:all .12s;padding:0}
+#atelier-toolbar .tb-btn:hover{background:rgba(56,189,248,0.1);color:var(--acc);border-color:rgba(56,189,248,0.2)}
+#atelier-toolbar .tb-btn.active{background:var(--acc3);color:var(--acc2);border-color:var(--gb)}
+#atelier-toolbar .tb-btn-h{font-size:11px;font-weight:700;letter-spacing:0.3px}
+#atelier-toolbar .tb-btn-text{width:auto;padding:0 8px;font-size:11px;font-weight:600}
+
+#atelier-page-wrap{flex:1;overflow-y:auto;padding:32px 24px 80px;display:flex;justify-content:center;background:linear-gradient(to bottom,rgba(0,0,0,0.04),transparent 120px),var(--bg)}
+body.light #atelier-page-wrap{background:linear-gradient(to bottom,rgba(0,0,0,0.06),transparent 120px),#e9eef5}
+#atelier-page{width:100%;max-width:820px;background:#ffffff;color:#1a1a2e;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,0.45),0 2px 6px rgba(0,0,0,0.25);padding:72px 84px;min-height:calc(100vh - 220px);transition:box-shadow .2s,background .2s,color .2s}
+body.light #atelier-page{box-shadow:0 8px 28px rgba(15,23,42,0.18),0 2px 6px rgba(15,23,42,0.06);border:1px solid #d8dde5}
+
+#atelier-editor{outline:none;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.85;color:#1a1a2e;caret-color:#7c6bff;min-height:65vh}
+#atelier-editor:empty:before{content:attr(data-placeholder);color:#94a3b8;pointer-events:none;white-space:pre-wrap;font-style:italic}
+#atelier-editor h1{font-size:28px;font-weight:800;color:#0f172a;margin:28px 0 14px;font-family:-apple-system,'Segoe UI',sans-serif;border-bottom:2px solid #cbd5e1;padding-bottom:10px}
+#atelier-editor h2{font-size:22px;font-weight:700;color:#1e293b;margin:26px 0 10px;font-family:-apple-system,'Segoe UI',sans-serif}
+#atelier-editor h3{font-size:18px;font-weight:700;color:#334155;margin:22px 0 8px;font-family:-apple-system,'Segoe UI',sans-serif}
+#atelier-editor p{margin:0 0 12px}
+#atelier-editor blockquote{margin:14px 0;padding:12px 18px;border-left:4px solid #7c6bff;background:rgba(124,107,255,0.08);border-radius:0 6px 6px 0;color:#334155;font-style:italic}
+#atelier-editor strong{color:#0f172a;font-weight:700}
+#atelier-editor em{color:#5b21b6}
+#atelier-editor ul,#atelier-editor ol{margin:8px 0 14px;padding-left:32px}
+#atelier-editor ul li,#atelier-editor ol li{margin:4px 0}
+#atelier-editor a{color:#5b21b6;text-decoration:underline}
+#atelier-editor u{text-decoration:underline;text-decoration-color:#7c6bff}
+#atelier-editor s{text-decoration:line-through;color:#64748b}
+#atelier-editor table{border-collapse:collapse;margin:14px 0;width:100%;font-size:14px;font-family:-apple-system,sans-serif}
+#atelier-editor table th,#atelier-editor table td{border:1px solid #cbd5e1;padding:8px 10px;text-align:left;vertical-align:top}
+#atelier-editor table th{background:rgba(124,107,255,0.08);font-weight:700;color:#5b21b6}
+#atelier-editor .legal-cite{display:block;margin:14px 0;padding:12px 16px;border-left:4px solid #7c6bff;background:rgba(124,107,255,0.06);border-radius:0 6px 6px 0;font-family:Georgia,serif;font-size:14px;color:#1a1a2e}
+#atelier-editor .legal-cite .lc-ref{display:block;font-weight:700;color:#5b21b6;font-size:12px;margin-bottom:6px;font-family:-apple-system,sans-serif;letter-spacing:0.2px}
+#atelier-editor .legal-cite .lc-text{font-style:italic;color:#475569;white-space:pre-wrap}
+
+#atelier-color-pop{position:absolute;top:130px;right:20px;background:rgba(15,23,42,0.97);border:1px solid var(--gb);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;z-index:30;box-shadow:0 6px 24px rgba(0,0,0,0.45)}
+body.light #atelier-color-pop{background:#fff}
+#atelier-color-pop[hidden]{display:none}
+#atelier-color-pop .atc-row{display:flex;gap:6px}
+#atelier-color-pop .atc-sw{width:24px;height:24px;border-radius:5px;cursor:pointer;border:1px solid rgba(255,255,255,0.15);transition:transform .12s}
+#atelier-color-pop .atc-sw:hover{transform:scale(1.15)}
+
+/* =========================================================================
    CARTE MENTALE — overlay full-screen avec canvas drag-drop
    Activé via body.carte-mode (cache panel-l, panel-r, resizers)
    ========================================================================= */
@@ -1255,6 +1352,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     <button class="ttab" data-tab="fiches" onclick="switchTab('fiches')">📝 Fiches</button>
     <button class="ttab" data-tab="quiz" onclick="switchTab('quiz')">⚡ Quiz</button>
     <button class="ttab" data-tab="carte" onclick="openCarte()">🧠 Carte</button>
+    <button class="ttab" data-tab="atelier" onclick="openAtelier()">✍️ Atelier</button>
   </div>
   <!-- ===== COMMAND BAR PERSISTANTE ===== -->
   <div id="topbar-search-wrap">
@@ -1298,6 +1396,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     </div>
     <div class="nav-icon" id="ni-carte" onclick="openCarte()" title="Carte mentale">
       🧠<span class="ni-tip">Carte mentale</span>
+    </div>
+    <div class="nav-icon" id="ni-atelier" onclick="openAtelier()" title="Atelier — page de rédaction">
+      ✍️<span class="ni-tip">Atelier</span>
     </div>
     <!-- ni-redac maintenu pour compat JS mais caché -->
     <div class="nav-icon" id="ni-redac" onclick="switchTab('redac')" style="display:none">
@@ -1665,6 +1766,80 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     <div class="studio-exit-hint">Échap pour quitter le plein écran</div>
 
   </div><!-- /panel-r -->
+
+  <!-- ATELIER — overlay full-screen (active via body.atelier-mode) -->
+  <div id="atelier-overlay" hidden>
+    <div id="atelier-sidebar">
+      <div id="atelier-sidebar-hdr">
+        <span id="atelier-sidebar-title">✍️ Documents</span>
+        <button id="atelier-new-btn" onclick="newAtelierDoc()" title="Nouveau document">+</button>
+      </div>
+      <div id="atelier-doc-list"></div>
+    </div>
+    <div id="atelier-resizer" title="Redimensionner"></div>
+    <div id="atelier-main">
+      <div id="atelier-toolbar-row">
+        <input id="atelier-doc-title" placeholder="Titre du document…" oninput="onAtelierTitleChange()" autocomplete="off" />
+        <span id="atelier-autosave" class="saved" aria-live="polite"><span class="aas-ico">✓</span><span class="aas-label">Sauvegardé</span></span>
+        <span id="atelier-wcount">0 mot</span>
+        <div class="at-spacer"></div>
+        <button class="at-btn" onclick="injectArticleToAtelier()" title="Coller le dernier article ouvert">📎 Article</button>
+        <button class="at-btn" onclick="exportAtelierDoc()" title="Exporter en .html">⬇ Export</button>
+        <button class="at-btn danger" onclick="exitAtelier()" title="Fermer">✕ Fermer</button>
+      </div>
+      <div id="atelier-toolbar" onmousedown="event.preventDefault()">
+        <div class="tb-group">
+          <button class="tb-btn" title="Annuler (⌘Z)" onclick="atExec('undo')">↶</button>
+          <button class="tb-btn" title="Refaire (⌘⇧Z)" onclick="atExec('redo')">↷</button>
+        </div>
+        <div class="tb-group">
+          <button class="tb-btn tb-btn-h" title="Titre 1" onclick="atFormatBlock('h1')">H1</button>
+          <button class="tb-btn tb-btn-h" title="Titre 2" onclick="atFormatBlock('h2')">H2</button>
+          <button class="tb-btn tb-btn-h" title="Titre 3" onclick="atFormatBlock('h3')">H3</button>
+          <button class="tb-btn tb-btn-text" title="Paragraphe" onclick="atFormatBlock('p')">¶</button>
+        </div>
+        <div class="tb-group">
+          <button class="tb-btn" title="Gras (⌘B)" onclick="atExec('bold')"><b>B</b></button>
+          <button class="tb-btn" title="Italique (⌘I)" onclick="atExec('italic')"><i>I</i></button>
+          <button class="tb-btn" title="Souligné (⌘U)" onclick="atExec('underline')"><u>U</u></button>
+          <button class="tb-btn" title="Barré" onclick="atExec('strikeThrough')"><s>S</s></button>
+        </div>
+        <div class="tb-group">
+          <button class="tb-btn" title="Liste à puces" onclick="atExec('insertUnorderedList')">•</button>
+          <button class="tb-btn" title="Liste numérotée" onclick="atExec('insertOrderedList')">1.</button>
+          <button class="tb-btn" title="Citation" onclick="atFormatBlock('blockquote')">❝</button>
+        </div>
+        <div class="tb-group">
+          <button class="tb-btn" title="Aligner à gauche" onclick="atExec('justifyLeft')">⇤</button>
+          <button class="tb-btn" title="Centrer" onclick="atExec('justifyCenter')">≡</button>
+          <button class="tb-btn" title="Aligner à droite" onclick="atExec('justifyRight')">⇥</button>
+          <button class="tb-btn" title="Justifier" onclick="atExec('justifyFull')">☰</button>
+        </div>
+        <div class="tb-group">
+          <button class="tb-btn" title="Couleur du texte" onclick="atOpenColorPop(event)">🎨</button>
+          <button class="tb-btn" title="Lien" onclick="atInsertLink()">🔗</button>
+          <button class="tb-btn tb-btn-text" title="Effacer le formatage" onclick="atExec('removeFormat')">⨯ Format</button>
+        </div>
+      </div>
+      <div id="atelier-page-wrap">
+        <div id="atelier-page">
+          <div id="atelier-editor" contenteditable="true" spellcheck="true"
+               oninput="onAtelierInput()"
+               data-placeholder="Commence à écrire ton document…&#10;&#10;Mise en forme : utilise la barre d'outils au-dessus.&#10;Tes documents sont enregistrés automatiquement."></div>
+        </div>
+      </div>
+    </div>
+    <div id="atelier-color-pop" hidden>
+      <div class="atc-row">
+        <div class="atc-sw" data-color="#e2e8f0" style="background:#e2e8f0" onclick="atApplyColor('#e2e8f0')"></div>
+        <div class="atc-sw" data-color="#7c6bff" style="background:#7c6bff" onclick="atApplyColor('#7c6bff')"></div>
+        <div class="atc-sw" data-color="#38bdf8" style="background:#38bdf8" onclick="atApplyColor('#38bdf8')"></div>
+        <div class="atc-sw" data-color="#22c55e" style="background:#22c55e" onclick="atApplyColor('#22c55e')"></div>
+        <div class="atc-sw" data-color="#f59e0b" style="background:#f59e0b" onclick="atApplyColor('#f59e0b')"></div>
+        <div class="atc-sw" data-color="#f87171" style="background:#f87171" onclick="atApplyColor('#f87171')"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- CARTE MENTALE — overlay full-screen (active via body.carte-mode) -->
   <div id="carte-overlay" hidden>
@@ -5461,6 +5636,419 @@ setTimeout(function(){
   var sp = document.getElementById('spotlight-input');
   if(sp) sp.focus();
 }, 80);
+
+/* =========================================================================
+   ATELIER — page de rédaction Word-like (mode dédié, multi-documents)
+   Stockage : jdx_atelier_docs_v1 (array) + jdx_atelier_active (id)
+   ========================================================================= */
+(function(){
+  var ATELIER_KEY  = 'jdx_atelier_docs_v1';
+  var ATELIER_ACT  = 'jdx_atelier_active';
+  var ATELIER_W    = 'jdx_atelier_sidebar_w';
+  var atDocs   = [];
+  var atActive = null;
+  var atSaveT  = null;
+  var atInitialized = false;
+
+  function uid(){ return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function loadDocs(){
+    try {
+      var raw = localStorage.getItem(ATELIER_KEY);
+      atDocs = raw ? (JSON.parse(raw) || []) : [];
+    } catch(e){ atDocs = []; }
+    atActive = localStorage.getItem(ATELIER_ACT) || (atDocs[0] ? atDocs[0].id : null);
+  }
+  function saveDocs(){
+    try { localStorage.setItem(ATELIER_KEY, JSON.stringify(atDocs)); } catch(e){}
+  }
+  function findDoc(id){ return atDocs.find(function(d){ return d.id === id; }) || null; }
+
+  function newDoc(title){
+    var d = {
+      id: uid(),
+      title: title || 'Document sans titre',
+      content: '',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    atDocs.unshift(d);
+    atActive = d.id;
+    saveDocs();
+    localStorage.setItem(ATELIER_ACT, d.id);
+    return d;
+  }
+
+  function renderList(){
+    var list = document.getElementById('atelier-doc-list');
+    if(!list) return;
+    if(!atDocs.length){
+      list.innerHTML = '<div class="at-doc-empty">Aucun document.<br/>Clique sur <strong>+</strong> pour en créer un.</div>';
+      return;
+    }
+    var html = atDocs.map(function(d){
+      var on = d.id === atActive;
+      var dt = new Date(d.updatedAt || d.createdAt);
+      var meta = String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + ' · ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+      var title = (d.title || 'Sans titre').replace(/[<>&"]/g, function(c){ return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]; });
+      return '<div class="at-doc-item' + (on ? ' on' : '') + '" data-id="' + d.id + '" onclick="loadAtelierDoc(\'' + d.id + '\')">' +
+               '<div style="flex:1;min-width:0">' +
+                 '<div class="at-doc-item-title">' + title + '</div>' +
+                 '<div class="at-doc-item-meta">' + meta + '</div>' +
+               '</div>' +
+               '<button class="at-doc-item-rn" onclick="event.stopPropagation();renameAtelierDoc(\'' + d.id + '\')" title="Renommer">✎</button>' +
+               '<button class="at-doc-item-del" onclick="event.stopPropagation();deleteAtelierDoc(\'' + d.id + '\')" title="Supprimer">🗑</button>' +
+             '</div>';
+    }).join('');
+    list.innerHTML = html;
+  }
+
+  function bindCurrentDocToUI(){
+    var doc = findDoc(atActive);
+    var titleEl = document.getElementById('atelier-doc-title');
+    var ed      = document.getElementById('atelier-editor');
+    if(!doc){
+      if(titleEl) titleEl.value = '';
+      if(ed)      ed.innerHTML  = '';
+      updateWordCount();
+      return;
+    }
+    if(titleEl) titleEl.value = doc.title || '';
+    if(ed)      ed.innerHTML  = doc.content || '';
+    updateWordCount();
+  }
+
+  function updateWordCount(){
+    var ed = document.getElementById('atelier-editor');
+    if(!ed) return;
+    var text = ed.innerText || '';
+    var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    var wc = document.getElementById('atelier-wcount');
+    if(wc) wc.textContent = words + ' mot' + (words !== 1 ? 's' : '');
+  }
+
+  function setSaveState(state){
+    var as = document.getElementById('atelier-autosave');
+    if(!as) return;
+    as.classList.remove('saving','saved','error');
+    if(state === 'saving'){
+      as.classList.add('saving');
+      as.innerHTML = '<span class="aas-ico">⟳</span><span class="aas-label">Enregistrement…</span>';
+    } else if(state === 'saved'){
+      as.classList.add('saved');
+      var t = new Date();
+      var hh = String(t.getHours()).padStart(2,'0');
+      var mm = String(t.getMinutes()).padStart(2,'0');
+      as.innerHTML = '<span class="aas-ico">✓</span><span class="aas-label">Sauvegardé · ' + hh + ':' + mm + '</span>';
+    } else {
+      as.classList.add('error');
+      as.innerHTML = '<span class="aas-ico">⚠</span><span class="aas-label">Erreur</span>';
+    }
+  }
+
+  function persistCurrent(){
+    var doc = findDoc(atActive);
+    if(!doc) return;
+    var ed = document.getElementById('atelier-editor');
+    var titleEl = document.getElementById('atelier-doc-title');
+    if(ed)      doc.content = ed.innerHTML;
+    if(titleEl) doc.title   = titleEl.value || 'Document sans titre';
+    doc.updatedAt = Date.now();
+    saveDocs();
+  }
+
+  function debouncedSave(){
+    clearTimeout(atSaveT);
+    setSaveState('saving');
+    atSaveT = setTimeout(function(){
+      try { persistCurrent(); setSaveState('saved'); renderList(); }
+      catch(e){ setSaveState('error'); }
+    }, 700);
+  }
+
+  function open(){
+    if(!atInitialized){ initAtelier(); atInitialized = true; }
+    // Si une carte mentale est ouverte, on en sort proprement
+    if(document.body.classList.contains('carte-mode') && typeof window.exitCarte === 'function'){
+      try { window.exitCarte(); } catch(e){}
+    }
+    document.body.classList.add('atelier-mode');
+    var ov = document.getElementById('atelier-overlay');
+    if(ov) ov.hidden = false;
+    document.querySelectorAll('#icon-sidebar .nav-icon').forEach(function(el){ el.classList.remove('on'); });
+    var ni = document.getElementById('ni-atelier');
+    if(ni) ni.classList.add('on');
+    document.querySelectorAll('.ttab').forEach(function(el){ el.classList.remove('on'); });
+    var tt = document.querySelector('.ttab[data-tab="atelier"]');
+    if(tt) tt.classList.add('on');
+    if(!atDocs.length){ newDoc('Mon premier document'); }
+    if(!findDoc(atActive) && atDocs[0]) atActive = atDocs[0].id;
+    renderList();
+    bindCurrentDocToUI();
+    setSaveState('saved');
+    setTimeout(function(){
+      var ed = document.getElementById('atelier-editor');
+      if(ed) ed.focus();
+    }, 80);
+  }
+
+  function exit(){
+    // Sauvegarde immédiate avant de quitter
+    if(atActive){ try { persistCurrent(); } catch(e){} }
+    document.body.classList.remove('atelier-mode');
+    var ov = document.getElementById('atelier-overlay');
+    if(ov) ov.hidden = true;
+    var lastTab = window._tab || 'search';
+    document.querySelectorAll('#icon-sidebar .nav-icon').forEach(function(el){ el.classList.remove('on'); });
+    var ni = document.getElementById('ni-' + lastTab);
+    if(ni) ni.classList.add('on');
+    document.querySelectorAll('.ttab').forEach(function(el){ el.classList.remove('on'); });
+    var tt = document.querySelector('.ttab[data-tab="' + lastTab + '"]');
+    if(tt) tt.classList.add('on');
+  }
+
+  function loadDoc(id){
+    if(atActive){ try { persistCurrent(); } catch(e){} }
+    atActive = id;
+    localStorage.setItem(ATELIER_ACT, id);
+    bindCurrentDocToUI();
+    renderList();
+    setSaveState('saved');
+    setTimeout(function(){
+      var ed = document.getElementById('atelier-editor');
+      if(ed) ed.focus();
+    }, 50);
+  }
+
+  function deleteDoc(id){
+    var d = findDoc(id);
+    if(!d) return;
+    if(!confirm('Supprimer "' + (d.title || 'Sans titre') + '" ? Cette action est irréversible.')) return;
+    atDocs = atDocs.filter(function(x){ return x.id !== id; });
+    if(atActive === id){
+      atActive = atDocs[0] ? atDocs[0].id : null;
+      if(!atActive){
+        // recrée un doc vide pour ne jamais avoir d'état "néant"
+        newDoc('Document sans titre');
+      } else {
+        localStorage.setItem(ATELIER_ACT, atActive);
+      }
+    }
+    saveDocs();
+    renderList();
+    bindCurrentDocToUI();
+  }
+
+  function renameDoc(id){
+    var d = findDoc(id);
+    if(!d) return;
+    var nv = prompt('Nouveau titre :', d.title || '');
+    if(nv === null) return;
+    d.title = (nv || 'Sans titre').slice(0, 200);
+    d.updatedAt = Date.now();
+    saveDocs();
+    renderList();
+    if(d.id === atActive){
+      var titleEl = document.getElementById('atelier-doc-title');
+      if(titleEl) titleEl.value = d.title;
+    }
+  }
+
+  function onInput(){
+    updateWordCount();
+    debouncedSave();
+  }
+  function onTitle(){
+    var titleEl = document.getElementById('atelier-doc-title');
+    var doc = findDoc(atActive);
+    if(!doc || !titleEl) return;
+    doc.title = titleEl.value || 'Document sans titre';
+    doc.updatedAt = Date.now();
+    debouncedSave();
+  }
+
+  // ---------- Rich-text helpers ----------
+  function exec(cmd, val){
+    var ed = document.getElementById('atelier-editor');
+    if(!ed) return;
+    ed.focus();
+    try { document.execCommand(cmd, false, val || null); } catch(e){}
+    onInput();
+  }
+  function formatBlock(tag){
+    var ed = document.getElementById('atelier-editor');
+    if(!ed) return;
+    ed.focus();
+    try { document.execCommand('formatBlock', false, '<' + tag + '>'); } catch(e){}
+    onInput();
+  }
+  function applyColor(c){
+    exec('foreColor', c);
+    var pop = document.getElementById('atelier-color-pop');
+    if(pop) pop.hidden = true;
+  }
+  function openColorPop(ev){
+    var pop = document.getElementById('atelier-color-pop');
+    if(!pop) return;
+    pop.hidden = !pop.hidden;
+    if(ev) ev.stopPropagation();
+  }
+  function insertLink(){
+    var url = prompt('URL du lien :', 'https://');
+    if(!url) return;
+    exec('createLink', url);
+  }
+
+  // ---------- Inject article (réutilise window._art) ----------
+  function injectArticle(){
+    var ed = document.getElementById('atelier-editor');
+    if(!ed) return;
+    if(typeof window._art === 'undefined' || !window._art){
+      if(typeof showToast === 'function') showToast('Ouvre d\'abord un article (recherche) pour pouvoir l\'injecter');
+      return;
+    }
+    var art = window._art;
+    var ref = (art.ref || art.title || 'Référence');
+    var code = art.code ? ' — ' + art.code : '';
+    var body = (art.texte || art.title || '').replace(/[<>&]/g, function(c){ return ({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]; });
+    var html = '<div class="legal-cite" contenteditable="false"><span class="lc-ref">' + ref + code + '</span><span class="lc-text">' + body + '</span></div><p>&nbsp;</p>';
+    ed.focus();
+    try { document.execCommand('insertHTML', false, html); } catch(e){
+      ed.innerHTML = ed.innerHTML + html;
+    }
+    onInput();
+    if(typeof showToast === 'function') showToast('📎 Article inséré dans le document');
+  }
+
+  // ---------- Export ----------
+  function exportDoc(){
+    var doc = findDoc(atActive);
+    if(!doc) return;
+    var html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>' +
+               (doc.title || 'Document').replace(/</g,'&lt;') +
+               '</title><style>body{font-family:Georgia,serif;max-width:780px;margin:40px auto;padding:0 20px;line-height:1.7;color:#1a1a2e}h1,h2,h3{font-family:-apple-system,sans-serif}blockquote{border-left:4px solid #7c6bff;padding:8px 16px;background:#f4f1ff;margin:12px 0}.legal-cite{border-left:3px solid #7c6bff;padding:10px 14px;background:rgba(124,107,255,0.06);margin:14px 0}.legal-cite .lc-ref{display:block;font-weight:700;color:#5b21b6;font-size:12px;margin-bottom:5px;font-family:-apple-system,sans-serif}.legal-cite .lc-text{font-style:italic;color:#475569}</style></head><body><h1>' +
+               (doc.title || 'Document').replace(/</g,'&lt;') + '</h1>' +
+               (doc.content || '') +
+               '</body></html>';
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (doc.title || 'document').replace(/[^a-z0-9-_ ]/gi,'').slice(0,80) + '.html';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 200);
+  }
+
+  // ---------- Resizer ----------
+  function bindResizer(){
+    var resEl = document.getElementById('atelier-resizer');
+    var sb    = document.getElementById('atelier-sidebar');
+    if(!resEl || !sb) return;
+    var savedW = localStorage.getItem(ATELIER_W);
+    if(savedW){
+      var w = Math.max(180, Math.min(window.innerWidth*0.4, parseFloat(savedW)));
+      sb.style.flex = '0 0 ' + w + 'px';
+    }
+    resEl.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      var startX = e.clientX;
+      var startW = sb.getBoundingClientRect().width;
+      resEl.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(ev){
+        var w = Math.max(180, Math.min(window.innerWidth*0.4, startW + ev.clientX - startX));
+        sb.style.flex = '0 0 ' + w + 'px';
+      }
+      function onUp(){
+        resEl.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        try { localStorage.setItem(ATELIER_W, sb.getBoundingClientRect().width); } catch(e){}
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // ---------- Init ----------
+  function initAtelier(){
+    loadDocs();
+    bindResizer();
+    // Click outside color popup → close
+    document.addEventListener('click', function(ev){
+      var pop = document.getElementById('atelier-color-pop');
+      if(!pop || pop.hidden) return;
+      if(!pop.contains(ev.target) && !(ev.target.closest && ev.target.closest('[onclick*="atOpenColorPop"]'))){
+        pop.hidden = true;
+      }
+    });
+    // Esc → exit atelier
+    document.addEventListener('keydown', function(ev){
+      if(ev.key === 'Escape' && document.body.classList.contains('atelier-mode')){
+        var ed = document.getElementById('atelier-editor');
+        // Ne pas fermer pendant qu'on tape — seulement si focus sur body / autre
+        if(document.activeElement && document.activeElement !== ed && document.activeElement.id !== 'atelier-doc-title'){
+          exit();
+        }
+      }
+    });
+  }
+
+  // ---------- Expose ----------
+  window.openAtelier        = open;
+  window.exitAtelier        = exit;
+  window.newAtelierDoc      = function(){ var d = newDoc('Document sans titre'); renderList(); bindCurrentDocToUI(); setSaveState('saved'); setTimeout(function(){var t=document.getElementById('atelier-doc-title'); if(t) t.focus(); }, 40); return d; };
+  window.loadAtelierDoc     = loadDoc;
+  window.deleteAtelierDoc   = deleteDoc;
+  window.renameAtelierDoc   = renameDoc;
+  window.onAtelierInput     = onInput;
+  window.onAtelierTitleChange = onTitle;
+  window.atExec             = exec;
+  window.atFormatBlock      = formatBlock;
+  window.atApplyColor       = applyColor;
+  window.atOpenColorPop     = openColorPop;
+  window.atInsertLink       = insertLink;
+  window.injectArticleToAtelier = injectArticle;
+  window.exportAtelierDoc   = exportDoc;
+
+  // Patch switchTab pour quitter l'atelier si on change d'onglet
+  var _origSwitchTab = window.switchTab;
+  if(typeof _origSwitchTab === 'function'){
+    window.switchTab = function(tab){
+      if(document.body.classList.contains('atelier-mode') && tab !== 'atelier'){
+        exit();
+      }
+      return _origSwitchTab.apply(this, arguments);
+    };
+  }
+  // Patch openCarte pour quitter l'atelier d'abord (carte.js est defer → on attend le DOMContentLoaded)
+  function patchOpenCarte(){
+    var _origOpenCarte = window.openCarte;
+    if(typeof _origOpenCarte !== 'function') return false;
+    if(_origOpenCarte.__atelierPatched) return true;
+    var wrapped = function(){
+      if(document.body.classList.contains('atelier-mode')) exit();
+      return _origOpenCarte.apply(this, arguments);
+    };
+    wrapped.__atelierPatched = true;
+    window.openCarte = wrapped;
+    return true;
+  }
+  if(!patchOpenCarte()){
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', function(){ patchOpenCarte(); });
+    } else {
+      // carte.js pas encore chargé : retry court
+      var retries = 0;
+      var iv = setInterval(function(){
+        if(patchOpenCarte() || ++retries > 30) clearInterval(iv);
+      }, 100);
+    }
+  }
+})();
 </script>
 </body>
 </html>
