@@ -160,6 +160,7 @@
       var title = (n.title || 'Note ' + (i + 1)).slice(0, 80);
       var body  = (n.body || '').slice(0, 120);
       return '<div class="cs-item" draggable="true" data-source="note" data-idx="' + i + '">'
+        +   '<button class="cs-item-open" data-action="open" title="Ouvrir / éditer la note">↗</button>'
         +   '<div class="cs-item-eyebrow">📝 Note</div>'
         +   '<div class="cs-item-title">' + esc(title) + '</div>'
         +   (body ? '<div class="cs-item-meta">' + esc(body) + '</div>' : '')
@@ -168,6 +169,14 @@
     box.querySelectorAll('.cs-item').forEach(function(el){
       var idx = parseInt(el.getAttribute('data-idx'), 10);
       var n = notes[idx]; if (!n) return;
+      var openBtn = el.querySelector('[data-action="open"]');
+      if (openBtn){
+        openBtn.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
+        openBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          if (typeof window.openNoteModal === 'function') window.openNoteModal(idx);
+        });
+      }
       el.addEventListener('dragstart', function(de){
         var payload = {
           type: 'ref', kind: 'note',
@@ -200,6 +209,7 @@
     }
     box.innerHTML = fiches.map(function(f, i){
       return '<div class="cs-item" draggable="true" data-source="fiche" data-idx="' + i + '">'
+        +   '<button class="cs-item-open" data-action="open" title="Ouvrir la fiche">↗</button>'
         +   '<div class="cs-item-eyebrow">📋 ' + esc(f.mat || 'Fiche') + '</div>'
         +   '<div class="cs-item-title">' + esc((f.ico || '') + ' ' + (f.titre || '')) + '</div>'
         +   '<div class="cs-item-meta">' + ((f.arts && f.arts.length) || 0) + ' article(s)</div>'
@@ -208,6 +218,17 @@
     box.querySelectorAll('.cs-item').forEach(function(el){
       var idx = parseInt(el.getAttribute('data-idx'), 10);
       var f = fiches[idx]; if (!f) return;
+      var openBtn = el.querySelector('[data-action="open"]');
+      if (openBtn){
+        openBtn.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
+        openBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          // Exit carte mode and open the fiche
+          if (typeof window.closeCarte === 'function') window.closeCarte();
+          else document.body.classList.remove('carte-mode');
+          if (typeof window.openFiche === 'function' && f.id) window.openFiche(f.id);
+        });
+      }
       el.addEventListener('dragstart', function(de){
         var payload = {
           type: 'ref', kind: 'fiche',
