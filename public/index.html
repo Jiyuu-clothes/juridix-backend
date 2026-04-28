@@ -783,8 +783,9 @@ body.light .ttab.on{background:rgba(105,88,232,0.1)}
 .drawer-close-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
 
 /* --- Layout panel-l = tiroir gauche --- */
+/* width/max-width sans !important pour que le resizer JS puisse les piloter */
 body.hub-mode #panel-l{
-  width:290px!important;max-width:390px!important;min-width:0!important;
+  width:290px;max-width:none;min-width:0!important;
   flex-direction:column!important;
   transition:width .25s cubic-bezier(.4,0,.2,1),border-right-color .25s;
   border-right:1px solid var(--gb);
