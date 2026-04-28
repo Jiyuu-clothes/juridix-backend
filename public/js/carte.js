@@ -1166,6 +1166,45 @@
   function zoomIn(){ view.scale = clamp(view.scale * 1.15, 0.3, 2.5); applyViewTransform(); }
   function zoomOut(){ view.scale = clamp(view.scale / 1.15, 0.3, 2.5); applyViewTransform(); }
 
+  // ---------- Inject from outside (fiches grid, fiche detail, etc.) ----------
+  // Inject a fiche as a ref-node into the active carte.
+  // If `openAfter` is true (default) the carte is opened to show the result.
+  function injectFicheIntoCarte(id, openAfter){
+    var f = findFicheById(id);
+    if (!f){ console.warn('carte: injectFicheIntoCarte — fiche introuvable:', id); return false; }
+    if (!ui.initialized) init();
+    // S'assurer qu'une carte existe
+    ensureMap();
+    var payload = {
+      type: 'ref',
+      kind: 'fiche',
+      title: f.titre || 'Fiche',
+      body: ficheBodyText(f).slice(0, 4000),
+      ref: f.id,
+      codeLabel: f.mat || ''
+    };
+    var doInject = function(){
+      // Si le canvas est masqué (carte-mode pas activé), fallback : position fixe en haut-gauche du dernier état
+      if (ui.canvas && ui.canvas.getBoundingClientRect().width > 0){
+        addRefNodeAtCenter(payload);
+      } else {
+        // canvas non visible — placer à proximité de l'origine de la map
+        var m = activeMap();
+        var x = 60 + (m.nodes.length % 6) * 30;
+        var y = 60 + (m.nodes.length % 6) * 30;
+        addRefNode(x, y, payload);
+      }
+    };
+    if (openAfter !== false){
+      open();
+      // attendre un tick pour que le canvas ait des dimensions
+      setTimeout(doInject, 60);
+    } else {
+      doInject();
+    }
+    return true;
+  }
+
   // ---------- Expose ----------
   window.openCarte    = open;
   window.exitCarte    = exit;
@@ -1176,6 +1215,7 @@
   window.resetCarteView = resetView;
   window.zoomCarteIn  = zoomIn;
   window.zoomCarteOut = zoomOut;
+  window.injectFicheIntoCarte = injectFicheIntoCarte;
 
   // Patch switchTab so any other nav-icon click exits carte-mode
   if (document.readyState === 'loading'){
