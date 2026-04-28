@@ -671,11 +671,18 @@
     c.addEventListener('wheel', function(ev){
       if (!ev.ctrlKey && !ev.metaKey) return;
       ev.preventDefault();
-      var delta = ev.deltaY > 0 ? 0.9 : 1.1;
+      // Smooth multiplicative zoom proportional to wheel delta.
+      // deltaMode: 0 = pixel, 1 = line, 2 = page — normalize roughly to pixels.
+      var dy = ev.deltaY;
+      if (ev.deltaMode === 1) dy *= 16;
+      else if (ev.deltaMode === 2) dy *= 100;
+      // Cap per-event delta so a single big wheel tick doesn't overshoot.
+      dy = Math.max(-60, Math.min(60, dy));
+      var factor = Math.exp(-dy * 0.0035);
       var rect = c.getBoundingClientRect();
       var mx = ev.clientX - rect.left;
       var my = ev.clientY - rect.top;
-      var newScale = clamp(view.scale * delta, 0.3, 2.5);
+      var newScale = clamp(view.scale * factor, 0.3, 2.5);
       var ratio = newScale / view.scale;
       view.x = mx - (mx - view.x) * ratio;
       view.y = my - (my - view.y) * ratio;
