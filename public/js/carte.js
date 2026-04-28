@@ -240,7 +240,8 @@
       listHtml = state.maps.map(function(m){
         var on = m.id === state.active ? ' on' : '';
         return '<div class="carte-item' + on + '" data-id="' + esc(m.id) + '">'
-          +   '<span class="carte-item-title">' + esc(m.title || '(sans titre)') + '</span>'
+          +   '<span class="carte-item-title" title="Double-clic pour renommer">' + esc(m.title || '(sans titre)') + '</span>'
+          +   '<button class="carte-item-rn" data-action="rename" title="Renommer">✏️</button>'
           +   '<button class="carte-item-del" data-action="del" title="Supprimer">🗑</button>'
           + '</div>';
       }).join('');
@@ -261,9 +262,22 @@
           }
           return;
         }
+        if (btn && btn.getAttribute('data-action') === 'rename'){
+          ev.stopPropagation();
+          startInlineRename(el, id);
+          return;
+        }
         state.active = id;
         save(); renderList(); renderActive();
       });
+      // Double-click on the title to rename inline
+      var titleEl = el.querySelector('.carte-item-title');
+      if (titleEl){
+        titleEl.addEventListener('dblclick', function(ev){
+          ev.stopPropagation();
+          startInlineRename(el, el.getAttribute('data-id'));
+        });
+      }
     });
     var addBtn = box.querySelector('.carte-add-btn');
     if (addBtn){
@@ -1053,8 +1067,45 @@
     state.maps.unshift(m);
     state.active = m.id;
     save(); renderList(); renderActive();
-    var t = document.getElementById('carte-title-in');
-    if (t) { t.focus(); t.select(); }
+    // Open inline rename on the new card immediately
+    var newEl = document.querySelector('.carte-item[data-id="' + m.id + '"]');
+    if (newEl) startInlineRename(newEl, m.id);
+  }
+  function startInlineRename(itemEl, id){
+    var m = state.maps.find(function(x){ return x.id === id; });
+    if (!m || !itemEl) return;
+    var titleEl = itemEl.querySelector('.carte-item-title');
+    if (!titleEl) return;
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'carte-item-rename-in';
+    input.value = m.title || '';
+    input.setAttribute('autocomplete', 'off');
+    titleEl.replaceWith(input);
+    input.focus(); input.select();
+    var done = false;
+    var commit = function(){
+      if (done) return; done = true;
+      m.title = input.value.trim() || 'Sans titre';
+      touchMap(); renderList();
+      // If renaming the active map, sync the top title input too
+      if (state.active === id){
+        var t = document.getElementById('carte-title-in');
+        if (t) t.value = m.title;
+      }
+    };
+    var cancel = function(){
+      if (done) return; done = true;
+      renderList();
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function(ev){
+      if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+      else if (ev.key === 'Escape'){ ev.preventDefault(); input.removeEventListener('blur', commit); cancel(); }
+    });
+    // Prevent the parent click from selecting the card while editing
+    input.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
+    input.addEventListener('click', function(ev){ ev.stopPropagation(); });
   }
   function renameActive(){
     var m = activeMap(); if (!m) return;
