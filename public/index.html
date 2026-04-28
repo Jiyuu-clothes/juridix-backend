@@ -400,6 +400,8 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 .btn-outline:hover{background:rgba(255,255,255,0.07);color:var(--t1);border-color:rgba(255,255,255,0.25)}
 .btn-green{background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.3);color:var(--green)}
 .btn-green:hover{background:rgba(52,211,153,0.25)}
+.btn-carte{background:rgba(124,107,255,0.18);border-color:rgba(124,107,255,0.4);color:var(--acc2)}
+.btn-carte:hover{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent}
 .cite-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-family:sans-serif;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
 .cite-toast.show{opacity:1}
 
@@ -1521,6 +1523,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
           <div class="art-voir" id="ac-voir"></div>
           <div class="art-actions-v4">
             <button class="btn btn-green" onclick="citeArticleAnimated(this)">📋 Citer</button>
+            <button class="btn btn-carte" onclick="injectArticleToCarte()" title="Ajouter cet article à la carte mentale active">🧠 Injecter dans la carte</button>
             <button class="btn btn-outline" onclick="openLegifrance()" style="font-size:12px">🔗 Légifrance</button>
             <!-- Conservés mais cachés en hub-mode par CSS -->
             <button class="btn btn-gold" onclick="generateFiche()">⭐ Générer fiche</button>
@@ -1565,6 +1568,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       <div id="lab-studio-hdr">
         <span class="lab-title-label">✍️ Studio</span>
         <button class="lab-inject-btn" onclick="injectArticleToLab()">📎 Injecter l'article</button>
+        <button class="lab-inject-btn" onclick="injectArticleToCarte()" title="Envoyer l'article vers la carte mentale" style="background:rgba(124,107,255,0.15);border-color:rgba(124,107,255,0.4);color:var(--acc2)">🧠 Carte</button>
         <button class="lab-copy-btn" onclick="copyLabDoc()">📋</button>
         <span id="lab-wcount">0 mot</span>
         <button class="studio-collapse-btn" onclick="collapseStudio()" title="Réduire le studio">▶ Réduire</button>
@@ -5340,6 +5344,34 @@ async function injectArticleToLab(){
       btn.style.color = '';
     }, 1800);
   }
+}
+
+// === Injecter l'article courant dans la carte mentale ===
+function injectArticleToCarte(){
+  if(!_art){
+    if(typeof showToast==='function') showToast('Ouvre d\'abord un article dans le lecteur');
+    return;
+  }
+  if(typeof window.injectIntoCarte !== 'function'){
+    if(typeof showToast==='function') showToast('Carte mentale indisponible');
+    return;
+  }
+  // Construire un titre court et un body lisible — style cohérent avec les drops depuis la recherche
+  var title = (_art.ref || 'Référence') + (_art.code ? ' — ' + _art.code : '');
+  var body  = _art.texte || '';
+  if(_art.type === 'jurisprudence' && _art.title){
+    title = _art.ref || _art.title;
+    body  = (_art.title ? _art.title + '\n\n' : '') + body;
+  }
+  var ok = window.injectIntoCarte({
+    title: title,
+    body: body.slice(0, 4000),
+    ref: _art.id || _art.ref || '',
+    kind: _art.type === 'jurisprudence' ? 'juris' : 'article',
+    codeLabel: _art.code || '',
+    date: _art.vigeur || _art.date || ''
+  }, true);
+  if(ok && typeof showToast==='function') showToast('🧠 Article ajouté à la carte mentale');
 }
 
 function _setSaveState(state){

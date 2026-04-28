@@ -1166,7 +1166,41 @@
   function zoomIn(){ view.scale = clamp(view.scale * 1.15, 0.3, 2.5); applyViewTransform(); }
   function zoomOut(){ view.scale = clamp(view.scale / 1.15, 0.3, 2.5); applyViewTransform(); }
 
-  // ---------- Inject from outside (fiches grid, fiche detail, etc.) ----------
+  // ---------- Inject from outside (fiches grid, fiche detail, article reader, etc.) ----------
+  // Generic injection : takes any node payload and adds it as a ref-node to the active carte.
+  // payload : { title, body, ref, kind, codeLabel, date }
+  function injectIntoCarte(payload, openAfter){
+    if (!payload || !payload.title){ console.warn('carte: injectIntoCarte — payload invalide'); return false; }
+    if (!ui.initialized) init();
+    ensureMap();
+    var clean = {
+      type: 'ref',
+      kind: payload.kind || 'article',
+      title: payload.title,
+      body: (payload.body || '').slice(0, 4000),
+      ref: payload.ref || '',
+      codeLabel: payload.codeLabel || '',
+      date: payload.date || ''
+    };
+    var doInject = function(){
+      if (ui.canvas && ui.canvas.getBoundingClientRect().width > 0){
+        addRefNodeAtCenter(clean);
+      } else {
+        var m = activeMap();
+        var x = 60 + (m.nodes.length % 6) * 30;
+        var y = 60 + (m.nodes.length % 6) * 30;
+        addRefNode(x, y, clean);
+      }
+    };
+    if (openAfter !== false){
+      open();
+      setTimeout(doInject, 60);
+    } else {
+      doInject();
+    }
+    return true;
+  }
+
   // Inject a fiche as a ref-node into the active carte.
   // If `openAfter` is true (default) the carte is opened to show the result.
   function injectFicheIntoCarte(id, openAfter){
@@ -1216,6 +1250,7 @@
   window.zoomCarteIn  = zoomIn;
   window.zoomCarteOut = zoomOut;
   window.injectFicheIntoCarte = injectFicheIntoCarte;
+  window.injectIntoCarte      = injectIntoCarte;
 
   // Patch switchTab so any other nav-icon click exits carte-mode
   if (document.readyState === 'loading'){
