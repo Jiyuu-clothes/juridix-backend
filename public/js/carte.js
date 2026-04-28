@@ -378,6 +378,23 @@
         touchMap(); renderNodes();
         ev.stopPropagation(); return;
       }
+      // Hold Alt/Option to start an edge from any point on the node's border
+      if (ev.altKey){
+        var rect0 = el.getBoundingClientRect();
+        var lx = (ev.clientX - rect0.left) / view.scale;
+        var ly = (ev.clientY - rect0.top) / view.scale;
+        var w0 = el.offsetWidth, h0 = el.offsetHeight;
+        var midX = w0/2, midY = h0/2;
+        var side;
+        var dxRel = lx - midX, dyRel = ly - midY;
+        var ax = Math.abs(dxRel) / (w0/2 || 1);
+        var ay = Math.abs(dyRel) / (h0/2 || 1);
+        if (ax >= ay) side = dxRel > 0 ? 'right' : 'left';
+        else          side = dyRel > 0 ? 'bottom' : 'top';
+        startEdgeDrag(id, side, ev);
+        ev.stopPropagation(); ev.preventDefault();
+        return;
+      }
       // Drag the node
       startNodeDrag(id, ev);
       ui.selected = { type: 'node', id: id };
@@ -481,12 +498,12 @@
       var a = m.nodes.find(function(n){ return n.id === e.from; });
       var b = m.nodes.find(function(n){ return n.id === e.to; });
       if (!a || !b) return;
-      var fromSide = e.fromSide || 'right';
-      var paFrom = nodeAnchor(a, fromSide);
-      var toSide = e.toSide || pickClosestSide(paFrom, b);
-      var pa = paFrom;
-      var pb = nodeAnchor(b, toSide);
-      var path = bezierPath(pa, pb, fromSide, toSide);
+      // Geometric anchoring: each end attaches to the perimeter point on the line
+      // between the two centers — gives smooth, infinite attachment points.
+      var ba = nodeBox(a), bb = nodeBox(b);
+      var pa = perimeterAnchor(a, bb.cx, bb.cy);
+      var pb = perimeterAnchor(b, ba.cx, ba.cy);
+      var path = bezierPath(pa, pb);
       var isSel = (ui.selected && ui.selected.type === 'edge' && ui.selected.id === e.id);
       var sel = isSel ? ' selected' : '';
       // Hit zone (wide invisible) for easy clicking
@@ -545,16 +562,43 @@
     });
   }
 
-  function nodeAnchor(n, side){
+  function nodeBox(n){
     var el = ui.nodes && ui.nodes.querySelector('.cm-node[data-id="' + n.id + '"]');
     var w = (n.w | 0) || (el ? el.offsetWidth : 160);
     var h = (n.h | 0) || (el ? el.offsetHeight : 40);
-    var cx = n.x + w / 2, cy = n.y + h / 2;
-    if (side === 'right')  return { x: n.x + w, y: cy };
-    if (side === 'left')   return { x: n.x,     y: cy };
-    if (side === 'top')    return { x: cx,      y: n.y };
-    if (side === 'bottom') return { x: cx,      y: n.y + h };
-    return { x: cx, y: cy };
+    return { x: n.x, y: n.y, w: w, h: h, cx: n.x + w/2, cy: n.y + h/2 };
+  }
+  function nodeAnchor(n, side){
+    var b = nodeBox(n);
+    if (side === 'right')  return { x: b.x + b.w, y: b.cy, nx:  1, ny:  0, side: 'right' };
+    if (side === 'left')   return { x: b.x,       y: b.cy, nx: -1, ny:  0, side: 'left' };
+    if (side === 'top')    return { x: b.cx,      y: b.y,  nx:  0, ny: -1, side: 'top' };
+    if (side === 'bottom') return { x: b.cx,      y: b.y + b.h, nx: 0, ny: 1, side: 'bottom' };
+    return { x: b.cx, y: b.cy, nx: 0, ny: 0, side: '' };
+  }
+  // Continuous perimeter anchor: returns the point on the rectangle's border
+  // intersected by the ray from the node's center toward (towardX, towardY).
+  // This effectively gives infinite attachment points around the node.
+  function perimeterAnchor(n, towardX, towardY){
+    var b = nodeBox(n);
+    var dx = towardX - b.cx, dy = towardY - b.cy;
+    if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001){
+      return { x: b.cx, y: b.cy, nx: 1, ny: 0, side: 'right' };
+    }
+    var halfW = b.w / 2, halfH = b.h / 2;
+    var tx = Math.abs(dx) > 0.0001 ? halfW / Math.abs(dx) : Infinity;
+    var ty = Math.abs(dy) > 0.0001 ? halfH / Math.abs(dy) : Infinity;
+    var t = Math.min(tx, ty);
+    var px = b.cx + dx * t, py = b.cy + dy * t;
+    var side, nx = 0, ny = 0;
+    if (tx <= ty){
+      side = dx > 0 ? 'right' : 'left';
+      nx = dx > 0 ? 1 : -1;
+    } else {
+      side = dy > 0 ? 'bottom' : 'top';
+      ny = dy > 0 ? 1 : -1;
+    }
+    return { x: px, y: py, nx: nx, ny: ny, side: side };
   }
   // Pick the side of `toNode` whose anchor is closest to `fromAnchor`.
   function pickClosestSide(fromAnchor, toNode){
@@ -576,8 +620,19 @@
   }
   function bezierPath(a, b, sideA, sideB){
     var d = Math.max(48, Math.hypot(b.x - a.x, b.y - a.y) * 0.42);
-    var oa = sideOffset(sideA || 'right', d);
-    var ob = sideOffset(sideB || 'left',  d);
+    // If the anchor objects carry their own outward normals (nx, ny), use them.
+    // Otherwise fall back to the named-side offset.
+    var oa, ob;
+    if (a && typeof a.nx === 'number' && typeof a.ny === 'number' && (a.nx || a.ny)){
+      oa = { dx: a.nx * d, dy: a.ny * d };
+    } else {
+      oa = sideOffset(sideA || 'right', d);
+    }
+    if (b && typeof b.nx === 'number' && typeof b.ny === 'number' && (b.nx || b.ny)){
+      ob = { dx: b.nx * d, dy: b.ny * d };
+    } else {
+      ob = sideOffset(sideB || 'left', d);
+    }
     var cx1 = a.x + oa.dx, cy1 = a.y + oa.dy;
     var cx2 = b.x + ob.dx, cy2 = b.y + ob.dy;
     return 'M ' + a.x + ' ' + a.y + ' C ' + cx1 + ' ' + cy1 + ' ' + cx2 + ' ' + cy2 + ' ' + b.x + ' ' + b.y;
@@ -738,13 +793,13 @@
   function drawTempEdge(){
     if (!ui.edgeDrag) return;
     var n = findNode(ui.edgeDrag.fromId); if (!n) return;
-    var a = nodeAnchor(n, ui.edgeDrag.side);
     var rect = ui.canvas.getBoundingClientRect();
-    var b = {
-      x: (ui.edgeDrag.mouseX - rect.left - view.x) / view.scale,
-      y: (ui.edgeDrag.mouseY - rect.top - view.y) / view.scale,
-    };
-    var d = bezierPath(a, b, ui.edgeDrag.side, inverseSide(ui.edgeDrag.side));
+    var mx = (ui.edgeDrag.mouseX - rect.left - view.x) / view.scale;
+    var my = (ui.edgeDrag.mouseY - rect.top - view.y) / view.scale;
+    // Anchor point follows the cursor direction continuously
+    var a = perimeterAnchor(n, mx, my);
+    var b = { x: mx, y: my, nx: -a.nx, ny: -a.ny };
+    var d = bezierPath(a, b);
     var existing = ui.edges.querySelector('.cm-edge-tmp');
     if (existing){ existing.setAttribute('d', d); return; }
     var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
