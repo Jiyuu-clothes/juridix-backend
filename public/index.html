@@ -1087,9 +1087,9 @@ body.light #atelier-sidebar{background:rgba(241,245,249,0.6)}
 
 #atelier-main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;background:var(--bg)}
 
-#atelier-toolbar-row{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(15,23,42,0.6);border-bottom:1px solid var(--gb);flex-shrink:0}
+#atelier-toolbar-row{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(15,23,42,0.6);border-bottom:1px solid var(--gb);flex-shrink:0;flex-wrap:wrap}
 body.light #atelier-toolbar-row{background:rgba(241,245,249,0.6)}
-#atelier-doc-title{flex:0 1 360px;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:600;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
+#atelier-doc-title{flex:1 1 240px;min-width:180px;max-width:480px;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:600;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
 #atelier-doc-title:hover{background:rgba(56,189,248,0.05);border-color:rgba(56,189,248,0.1)}
 #atelier-doc-title:focus{background:rgba(56,189,248,0.08);border-color:var(--acc)}
 .at-spacer{flex:1}
@@ -1954,7 +1954,62 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   var ATELIER_KEY='jdx_atelier_docs_v1';
   var ATELIER_ACT='jdx_atelier_active';
   var ATELIER_W='jdx_atelier_sidebar_w';
+  var ATELIER_LINK='jdx_atelier_studio_linked_id'; // id du doc atelier lié au Studio
+  var STUDIO_C='jdx_lab_content';
+  var STUDIO_T='jdx_lab_title';
   var atDocs=[], atActive=null, atSaveT=null, atInitialized=false;
+
+  // Lien bidirectionnel Studio (jdx_lab_content / jdx_lab_title) <-> Atelier
+  function getStudioLinkedId(){ try{ return localStorage.getItem(ATELIER_LINK)||null; }catch(e){ return null; } }
+  function setStudioLinkedId(id){ try{ id ? localStorage.setItem(ATELIER_LINK,id) : localStorage.removeItem(ATELIER_LINK); }catch(e){} }
+  function importStudioIfNeeded(){
+    // Si un doc atelier est déjà lié au studio, on le synchronise vers le contenu studio le plus récent
+    var linkedId = getStudioLinkedId();
+    var studioHtml='', studioTitle='';
+    try{ studioHtml = localStorage.getItem(STUDIO_C) || ''; }catch(e){}
+    try{ studioTitle = localStorage.getItem(STUDIO_T) || ''; }catch(e){}
+    var hasStudioContent = !!(studioHtml && studioHtml.replace(/<[^>]+>/g,'').trim()) || !!(studioTitle && studioTitle.trim());
+    if(linkedId){
+      var d=findDoc(linkedId);
+      if(d){
+        // si le studio a été modifié hors atelier, propager vers l'atelier
+        if(studioHtml && studioHtml!==d.html){ d.html=studioHtml; d.updated=Date.now(); saveDocs(); }
+        if(studioTitle && studioTitle!==d.title){ d.title=studioTitle; d.updated=Date.now(); saveDocs(); }
+      } else {
+        // doc lié supprimé : on délie
+        setStudioLinkedId(null);
+      }
+    } else if(hasStudioContent){
+      // Première ouverture après que le studio a déjà été utilisé : on importe
+      var imported={
+        id:uid(),
+        title:(studioTitle && studioTitle.trim()) ? studioTitle.trim() : 'Studio',
+        html:studioHtml||'',
+        updated:Date.now(),
+        created:Date.now(),
+        fromStudio:true
+      };
+      atDocs.unshift(imported);
+      atActive=imported.id;
+      setStudioLinkedId(imported.id);
+      saveDocs();
+    }
+  }
+  function syncToStudio(d){
+    // Si le doc actif est celui lié au studio, on miroir vers les clés Studio
+    if(!d) return;
+    if(getStudioLinkedId()===d.id){
+      try{ localStorage.setItem(STUDIO_C, d.html||''); }catch(e){}
+      try{ localStorage.setItem(STUDIO_T, d.title||''); }catch(e){}
+      // si le panneau Studio est ouvert, on rafraîchit son éditeur
+      try{
+        var ed2=document.getElementById('lab-editor2');
+        var ti2=document.getElementById('lab-doc-title');
+        if(ed2 && ed2.innerHTML !== (d.html||'')) ed2.innerHTML = d.html||'';
+        if(ti2 && ti2.value !== (d.title||'')) ti2.value = d.title||'';
+      }catch(e){}
+    }
+  }
 
   function uid(){ return 'd_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
   function loadDocs(){
@@ -2042,6 +2097,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     if(ti) d.title = ti.value || 'Sans titre';
     d.updated = Date.now();
     saveDocs();
+    syncToStudio(d);
     renderList();
     setSaveState('saved');
   }
@@ -2054,6 +2110,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   function open(){
     if(!atInitialized){ initAtelier(); }
     loadDocs();
+    importStudioIfNeeded(); // récupère le contenu du Studio si présent et lie les deux
     if(!atDocs.length || !findDoc(atActive)){
       if(!atDocs.length){ newDoc('Mon premier document'); }
       else { atActive=atDocs[0].id; saveDocs(); }
@@ -2283,6 +2340,38 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   window.atInsertLink       = insertLink;
   window.injectArticleToAtelier = injectArticle;
   window.exportAtelierDoc   = exportDoc;
+
+  // Sens Studio -> Atelier : appelé par onLabEditorInput / onLabTitleChange
+  window.atelierMirrorFromStudio = function(){
+    loadDocs();
+    var studioHtml='', studioTitle='';
+    try{ studioHtml = localStorage.getItem(STUDIO_C) || ''; }catch(e){}
+    try{ studioTitle = localStorage.getItem(STUDIO_T) || ''; }catch(e){}
+    var linkedId = getStudioLinkedId();
+    var d = linkedId ? findDoc(linkedId) : null;
+    if(!d){
+      // Crée le doc lié à la volée si l'utilisateur tape directement dans le Studio
+      d = { id:uid(), title:(studioTitle||'Studio'), html:studioHtml||'', updated:Date.now(), created:Date.now(), fromStudio:true };
+      atDocs.unshift(d);
+      setStudioLinkedId(d.id);
+    } else {
+      d.html = studioHtml || '';
+      d.title = studioTitle || d.title || 'Studio';
+      d.updated = Date.now();
+    }
+    saveDocs();
+    // si l'atelier est ouvert, refléter dans l'UI
+    if(document.body.classList.contains('atelier-mode')){
+      if(atActive===d.id){
+        var ed=document.getElementById('atelier-editor');
+        var ti=document.getElementById('atelier-doc-title');
+        if(ed && ed.innerHTML !== d.html) ed.innerHTML = d.html;
+        if(ti && ti.value !== d.title) ti.value = d.title;
+        updateWordCount();
+      }
+      renderList();
+    }
+  };
 
   // Patch switchTab so any tab change exits atelier
   function wrapSwitchTab(){
@@ -5963,6 +6052,10 @@ function onLabEditorInput(){
     try {
       localStorage.setItem('jdx_lab_content', editor.innerHTML);
       _setSaveState('saved');
+      // Propagation vers le doc Atelier lié (si présent)
+      try{
+        if(typeof window.atelierMirrorFromStudio==='function') window.atelierMirrorFromStudio();
+      }catch(e){}
     } catch(e) {
       _setSaveState('error');
     }
@@ -5975,6 +6068,8 @@ function onLabTitleChange(){
   var val = (document.getElementById('lab-doc-title')||{}).value || '';
   localStorage.setItem('jdx_lab_title', val);
   if(window.JuriDix && JuriDix.scheduleStudioSync) JuriDix.scheduleStudioSync();
+  // Propagation vers Atelier
+  try{ if(typeof window.atelierMirrorFromStudio==='function') window.atelierMirrorFromStudio(); }catch(e){}
 }
 
 function copyLabDoc(){
