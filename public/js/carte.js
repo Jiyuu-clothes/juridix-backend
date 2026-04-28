@@ -233,17 +233,21 @@
   function renderList(){
     var box = document.getElementById('carte-list');
     if (!box) return;
+    var listHtml = '';
     if (state.maps.length === 0){
-      box.innerHTML = '<div class="carte-empty-list">Aucune carte.<br>Clique « + » pour en créer une.</div>';
-      return;
+      listHtml = '<div class="carte-empty-list">Aucune carte pour l\'instant.</div>';
+    } else {
+      listHtml = state.maps.map(function(m){
+        var on = m.id === state.active ? ' on' : '';
+        return '<div class="carte-item' + on + '" data-id="' + esc(m.id) + '">'
+          +   '<span class="carte-item-title">' + esc(m.title || '(sans titre)') + '</span>'
+          +   '<button class="carte-item-del" data-action="del" title="Supprimer">🗑</button>'
+          + '</div>';
+      }).join('');
     }
-    box.innerHTML = state.maps.map(function(m){
-      var on = m.id === state.active ? ' on' : '';
-      return '<div class="carte-item' + on + '" data-id="' + esc(m.id) + '">'
-        +   '<span class="carte-item-title">' + esc(m.title || '(sans titre)') + '</span>'
-        +   '<button class="carte-item-del" data-action="del" title="Supprimer">🗑</button>'
-        + '</div>';
-    }).join('');
+    // "+ Nouvelle carte" button at the bottom of the list
+    listHtml += '<button class="carte-add-btn" data-action="add" title="Créer une nouvelle carte">+ Nouvelle carte</button>';
+    box.innerHTML = listHtml;
     box.querySelectorAll('.carte-item').forEach(function(el){
       el.addEventListener('click', function(ev){
         var id = el.getAttribute('data-id');
@@ -261,6 +265,12 @@
         save(); renderList(); renderActive();
       });
     });
+    var addBtn = box.querySelector('.carte-add-btn');
+    if (addBtn){
+      addBtn.addEventListener('click', function(){
+        if (typeof window.newCarte === 'function') window.newCarte();
+      });
+    }
   }
 
   // ---------- Render: active map ----------
