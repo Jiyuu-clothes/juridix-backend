@@ -2868,6 +2868,10 @@ function switchTab(tab){
   if(!_hubInited && typeof applyPanelWidth==='function') applyPanelWidth(tab);
   if(tab==='codes' && !_codesInited){initCodes();}
   if(tab==='redac' && !_redacInited){initRedac();}
+  if(tab==='fiches'){
+    // Toujours re-render pour garantir un contenu visible meme si le boot a foire
+    try { if(typeof initFiches==='function') initFiches(); } catch(e){ console.warn('initFiches failed', e); }
+  }
   if(tab!=='fiches'){
     document.getElementById('fiche-detail').classList.remove('show');
     if(!_art && tab!=='redac'){document.getElementById('art-empty').style.display='flex';}
