@@ -155,6 +155,9 @@
     document.body.classList.add('carte-mode');
     var ov = document.getElementById('carte-overlay');
     if (ov) ov.hidden = false;
+    // Swipe lumineux
+    var sw = document.getElementById('tab-swipe');
+    if (sw){ sw.classList.remove('active'); void sw.offsetWidth; sw.classList.add('active'); }
     document.querySelectorAll('#icon-sidebar .nav-icon').forEach(function(el){ el.classList.remove('on'); });
     var ni = document.getElementById('ni-carte');
     if (ni) ni.classList.add('on');

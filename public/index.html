@@ -185,8 +185,9 @@ body.on-search.hub-mode #panel-l{width:0!important;max-width:0!important;min-wid
 body.on-search.hub-mode #main-resizer{display:none!important}
 /* SPOTLIGHT ZEN */
 #spotlight{position:fixed;inset:0;z-index:1500;background:#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;transition:opacity 0.4s cubic-bezier(0.4,0,0.2,1);overflow:hidden}
-#spotlight:before{content:"";position:absolute;left:0;right:0;top:-2px;height:2px;background:linear-gradient(90deg,transparent 0%,rgba(124,107,255,0) 5%,rgba(124,107,255,0.6) 50%,rgba(56,189,248,0) 95%,transparent 100%);box-shadow:0 0 24px rgba(124,107,255,0.6),0 0 48px rgba(56,189,248,0.3);animation:scanline 3.2s cubic-bezier(.55,0,.45,1) infinite;pointer-events:none}
-#spotlight:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 2px,rgba(255,255,255,0.012) 2px,rgba(255,255,255,0.012) 3px);pointer-events:none}
+#spotlight:before{content:"";position:absolute;left:0;right:0;top:-2px;height:2px;background:linear-gradient(90deg,transparent 0%,rgba(124,107,255,0) 5%,rgba(124,107,255,0.6) 50%,rgba(56,189,248,0) 95%,transparent 100%);box-shadow:0 0 24px rgba(124,107,255,0.6),0 0 48px rgba(56,189,248,0.3);animation:scanline 6.5s cubic-bezier(.55,0,.45,1) infinite;pointer-events:none;z-index:0}
+#spotlight:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 2px,rgba(255,255,255,0.012) 2px,rgba(255,255,255,0.012) 3px);pointer-events:none;z-index:0}
+#spotlight-inner{position:relative;z-index:2}
 @keyframes scanline{0%{top:-2px;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:100%;opacity:0}}
 
 /* Indicateur de chargement scanline pour boutons en cours d'action */
@@ -328,7 +329,7 @@ body.light #notes-quick-panel{background:rgba(255,255,255,0.99);box-shadow:0 12p
 }
 
 /* Swipe overlay — barre de lumière qui balaye la zone main lors du switch d'onglet */
-#tab-swipe{position:absolute;inset:0;pointer-events:none;z-index:8;opacity:0;background:linear-gradient(90deg,transparent 0%,rgba(124,107,255,0.18) 30%,rgba(56,189,248,0.30) 50%,rgba(124,107,255,0.18) 70%,transparent 100%);transform:translateX(-100%)}
+#tab-swipe{position:absolute;inset:0;pointer-events:none;z-index:50;opacity:0;background:linear-gradient(90deg,transparent 0%,rgba(124,107,255,0.18) 30%,rgba(56,189,248,0.30) 50%,rgba(124,107,255,0.18) 70%,transparent 100%);transform:translateX(-100%)}
 #tab-swipe.active{animation:tab-swipe-anim .55s cubic-bezier(.4,0,.4,1)}
 @keyframes tab-swipe-anim{
   0%  {transform:translateX(-100%);opacity:0}
@@ -1082,7 +1083,7 @@ body.hub-mode #lab-toolbar{display:flex}
    Activé via body.atelier-mode (cache panel-l, panel-r, resizers, studio)
    ========================================================================= */
 #atelier-overlay{position:absolute;inset:0;display:none;flex-direction:row;background:var(--bg);z-index:5;font-family:var(--font-ui)}
-body.atelier-mode #atelier-overlay{display:flex}
+body.atelier-mode #atelier-overlay{display:flex;animation:overlay-fade-in .5s cubic-bezier(.2,.8,.3,1)}
 body.atelier-mode #panel-l,
 body.atelier-mode #panel-r,
 body.atelier-mode #main-resizer,
@@ -1259,7 +1260,8 @@ body.light #atelier-color-pop{background:#fff}
    Activé via body.carte-mode (cache panel-l, panel-r, resizers)
    ========================================================================= */
 #carte-overlay{position:absolute;inset:0;display:none;flex-direction:row;background:var(--bg);z-index:5;font-family:var(--font-ui)}
-body.carte-mode #carte-overlay{display:flex}
+body.carte-mode #carte-overlay{display:flex;animation:overlay-fade-in .5s cubic-bezier(.2,.8,.3,1)}
+@keyframes overlay-fade-in{from{opacity:0;transform:scale(.97);filter:blur(6px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
 body.carte-mode #panel-l,
 body.carte-mode #panel-r,
 body.carte-mode #main-resizer,
@@ -2329,6 +2331,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     document.body.classList.remove('studio-fullscreen','studio-primary');
     var ov=document.getElementById('atelier-overlay');
     if(ov) ov.hidden=false;
+    // Swipe lumineux
+    var sw=document.getElementById('tab-swipe');
+    if(sw){ sw.classList.remove('active'); void sw.offsetWidth; sw.classList.add('active'); }
     renderList();
     bindCurrentDocToUI();
     // restore sidebar width
