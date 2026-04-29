@@ -123,11 +123,26 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─── Static frontend ──────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+// HTML jamais en cache — le reste (js/css/img) bénéficie d'un cache court
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    } else {
+      // Cache court (5 min) pour assets — Render purge à chaque déploiement de toute façon
+      res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    }
+  }
+}));
 
 // SPA fallback — must NOT shadow /api routes (express handles this naturally)
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
