@@ -130,6 +130,9 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;backgroun
 /* ===== COMMAND BAR PERSISTANTE (Phase 9) ===== */
 #topbar{position:relative}
 #topbar-search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,46vw);min-width:300px;z-index:210;transition:width .25s cubic-bezier(.4,0,.2,1)}
+/* En hub-mode (avec onglets visibles), la search bar est plus étroite pour ne pas chevaucher */
+body.hub-mode #topbar-search-wrap{width:min(360px,30vw);min-width:220px}
+body.hub-mode #topbar-search-wrap:focus-within{width:min(420px,36vw)}
 /* Au focus du child input → wrap s'élargit légèrement (effet "ouverture") + icône s'active.
    :focus-within = CSS pur, zéro JS, aucun listener à brancher. */
 #topbar-search-wrap:focus-within{width:min(560px,50vw)}
@@ -1463,7 +1466,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       ✍️<span class="ni-tip">Rédaction avancée</span>
     </div>
     <div id="sidebar-bottom">
-      <div class="nav-icon" id="ni-studio" onclick="openAtelier()" title="Atelier — page de rédaction">✍️<span class="ni-tip">Atelier</span></div>
+      <div class="nav-icon" id="ni-studio" onclick="toggleStudio()" title="Studio de Rédaction (réduire/agrandir)">✍️<span class="ni-tip">Studio de Rédaction</span></div>
       <div style="width:28px;height:1px;background:var(--gb);margin:4px auto;flex-shrink:0"></div>
       <div class="nav-icon" onclick="toggleTheme()" id="ni-theme" title="Mode clair/sombre">☀️<span class="ni-tip">Mode clair/sombre</span></div>
     </div>
@@ -2008,9 +2011,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 </div>
 
 <!-- STUDIO EXPAND TAB (visible quand studio réduit) -->
-<div id="studio-expand-tab" onclick="openAtelier()" title="Ouvrir l'Atelier">
+<div id="studio-expand-tab" onclick="expandStudio()" title="Agrandir le Studio">
   <span class="set-icon">✍️</span>
-  <span class="set-label">Atelier</span>
+  <span class="set-label">Studio</span>
 </div>
 
 <script>
@@ -2027,6 +2030,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   var STUDIO_C='jdx_lab_content';
   var STUDIO_T='jdx_lab_title';
   var atDocs=[], atActive=null, atSaveT=null, atInitialized=false;
+  var atPrevTab=null; // onglet hub actif avant ouverture de l'Atelier
 
   // Lien bidirectionnel Studio (jdx_lab_content / jdx_lab_title) <-> Atelier
   function getStudioLinkedId(){ try{ return localStorage.getItem(ATELIER_LINK)||null; }catch(e){ return null; } }
@@ -2178,6 +2182,17 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 
   function open(){
     if(!atInitialized){ initAtelier(); }
+    // Mémoriser l'onglet hub actif avant d'ouvrir l'Atelier (pour pouvoir y revenir)
+    try{
+      if(typeof window._tab !== 'undefined' && window._tab) atPrevTab = window._tab;
+      else {
+        var activeTtab = document.querySelector('#top-tabs .ttab.on');
+        if(activeTtab){
+          var t = activeTtab.getAttribute('data-tab');
+          if(t && t!=='atelier' && t!=='carte') atPrevTab = t;
+        }
+      }
+    }catch(e){}
     loadDocs();
     importStudioIfNeeded(); // récupère le contenu du Studio si présent et lie les deux
     if(!atDocs.length || !findDoc(atActive)){
@@ -2214,10 +2229,17 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     document.body.classList.remove('atelier-mode');
     var ov=document.getElementById('atelier-overlay');
     if(ov) ov.hidden=true;
-    // unmark atelier ttab
+    // Restaurer l'onglet hub précédent — sinon le hub apparaît "vide"
+    var target = atPrevTab || 'codes';
+    atPrevTab = null;
     try{
+      // démarquer l'onglet atelier puis appeler le switchTab original (non-wrappé) si possible
       var ttabs=document.querySelectorAll('#top-tabs .ttab');
       ttabs.forEach(function(t){ t.classList.remove('on'); });
+      // Appeler la version originale de switchTab pour ne pas re-déclencher exit()
+      if(typeof window.switchTab==='function'){
+        window.switchTab(target);
+      }
     }catch(e){}
   }
 
