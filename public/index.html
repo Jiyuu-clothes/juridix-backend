@@ -184,7 +184,15 @@ body.light .tbdd-citation-pill{background:rgba(14,165,233,.12);color:#0369a1;bor
 body.on-search.hub-mode #panel-l{width:0!important;max-width:0!important;min-width:0!important;border:none!important;overflow:hidden!important}
 body.on-search.hub-mode #main-resizer{display:none!important}
 /* SPOTLIGHT ZEN */
-#spotlight{position:fixed;inset:0;z-index:1500;background:#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;transition:opacity 0.4s cubic-bezier(0.4,0,0.2,1)}
+#spotlight{position:fixed;inset:0;z-index:1500;background:#030308;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;transition:opacity 0.4s cubic-bezier(0.4,0,0.2,1);overflow:hidden}
+#spotlight:before{content:"";position:absolute;left:0;right:0;top:-2px;height:2px;background:linear-gradient(90deg,transparent 0%,rgba(124,107,255,0) 5%,rgba(124,107,255,0.6) 50%,rgba(56,189,248,0) 95%,transparent 100%);box-shadow:0 0 24px rgba(124,107,255,0.6),0 0 48px rgba(56,189,248,0.3);animation:scanline 3.2s cubic-bezier(.55,0,.45,1) infinite;pointer-events:none}
+#spotlight:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 2px,rgba(255,255,255,0.012) 2px,rgba(255,255,255,0.012) 3px);pointer-events:none}
+@keyframes scanline{0%{top:-2px;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:100%;opacity:0}}
+
+/* Indicateur de chargement scanline pour boutons en cours d'action */
+.scanline-loading{position:relative;overflow:hidden}
+.scanline-loading:after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--acc),transparent);animation:scanline-h 1.4s linear infinite}
+@keyframes scanline-h{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 #spotlight.fade-out{opacity:0;pointer-events:none}
 #spotlight.gone{display:none}
 #spotlight-inner{width:100%;max-width:620px;display:flex;flex-direction:column;align-items:center}
@@ -311,7 +319,8 @@ body.light #notes-quick-panel{background:rgba(255,255,255,0.99);box-shadow:0 12p
 .resizer-inner{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;transition:background .2s}
 .resizer-inner:hover,.resizer-inner.dragging{background:var(--acc)}
 #page-search,#page-fiches,#page-quiz{display:none;flex-direction:column;height:100%;overflow:hidden}
-#page-search.active,#page-fiches.active,#page-quiz.active{display:flex}
+#page-search.active,#page-fiches.active,#page-quiz.active{display:flex;animation:page-fade-slide .26s cubic-bezier(.2,.8,.3,1)}
+@keyframes page-fade-slide{from{opacity:0;transform:translateX(8px) scale(.995)}to{opacity:1;transform:translateX(0) scale(1)}}
 
 /* RESULTS */
 #results-list{flex:1;overflow-y:auto;padding:10px}
@@ -456,7 +465,7 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 
 /* CODES PAGE */
 #page-codes{display:none;flex-direction:column;height:100%;overflow:hidden}
-#page-codes.active{display:flex}
+#page-codes.active{display:flex;animation:page-fade-slide .26s cubic-bezier(.2,.8,.3,1)}
 .code-selector{padding:10px 10px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--gb);font-family:var(--font-ui)}
 .code-picker-label{font-size:10.5px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase}
 .code-picker{position:relative}
@@ -1158,6 +1167,27 @@ body.light #atelier-add-page button{background:rgba(15,23,42,0.04);border-color:
 /* Atelier mode : masquer la search bar du topbar (évite les conflits) */
 body.atelier-mode #topbar-search-wrap{display:none!important}
 
+/* ===== GLASS MORPHISM — panneaux flottants futuristes ===== */
+#atelier-sidebar,
+#atelier-search-results,
+#atelier-color-pop,
+#topbar-search-dd,
+#notes-quick-panel,
+#lab-color-pop,
+#carte-sidebar,
+#cite-bubble{
+  backdrop-filter:blur(24px) saturate(140%);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);
+}
+#atelier-sidebar{background:rgba(15,23,42,0.55)!important;border-right:1px solid rgba(255,255,255,0.06)!important;box-shadow:inset -1px 0 0 rgba(255,255,255,0.04),4px 0 24px rgba(0,0,0,0.25)}
+body.light #atelier-sidebar{background:rgba(255,255,255,0.55)!important;border-right:1px solid rgba(15,23,42,0.06)!important}
+#atelier-search-results,#topbar-search-dd,#notes-quick-panel{background:rgba(10,12,22,0.78)!important;border:1px solid rgba(255,255,255,0.08)!important;box-shadow:0 12px 36px rgba(0,0,0,0.55),0 0 0 1px rgba(124,107,255,0.06) inset!important}
+body.light #atelier-search-results,body.light #topbar-search-dd,body.light #notes-quick-panel{background:rgba(255,255,255,0.78)!important}
+#atelier-color-pop,#lab-color-pop{background:rgba(10,12,22,0.85)!important;border:1px solid rgba(255,255,255,0.10)!important}
+body.light #atelier-color-pop,body.light #lab-color-pop{background:rgba(255,255,255,0.85)!important}
+#carte-sidebar{background:rgba(15,23,42,0.50)!important;backdrop-filter:blur(28px) saturate(150%)}
+body.light #carte-sidebar{background:rgba(255,255,255,0.50)!important}
+
 /* Mini-recherche dans la toolbar-row de l'atelier */
 #atelier-search-wrap{position:relative;flex:0 0 240px;display:flex;align-items:center}
 #atelier-search-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:6px;padding:6px 30px 6px 28px;font-size:12px;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
@@ -1282,7 +1312,19 @@ body.light #carte-toolbar{background:rgba(241,245,249,0.6)}
 #carte-canvas.connecting{cursor:crosshair}
 
 #carte-edges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;transform-origin:0 0}
-.cm-edge{stroke:var(--acc);stroke-width:2;fill:none;pointer-events:stroke;cursor:pointer;transition:stroke-width .15s,stroke .15s}
+.cm-edge{stroke:var(--acc);stroke-width:2;fill:none;pointer-events:stroke;cursor:pointer;transition:stroke-width .15s,stroke .15s;stroke-dasharray:6 8;animation:cm-edge-flow 1.6s linear infinite;filter:drop-shadow(0 0 3px rgba(124,107,255,0.45))}
+.cm-edge.on{stroke-dasharray:none;animation:none;filter:drop-shadow(0 0 6px rgba(124,107,255,0.85))}
+@keyframes cm-edge-flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-14}}
+
+/* Mini-map carte mentale — overview cliquable */
+#carte-minimap{position:absolute;right:14px;bottom:14px;width:180px;height:112px;background:rgba(10,12,22,0.72);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,0.10);border-radius:8px;overflow:hidden;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.4),0 0 0 1px rgba(124,107,255,0.06) inset;z-index:6;transition:transform .15s,box-shadow .15s}
+body.light #carte-minimap{background:rgba(255,255,255,0.78);border-color:rgba(15,23,42,0.10)}
+#carte-minimap:hover{transform:scale(1.04);box-shadow:0 12px 32px rgba(0,0,0,0.55),0 0 0 1px rgba(124,107,255,0.15) inset}
+#carte-minimap-svg{width:100%;height:100%;display:block}
+#carte-minimap .mm-node{fill:rgba(124,107,255,0.85);stroke:rgba(255,255,255,0.25);stroke-width:0.4}
+#carte-minimap .mm-node.juris{fill:rgba(56,189,248,0.85)}
+#carte-minimap .mm-edge{stroke:rgba(255,255,255,0.25);stroke-width:0.5;fill:none}
+#carte-minimap .mm-viewport{fill:rgba(124,107,255,0.10);stroke:rgba(124,107,255,0.85);stroke-width:1.2;pointer-events:none}
 .cm-edge:hover{stroke-width:3;stroke:var(--acc2)}
 .cm-edge.selected{stroke:var(--gold);stroke-width:3}
 .cm-edge-hit{stroke:transparent;stroke-width:18;fill:none;pointer-events:stroke;cursor:pointer}
@@ -1426,6 +1468,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   </div>
   <div class="tb-right">
     <div class="btn-icon" id="notes-quick-btn" onclick="toggleNotesQuick(event)" title="Mes notes">📝</div>
+    <div class="btn-icon" id="sound-btn" onclick="toggleSound()" title="Sons d'interface">🔇</div>
     <div class="btn-icon" id="theme-btn" onclick="toggleTheme()" title="Mode clair / sombre">☀️</div>
   </div>
   <!-- Notes quick panel (popover) -->
@@ -1954,6 +1997,10 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
           <span id="cz-pct">100%</span>
           <button class="zind-btn" onclick="zoomCarteIn()" title="Zoom +">+</button>
         </div>
+        <!-- Mini-map -->
+        <div id="carte-minimap" title="Vue d'ensemble (clic = téléporter)">
+          <svg id="carte-minimap-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
+        </div>
       </div>
     </div>
   </div>
@@ -2017,6 +2064,70 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 </div>
 
 <script>
+/* =========================================================================
+   SONS D'INTERFACE — opt-in, Web Audio API (pas de fichiers)
+   ========================================================================= */
+(function(){
+  var SND_KEY='jdx_sound_enabled_v1';
+  var enabled = false;
+  try{ enabled = localStorage.getItem(SND_KEY)==='1'; }catch(e){}
+  var ctx = null;
+  function ensureCtx(){
+    if(ctx) return ctx;
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) ctx = new AC();
+    }catch(e){}
+    return ctx;
+  }
+  function tone(freq, dur, type, vol){
+    if(!enabled) return;
+    var c = ensureCtx(); if(!c) return;
+    if(c.state==='suspended'){ try{ c.resume(); }catch(e){} }
+    try{
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, c.currentTime);
+      gain.gain.linearRampToValueAtTime(vol||0.06, c.currentTime + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + (dur||0.08));
+      osc.connect(gain); gain.connect(c.destination);
+      osc.start(); osc.stop(c.currentTime + (dur||0.08) + 0.02);
+    }catch(e){}
+  }
+  function click(){ tone(720, 0.05, 'sine', 0.04); }
+  function success(){ tone(880, 0.08, 'sine', 0.05); setTimeout(function(){ tone(1320, 0.10, 'sine', 0.05); }, 70); }
+  function refreshButton(){
+    var btn = document.getElementById('sound-btn');
+    if(!btn) return;
+    btn.textContent = enabled ? '🔊' : '🔇';
+    btn.title = enabled ? 'Sons : activés (cliquer pour désactiver)' : 'Sons : désactivés (cliquer pour activer)';
+  }
+  function toggleSound(){
+    enabled = !enabled;
+    try{ localStorage.setItem(SND_KEY, enabled ? '1' : '0'); }catch(e){}
+    refreshButton();
+    if(enabled){ ensureCtx(); click(); }
+  }
+  // Bind global click sound on primary buttons (delegation)
+  document.addEventListener('click', function(ev){
+    if(!enabled) return;
+    var t = ev.target;
+    if(!t || !t.closest) return;
+    if(t.closest('.at-btn, .ttab, .tab, .nav-icon, .btn-icon, .sp-skip, .home-shortcut')){
+      click();
+    }
+  }, true);
+  // Refresh icon at boot
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', refreshButton);
+  } else { refreshButton(); }
+  window.toggleSound = toggleSound;
+  window.jdxSoundClick = click;
+  window.jdxSoundSuccess = success;
+})();
+
 /* =========================================================================
    ATELIER — page de rédaction Word-like (mode dédié, multi-documents)
    Placée tout en haut du script pour résister à toute erreur runtime
@@ -2538,6 +2649,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     window.html2pdf().set(opt).from(container).save().then(function(){
       document.body.removeChild(container);
       setSaveState('saved');
+      try{ if(typeof window.jdxSoundSuccess==='function') window.jdxSoundSuccess(); }catch(e){}
     }).catch(function(err){
       document.body.removeChild(container);
       setSaveState('saved');

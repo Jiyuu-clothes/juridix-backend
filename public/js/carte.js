@@ -195,6 +195,7 @@
     bindDragDrop();
     bindResizer();
     bindSidebarTabs();
+    bindMinimap();
     load();
     ui.initialized = true;
   }
@@ -644,6 +645,8 @@
       }
     });
     ui.edges.innerHTML = html;
+    // Refresh mini-map après chaque rendu d'arêtes
+    try { renderMinimap(); } catch(e){}
     // Selection / dblclick on edges (visible, hit-zone, label)
     ui.edges.querySelectorAll('.cm-edge,.cm-edge-hit,.cm-edge-label').forEach(function(el){
       el.addEventListener('mousedown', function(ev){
@@ -770,6 +773,116 @@
     if (ui.edges) ui.edges.style.transform = t;
     var ind = document.getElementById('cz-pct');
     if (ind) ind.textContent = Math.round(view.scale * 100) + '%';
+    renderMinimapViewport();
+  }
+
+  // ---------- Mini-map ----------
+  var mmBox = null; // bounding box { minX, minY, maxX, maxY } sur l'espace logique
+  function computeMinimapBox(){
+    var m = activeMap();
+    if (!m || !m.nodes || !m.nodes.length) return null;
+    var minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    m.nodes.forEach(function(n){
+      var w = n.w || 200, h = n.h || 80;
+      if (n.x < minX) minX = n.x;
+      if (n.y < minY) minY = n.y;
+      if (n.x + w > maxX) maxX = n.x + w;
+      if (n.y + h > maxY) maxY = n.y + h;
+    });
+    // Marge
+    var pad = 60;
+    return { minX: minX-pad, minY: minY-pad, maxX: maxX+pad, maxY: maxY+pad };
+  }
+  function renderMinimap(){
+    var svg = document.getElementById('carte-minimap-svg');
+    var holder = document.getElementById('carte-minimap');
+    if (!svg || !holder) return;
+    var m = activeMap();
+    if (!m || !m.nodes || !m.nodes.length){
+      holder.style.display = 'none';
+      return;
+    }
+    holder.style.display = 'block';
+    mmBox = computeMinimapBox();
+    if (!mmBox) return;
+    var bw = Math.max(1, mmBox.maxX - mmBox.minX);
+    var bh = Math.max(1, mmBox.maxY - mmBox.minY);
+    // viewBox 160 x 100, on adapte avec preserveAspectRatio="none"
+    var sx = 160 / bw, sy = 100 / bh;
+    var html = '';
+    // edges
+    if (m.edges && m.edges.length){
+      m.edges.forEach(function(e){
+        var a = m.nodes.find(function(n){ return n.id === e.from; });
+        var b = m.nodes.find(function(n){ return n.id === e.to; });
+        if (!a || !b) return;
+        var aw = a.w||200, ah = a.h||80, bw2 = b.w||200, bh2 = b.h||80;
+        var x1 = (a.x + aw/2 - mmBox.minX) * sx;
+        var y1 = (a.y + ah/2 - mmBox.minY) * sy;
+        var x2 = (b.x + bw2/2 - mmBox.minX) * sx;
+        var y2 = (b.y + bh2/2 - mmBox.minY) * sy;
+        html += '<line class="mm-edge" x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'"/>';
+      });
+    }
+    // nodes
+    m.nodes.forEach(function(n){
+      var w = n.w || 200, h = n.h || 80;
+      var x = (n.x - mmBox.minX) * sx;
+      var y = (n.y - mmBox.minY) * sy;
+      var rw = Math.max(1.5, w * sx);
+      var rh = Math.max(1.5, h * sy);
+      var cls = 'mm-node' + (n.kind === 'juris' ? ' juris' : '');
+      html += '<rect class="'+cls+'" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+rw.toFixed(1)+'" height="'+rh.toFixed(1)+'" rx="1.2"/>';
+    });
+    // viewport
+    html += '<rect id="mm-viewport" class="mm-viewport" x="0" y="0" width="0" height="0"/>';
+    svg.innerHTML = html;
+    renderMinimapViewport();
+  }
+  function renderMinimapViewport(){
+    var svg = document.getElementById('carte-minimap-svg');
+    if (!svg || !mmBox) return;
+    var vp = document.getElementById('mm-viewport');
+    if (!vp) return;
+    var c = ui.canvas; if (!c) return;
+    var rect = c.getBoundingClientRect();
+    var bw = Math.max(1, mmBox.maxX - mmBox.minX);
+    var bh = Math.max(1, mmBox.maxY - mmBox.minY);
+    var sx = 160 / bw, sy = 100 / bh;
+    // espace logique du viewport = (-view.x / scale, -view.y / scale, w / scale, h / scale)
+    var vx = -view.x / view.scale;
+    var vy = -view.y / view.scale;
+    var vw = rect.width / view.scale;
+    var vh = rect.height / view.scale;
+    var x = (vx - mmBox.minX) * sx;
+    var y = (vy - mmBox.minY) * sy;
+    var w = vw * sx;
+    var h = vh * sy;
+    vp.setAttribute('x', x.toFixed(1));
+    vp.setAttribute('y', y.toFixed(1));
+    vp.setAttribute('width', Math.max(2, w).toFixed(1));
+    vp.setAttribute('height', Math.max(2, h).toFixed(1));
+  }
+  function bindMinimap(){
+    var holder = document.getElementById('carte-minimap');
+    if (!holder) return;
+    holder.addEventListener('click', function(ev){
+      if (!mmBox) return;
+      var c = ui.canvas; if (!c) return;
+      var rect = holder.getBoundingClientRect();
+      var rx = (ev.clientX - rect.left) / rect.width;   // 0..1
+      var ry = (ev.clientY - rect.top)  / rect.height;
+      var bw = mmBox.maxX - mmBox.minX;
+      var bh = mmBox.maxY - mmBox.minY;
+      // Position cliquée en espace logique
+      var lx = mmBox.minX + rx * bw;
+      var ly = mmBox.minY + ry * bh;
+      // Centrer la vue sur ce point
+      var cr = c.getBoundingClientRect();
+      view.x = cr.width / 2 - lx * view.scale;
+      view.y = cr.height / 2 - ly * view.scale;
+      applyViewTransform();
+    });
   }
 
   function bindCanvas(){
