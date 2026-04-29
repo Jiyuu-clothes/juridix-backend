@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
 <script defer src="/js/juridix.js"></script>
 <script defer src="/js/carte.js"></script>
 <style>
@@ -1140,6 +1141,19 @@ body.light #atelier-page{box-shadow:0 6px 18px rgba(0,0,0,0.15),0 1px 3px rgba(0
 #atelier-editor table th,#atelier-editor table td{border:1px solid #000;padding:6px 8px;text-align:left;vertical-align:top}
 #atelier-editor table th{background:#f0f0f0;font-weight:700;color:#000}
 
+/* Saut de page — séparateur visuel entre 2 feuilles A4 + impression */
+#atelier-editor .page-break{display:block;height:24px;margin:18mm -25mm 18mm;background:repeating-linear-gradient(90deg,transparent 0,transparent 6px,#cbd5e1 6px,#cbd5e1 12px);position:relative;border-top:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;page-break-before:always;break-before:page;user-select:none}
+#atelier-editor .page-break:before{content:"— Saut de page —";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;padding:0 12px;font-size:9pt;color:#94a3b8;font-family:-apple-system,sans-serif;letter-spacing:.5px;text-transform:uppercase}
+
+/* Bouton flottant "+ ajouter page" sous la feuille */
+#atelier-add-page{display:flex;justify-content:center;margin-top:18px;padding-bottom:24px}
+#atelier-add-page button{background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.25);color:rgba(255,255,255,0.75);padding:8px 18px;border-radius:24px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font-ui);transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+#atelier-add-page button:hover{background:rgba(124,107,255,0.15);border-color:var(--acc);color:var(--acc2)}
+body.light #atelier-add-page button{background:rgba(15,23,42,0.04);border-color:rgba(15,23,42,0.18);color:var(--t2)}
+
+/* Atelier mode : masquer la search bar du topbar (évite les conflits) */
+body.atelier-mode #topbar-search-wrap{display:none!important}
+
 /* Citation d'article — neutre, imprimable, sans violet */
 #atelier-editor .legal-cite{display:block;margin:10pt 0;padding:8pt 12pt;border-left:3px solid #000;background:#f5f5f5;border-radius:0;font-family:'Times New Roman',serif;font-size:11pt;color:#000}
 #atelier-editor .legal-cite .legal-cite-ref{display:block;font-weight:700;color:#000;font-size:10pt;margin-bottom:4px;font-family:'Times New Roman',serif;text-transform:uppercase;letter-spacing:0.5px}
@@ -1811,8 +1825,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
         <button class="at-btn at-btn-primary" onclick="newAtelierDoc()" title="Créer un nouveau document">＋ Nouveau</button>
         <button class="at-btn" onclick="duplicateAtelierDoc()" title="Dupliquer ce document">⎘ Dupliquer</button>
         <button class="at-btn" onclick="injectArticleToAtelier()" title="Coller le dernier article ouvert">📎 Article</button>
-        <button class="at-btn" onclick="printAtelierDoc()" title="Imprimer / PDF">🖨 Imprimer</button>
-        <button class="at-btn" onclick="exportAtelierDoc()" title="Exporter en .html">⬇ Export</button>
+        <button class="at-btn" onclick="printAtelierDoc()" title="Imprimer">🖨 Imprimer</button>
+        <button class="at-btn" onclick="exportAtelierPDF()" title="Exporter en PDF">📄 PDF</button>
+        <button class="at-btn" onclick="exportAtelierDoc()" title="Exporter en .html">⬇ HTML</button>
         <button class="at-btn danger" onclick="exitAtelier()" title="Fermer">✕ Fermer</button>
       </div>
       <div id="atelier-toolbar" onmousedown="event.preventDefault()">
@@ -1850,10 +1865,15 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
         </div>
       </div>
       <div id="atelier-page-wrap">
-        <div id="atelier-page">
-          <div id="atelier-editor" contenteditable="true" spellcheck="true"
-               oninput="onAtelierInput()"
-               data-placeholder="Commence à écrire ton document…&#10;&#10;Mise en forme : utilise la barre d'outils au-dessus.&#10;Tes documents sont enregistrés automatiquement."></div>
+        <div id="atelier-page-stack" style="display:flex;flex-direction:column;align-items:center;width:100%">
+          <div id="atelier-page">
+            <div id="atelier-editor" contenteditable="true" spellcheck="true"
+                 oninput="onAtelierInput()"
+                 data-placeholder="Commence à écrire ton document…&#10;&#10;Mise en forme : utilise la barre d'outils au-dessus.&#10;Tes documents sont enregistrés automatiquement."></div>
+          </div>
+          <div id="atelier-add-page">
+            <button onclick="addAtelierPage()" title="Insérer un saut de page">＋ Ajouter une page</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2320,6 +2340,66 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
     }catch(e){ alert('Export impossible: '+e.message); }
   }
+  function addPage(){
+    var ed=document.getElementById('atelier-editor'); if(!ed) return;
+    ed.focus();
+    // Place cursor at end then insert page-break
+    try{
+      var range=document.createRange();
+      range.selectNodeContents(ed);
+      range.collapse(false);
+      var sel=window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+      document.execCommand('insertHTML', false, '<div class="page-break" contenteditable="false">&nbsp;</div><p><br></p>');
+    }catch(e){
+      ed.innerHTML += '<div class="page-break" contenteditable="false">&nbsp;</div><p><br></p>';
+    }
+    onInput();
+    // scroll to bottom of page-wrap
+    setTimeout(function(){
+      var w=document.getElementById('atelier-page-wrap');
+      if(w) w.scrollTop = w.scrollHeight;
+    },50);
+  }
+  function exportPDF(){
+    var d=findDoc(atActive); if(!d){ alert('Aucun document actif.'); return; }
+    persistCurrent();
+    if(typeof window.html2pdf !== 'function'){
+      alert('La librairie PDF n\'est pas encore chargée. Réessaie dans une seconde.');
+      return;
+    }
+    var title = d.title || 'Document';
+    var safe = title.replace(/[^a-zA-Z0-9-_]+/g,'_').slice(0,60) || 'document';
+    // Construire un container temporaire, hors viewport, avec les styles d'export
+    var container = document.createElement('div');
+    container.style.cssText='position:fixed;left:-99999px;top:0;width:170mm;background:#fff;color:#000';
+    container.innerHTML =
+      '<style>'+DOC_CSS+
+      '.page-break{page-break-before:always;break-before:page;height:0;border:none;background:transparent}'+
+      '.page-break:before{display:none}'+
+      '</style>'+
+      '<h1>'+escHtml(title)+'</h1>'+(d.html||'');
+    document.body.appendChild(container);
+    var opt={
+      margin:[15,15,15,15],
+      filename:safe+'.pdf',
+      image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'], before:'.page-break'}
+    };
+    setSaveState('saving');
+    var setLabel=function(t){ var el=document.getElementById('atelier-autosave'); if(el) el.textContent=t; };
+    setLabel('Génération PDF…');
+    window.html2pdf().set(opt).from(container).save().then(function(){
+      document.body.removeChild(container);
+      setSaveState('saved');
+    }).catch(function(err){
+      document.body.removeChild(container);
+      setSaveState('saved');
+      alert('Export PDF impossible: '+(err && err.message ? err.message : err));
+    });
+  }
   function printDoc(){
     var d=findDoc(atActive); if(!d){ alert('Aucun document actif.'); return; }
     persistCurrent();
@@ -2401,7 +2481,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   window.atInsertLink       = insertLink;
   window.injectArticleToAtelier = injectArticle;
   window.exportAtelierDoc   = exportDoc;
+  window.exportAtelierPDF   = exportPDF;
   window.printAtelierDoc    = printDoc;
+  window.addAtelierPage     = addPage;
 
   // Sens Studio -> Atelier : appelé par onLabEditorInput / onLabTitleChange
   window.atelierMirrorFromStudio = function(){
