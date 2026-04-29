@@ -319,12 +319,22 @@ body.light #notes-quick-panel{background:rgba(255,255,255,0.99);box-shadow:0 12p
 .resizer-inner{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;transition:background .2s}
 .resizer-inner:hover,.resizer-inner.dragging{background:var(--acc)}
 #page-search,#page-fiches,#page-quiz{display:none;flex-direction:column;height:100%;overflow:hidden}
-#page-search.active,#page-fiches.active,#page-quiz.active{display:flex;animation:page-fade-slide .42s cubic-bezier(.2,.8,.3,1)}
-.page-anim-reset{animation:page-fade-slide .42s cubic-bezier(.2,.8,.3,1)!important}
+#page-search.active,#page-fiches.active,#page-quiz.active{display:flex;animation:page-fade-slide .55s cubic-bezier(.2,.8,.3,1)}
+.page-anim-reset{animation:page-fade-slide .55s cubic-bezier(.2,.8,.3,1)!important}
 @keyframes page-fade-slide{
-  0%  {opacity:0;transform:translateX(28px) scale(.985);filter:blur(4px)}
-  60% {opacity:.85;filter:blur(0)}
+  0%  {opacity:0;transform:translateX(60px) scale(.96);filter:blur(8px)}
+  40% {opacity:.6;filter:blur(2px)}
   100%{opacity:1;transform:translateX(0) scale(1);filter:blur(0)}
+}
+
+/* Swipe overlay — barre de lumière qui balaye la zone main lors du switch d'onglet */
+#tab-swipe{position:absolute;inset:0;pointer-events:none;z-index:8;opacity:0;background:linear-gradient(90deg,transparent 0%,rgba(124,107,255,0.18) 30%,rgba(56,189,248,0.30) 50%,rgba(124,107,255,0.18) 70%,transparent 100%);transform:translateX(-100%)}
+#tab-swipe.active{animation:tab-swipe-anim .55s cubic-bezier(.4,0,.4,1)}
+@keyframes tab-swipe-anim{
+  0%  {transform:translateX(-100%);opacity:0}
+  20% {opacity:1}
+  80% {opacity:1}
+  100%{transform:translateX(100%);opacity:0}
 }
 
 /* RESULTS */
@@ -470,7 +480,7 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 
 /* CODES PAGE */
 #page-codes{display:none;flex-direction:column;height:100%;overflow:hidden}
-#page-codes.active{display:flex;animation:page-fade-slide .42s cubic-bezier(.2,.8,.3,1)}
+#page-codes.active{display:flex;animation:page-fade-slide .55s cubic-bezier(.2,.8,.3,1)}
 .code-selector{padding:10px 10px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--gb);font-family:var(--font-ui)}
 .code-picker-label{font-size:10.5px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase}
 .code-picker{position:relative}
@@ -1488,6 +1498,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 
 <!-- MAIN -->
 <div id="main">
+<div id="tab-swipe"></div>
 
   <!-- ICON SIDEBAR — toujours visible en hub mode -->
   <div id="icon-sidebar">
@@ -3918,6 +3929,13 @@ function switchTab(tab){
     pg.classList.remove('page-anim-reset');
     void pg.offsetWidth;
     pg.classList.add('page-anim-reset');
+  }
+  // Swipe lumineux qui balaye la zone main
+  var sw = document.getElementById('tab-swipe');
+  if(sw){
+    sw.classList.remove('active');
+    void sw.offsetWidth;
+    sw.classList.add('active');
   }
   // Sync sidebar icons
   document.querySelectorAll('#icon-sidebar .nav-icon[id^="ni-"]').forEach(function(el){el.classList.remove('on');});
