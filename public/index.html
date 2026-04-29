@@ -846,6 +846,7 @@ body.hub-mode #panel-r{
   align-self:stretch;
   overflow:hidden;
   background:transparent;
+  transition:flex-basis .35s cubic-bezier(.2,.8,.3,1), width .35s cubic-bezier(.2,.8,.3,1), opacity .35s ease;
 }
 body.hub-mode #split-r{display:none!important}
 body.hub-mode #notes-pane{display:none!important}
@@ -859,21 +860,25 @@ body.hub-mode #lab-studio{
 }
 /* Studio caché : masquer tout panel-r */
 body.hub-mode.studio-hidden #panel-r{
-  flex:0 0 0!important;width:0!important;overflow:hidden!important;
+  flex:0 0 0!important;width:0!important;overflow:hidden!important;opacity:0;
 }
 body.hub-mode.studio-hidden #lab-studio{border-left-color:transparent!important}
 
 /* --- Studio expand tab (bord droit quand studio fermé) --- */
 #studio-expand-tab{
-  position:fixed;right:0;top:50%;transform:translateY(-50%);
+  position:fixed;right:0;top:50%;
   background:rgba(13,13,28,0.95);border:1px solid var(--gb);border-right:none;
   border-radius:8px 0 0 8px;padding:20px 8px;
-  display:none;flex-direction:column;align-items:center;gap:8px;
-  cursor:pointer;z-index:50;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;z-index:50;
   font-family:-apple-system,sans-serif;box-shadow:-4px 0 20px rgba(0,0,0,.4);
+  /* État réduit par défaut : translaté hors écran à droite, invisible */
+  transform:translate(100%,-50%);opacity:0;pointer-events:none;
+  transition:transform .35s cubic-bezier(.2,.8,.3,1),opacity .25s ease,background .2s,border-color .2s;
 }
 #studio-expand-tab:hover{background:rgba(124,107,255,0.15);border-color:var(--acc)}
-body.hub-mode.studio-hidden #studio-expand-tab{display:flex}
+/* Quand le studio est caché, on fait glisser l'onglet en place avec un fondu */
+body.hub-mode.studio-hidden #studio-expand-tab{transform:translate(0,-50%);opacity:1;pointer-events:auto}
 #studio-expand-tab .set-icon{font-size:17px}
 #studio-expand-tab .set-label{
   writing-mode:vertical-rl;font-size:10px;font-weight:700;
