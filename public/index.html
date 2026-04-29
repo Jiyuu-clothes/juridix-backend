@@ -319,8 +319,13 @@ body.light #notes-quick-panel{background:rgba(255,255,255,0.99);box-shadow:0 12p
 .resizer-inner{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;transition:background .2s}
 .resizer-inner:hover,.resizer-inner.dragging{background:var(--acc)}
 #page-search,#page-fiches,#page-quiz{display:none;flex-direction:column;height:100%;overflow:hidden}
-#page-search.active,#page-fiches.active,#page-quiz.active{display:flex;animation:page-fade-slide .26s cubic-bezier(.2,.8,.3,1)}
-@keyframes page-fade-slide{from{opacity:0;transform:translateX(8px) scale(.995)}to{opacity:1;transform:translateX(0) scale(1)}}
+#page-search.active,#page-fiches.active,#page-quiz.active{display:flex;animation:page-fade-slide .42s cubic-bezier(.2,.8,.3,1)}
+.page-anim-reset{animation:page-fade-slide .42s cubic-bezier(.2,.8,.3,1)!important}
+@keyframes page-fade-slide{
+  0%  {opacity:0;transform:translateX(28px) scale(.985);filter:blur(4px)}
+  60% {opacity:.85;filter:blur(0)}
+  100%{opacity:1;transform:translateX(0) scale(1);filter:blur(0)}
+}
 
 /* RESULTS */
 #results-list{flex:1;overflow-y:auto;padding:10px}
@@ -465,7 +470,7 @@ body.light #art-toolbar-float .atf-btn{background:rgba(240,240,248,0.95);color:v
 
 /* CODES PAGE */
 #page-codes{display:none;flex-direction:column;height:100%;overflow:hidden}
-#page-codes.active{display:flex;animation:page-fade-slide .26s cubic-bezier(.2,.8,.3,1)}
+#page-codes.active{display:flex;animation:page-fade-slide .42s cubic-bezier(.2,.8,.3,1)}
 .code-selector{padding:10px 10px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--gb);font-family:var(--font-ui)}
 .code-picker-label{font-size:10.5px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase}
 .code-picker{position:relative}
@@ -3907,7 +3912,13 @@ function switchTab(tab){
   var tabEls  = document.querySelectorAll('.tab');
   if(tabEls[tabsOld[tab]]) tabEls[tabsOld[tab]].classList.add('on');
   var pg = document.getElementById('page-'+tab);
-  if(pg) pg.classList.add('active');
+  if(pg){
+    pg.classList.add('active');
+    // Re-déclencher l'animation de transition à chaque switch
+    pg.classList.remove('page-anim-reset');
+    void pg.offsetWidth;
+    pg.classList.add('page-anim-reset');
+  }
   // Sync sidebar icons
   document.querySelectorAll('#icon-sidebar .nav-icon[id^="ni-"]').forEach(function(el){el.classList.remove('on');});
   var ni = document.getElementById('ni-'+tab);
