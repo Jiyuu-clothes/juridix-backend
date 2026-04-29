@@ -130,9 +130,9 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;backgroun
 /* ===== COMMAND BAR PERSISTANTE (Phase 9) ===== */
 #topbar{position:relative}
 #topbar-search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,46vw);min-width:300px;z-index:210;transition:width .25s cubic-bezier(.4,0,.2,1)}
-/* En hub-mode (avec onglets visibles), la search bar est plus étroite pour ne pas chevaucher */
-body.hub-mode #topbar-search-wrap{width:min(360px,30vw);min-width:220px}
-body.hub-mode #topbar-search-wrap:focus-within{width:min(420px,36vw)}
+/* En hub-mode (avec onglets visibles), la search bar reste large mais sans chevaucher les onglets */
+body.hub-mode #topbar-search-wrap{width:min(460px,38vw);min-width:280px}
+body.hub-mode #topbar-search-wrap:focus-within{width:min(520px,44vw)}
 /* Au focus du child input → wrap s'élargit légèrement (effet "ouverture") + icône s'active.
    :focus-within = CSS pur, zéro JS, aucun listener à brancher. */
 #topbar-search-wrap:focus-within{width:min(560px,50vw)}
@@ -2182,15 +2182,11 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 
   function open(){
     if(!atInitialized){ initAtelier(); }
-    // Mémoriser l'onglet hub actif avant d'ouvrir l'Atelier (pour pouvoir y revenir)
+    // S'assurer que le splash zen est fermé et que le hub est initialisé
+    // (sinon en quittant l'atelier on retombe sur le splash "Juri")
     try{
-      if(typeof window._tab !== 'undefined' && window._tab) atPrevTab = window._tab;
-      else {
-        var activeTtab = document.querySelector('#top-tabs .ttab.on');
-        if(activeTtab){
-          var t = activeTtab.getAttribute('data-tab');
-          if(t && t!=='atelier' && t!=='carte') atPrevTab = t;
-        }
+      if(typeof window.exitZenMode === 'function' && typeof window._zenActive !== 'undefined' && window._zenActive){
+        window.exitZenMode('codes');
       }
     }catch(e){}
     loadDocs();
@@ -2229,16 +2225,18 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     document.body.classList.remove('atelier-mode');
     var ov=document.getElementById('atelier-overlay');
     if(ov) ov.hidden=true;
-    // Restaurer l'onglet hub précédent — sinon le hub apparaît "vide"
-    var target = atPrevTab || 'codes';
     atPrevTab = null;
     try{
-      // démarquer l'onglet atelier puis appeler le switchTab original (non-wrappé) si possible
       var ttabs=document.querySelectorAll('#top-tabs .ttab');
       ttabs.forEach(function(t){ t.classList.remove('on'); });
-      // Appeler la version originale de switchTab pour ne pas re-déclencher exit()
+      // Si le splash zen est encore visible (cas rare), le fermer
+      if(typeof window.exitZenMode === 'function' && typeof window._zenActive !== 'undefined' && window._zenActive){
+        window.exitZenMode('codes');
+        return;
+      }
+      // Sinon, ramener systématiquement sur l'onglet Codes
       if(typeof window.switchTab==='function'){
-        window.switchTab(target);
+        window.switchTab('codes');
       }
     }catch(e){}
   }
