@@ -1141,9 +1141,10 @@ body.light #atelier-page{box-shadow:0 6px 18px rgba(0,0,0,0.15),0 1px 3px rgba(0
 #atelier-editor table th,#atelier-editor table td{border:1px solid #000;padding:6px 8px;text-align:left;vertical-align:top}
 #atelier-editor table th{background:#f0f0f0;font-weight:700;color:#000}
 
-/* Saut de page — séparateur visuel entre 2 feuilles A4 + impression */
-#atelier-editor .page-break{display:block;height:24px;margin:18mm -25mm 18mm;background:repeating-linear-gradient(90deg,transparent 0,transparent 6px,#cbd5e1 6px,#cbd5e1 12px);position:relative;border-top:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;page-break-before:always;break-before:page;user-select:none}
-#atelier-editor .page-break:before{content:"— Saut de page —";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;padding:0 12px;font-size:9pt;color:#94a3b8;font-family:-apple-system,sans-serif;letter-spacing:.5px;text-transform:uppercase}
+/* Saut de page — coupe physique de la feuille pour donner l'illusion de 2 feuilles A4 séparées */
+#atelier-editor .page-break{display:block;height:32px;margin:25mm -25mm 0;background:#3a3f4b;border-top:1px solid rgba(0,0,0,0.25);border-bottom:1px solid rgba(0,0,0,0.25);box-shadow:inset 0 8px 16px rgba(0,0,0,0.45),inset 0 -8px 16px rgba(0,0,0,0.45);page-break-before:always;break-before:page;user-select:none;position:relative}
+#atelier-editor .page-break + *{margin-top:25mm!important}
+body.light #atelier-editor .page-break{background:#cfd4dc;border-color:rgba(0,0,0,0.12);box-shadow:inset 0 8px 16px rgba(0,0,0,0.18),inset 0 -8px 16px rgba(0,0,0,0.18)}
 
 /* Bouton flottant "+ ajouter page" sous la feuille */
 #atelier-add-page{display:flex;justify-content:center;margin-top:18px;padding-bottom:24px}
@@ -1153,6 +1154,24 @@ body.light #atelier-add-page button{background:rgba(15,23,42,0.04);border-color:
 
 /* Atelier mode : masquer la search bar du topbar (évite les conflits) */
 body.atelier-mode #topbar-search-wrap{display:none!important}
+
+/* Mini-recherche dans la toolbar-row de l'atelier */
+#atelier-search-wrap{position:relative;flex:0 0 240px;display:flex;align-items:center}
+#atelier-search-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:6px;padding:6px 30px 6px 28px;font-size:12px;color:var(--t1);font-family:inherit;outline:none;transition:all .15s}
+#atelier-search-input:focus{background:rgba(56,189,248,0.06);border-color:var(--acc)}
+body.light #atelier-search-input{background:rgba(15,23,42,0.04);border-color:rgba(15,23,42,0.10)}
+#atelier-search-wrap:before{content:"🔎";position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;opacity:.6;pointer-events:none}
+#atelier-search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:2px 6px;display:none;line-height:1}
+#atelier-search-clear.visible{display:block}
+#atelier-search-results{position:absolute;top:calc(100% + 4px);left:0;width:360px;max-height:340px;overflow-y:auto;background:rgba(15,23,42,0.97);border:1px solid var(--gb);border-radius:8px;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,0.5);padding:4px}
+body.light #atelier-search-results{background:#fff;box-shadow:0 8px 22px rgba(0,0,0,0.18)}
+#atelier-search-results[hidden]{display:none}
+#atelier-search-results .asr-empty{padding:14px;color:var(--t3);font-size:12px;text-align:center}
+#atelier-search-results .asr-item{padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .12s}
+#atelier-search-results .asr-item:hover{background:rgba(124,107,255,0.12)}
+#atelier-search-results .asr-ref{font-weight:700;font-size:12px;color:var(--acc2)}
+#atelier-search-results .asr-title{font-size:12px;color:var(--t2);margin-top:2px}
+#atelier-search-results .asr-text{font-size:11px;color:var(--t3);margin-top:3px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Citation d'article — neutre, imprimable, sans violet */
 #atelier-editor .legal-cite{display:block;margin:10pt 0;padding:8pt 12pt;border-left:3px solid #000;background:#f5f5f5;border-radius:0;font-family:'Times New Roman',serif;font-size:11pt;color:#000}
@@ -1819,6 +1838,11 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     <div id="atelier-main">
       <div id="atelier-toolbar-row">
         <input id="atelier-doc-title" placeholder="Titre du document…" oninput="onAtelierTitleChange()" autocomplete="off" />
+        <div id="atelier-search-wrap">
+          <input id="atelier-search-input" type="text" placeholder="Chercher un article…" autocomplete="off" oninput="onAtelierSearchInput()" onfocus="onAtelierSearchInput()" onblur="setTimeout(closeAtelierSearch, 180)" />
+          <button id="atelier-search-clear" onclick="clearAtelierSearch()" title="Effacer">✕</button>
+          <div id="atelier-search-results" hidden></div>
+        </div>
         <span id="atelier-autosave" class="saved" aria-live="polite"><span class="aas-ico">✓</span><span class="aas-label">Sauvegardé</span></span>
         <span id="atelier-wcount">0 mot</span>
         <div class="at-spacer"></div>
@@ -1827,7 +1851,6 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
         <button class="at-btn" onclick="injectArticleToAtelier()" title="Coller le dernier article ouvert">📎 Article</button>
         <button class="at-btn" onclick="printAtelierDoc()" title="Imprimer">🖨 Imprimer</button>
         <button class="at-btn" onclick="exportAtelierPDF()" title="Exporter en PDF">📄 PDF</button>
-        <button class="at-btn" onclick="exportAtelierDoc()" title="Exporter en .html">⬇ HTML</button>
         <button class="at-btn danger" onclick="exitAtelier()" title="Fermer">✕ Fermer</button>
       </div>
       <div id="atelier-toolbar" onmousedown="event.preventDefault()">
@@ -2340,6 +2363,107 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
     }catch(e){ alert('Export impossible: '+e.message); }
   }
+  // ── Mini-recherche dans le corpus depuis l'atelier ──
+  function searchCorpus(q){
+    var corpus = (typeof window.CORPUS !== 'undefined' && Array.isArray(window.CORPUS)) ? window.CORPUS : (typeof CORPUS !== 'undefined' ? CORPUS : []);
+    if(!corpus || !corpus.length) return [];
+    q = (q||'').trim().toLowerCase();
+    if(q.length < 2) return [];
+    var tokens = q.split(/\s+/).filter(Boolean);
+    var hits=[];
+    for(var i=0;i<corpus.length;i++){
+      var a = corpus[i];
+      var hay = ((a.ref||'')+' '+(a.code||'')+' '+(a.title||'')+' '+(a.texte||a.faits||'')+' '+((a.themes||[]).join(' '))).toLowerCase();
+      var score=0, ok=true;
+      for(var t=0;t<tokens.length;t++){
+        var idx = hay.indexOf(tokens[t]);
+        if(idx<0){ ok=false; break; }
+        score += (idx<40 ? 8 : (idx<200 ? 3 : 1));
+      }
+      if(ok){ hits.push({a:a, score:score}); }
+      if(hits.length>200) break;
+    }
+    hits.sort(function(x,y){ return y.score-x.score; });
+    return hits.slice(0,12).map(function(h){ return h.a; });
+  }
+  function renderSearchResults(items){
+    var box=document.getElementById('atelier-search-results'); if(!box) return;
+    if(!items || !items.length){
+      box.innerHTML = '<div class="asr-empty">Aucun résultat</div>';
+      box.hidden=false; return;
+    }
+    var html='';
+    for(var i=0;i<items.length;i++){
+      var a = items[i];
+      var ref = escHtml((a.code||a.type||'')+' — '+(a.ref||''));
+      var ttl = escHtml(a.title||'');
+      var txt = escHtml((a.texte||a.faits||'').slice(0,180));
+      html += '<div class="asr-item" data-id="'+escHtml(a.id||'')+'">'+
+                '<div class="asr-ref">'+ref+'</div>'+
+                (ttl?'<div class="asr-title">'+ttl+'</div>':'')+
+                '<div class="asr-text">'+txt+'</div>'+
+              '</div>';
+    }
+    box.innerHTML = html;
+    box.hidden = false;
+    // bind clicks
+    var nodes = box.querySelectorAll('.asr-item');
+    nodes.forEach(function(n){
+      n.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        var id = n.getAttribute('data-id');
+        insertCitationById(id);
+      });
+    });
+  }
+  function insertCitationById(id){
+    var corpus = (typeof window.CORPUS !== 'undefined' && Array.isArray(window.CORPUS)) ? window.CORPUS : (typeof CORPUS !== 'undefined' ? CORPUS : []);
+    var a = null;
+    for(var i=0;i<corpus.length;i++){ if(corpus[i].id===id){ a=corpus[i]; break; } }
+    if(!a) return;
+    var ed=document.getElementById('atelier-editor'); if(!ed) return;
+    ed.focus();
+    var html = '<div class="legal-cite">'+
+                 '<div class="legal-cite-ref">'+escHtml((a.code||a.type||'')+' — '+(a.ref||''))+'</div>'+
+                 '<div class="legal-cite-title">'+escHtml(a.title||'')+'</div>'+
+                 '<div class="legal-cite-text">'+escHtml(a.texte||a.faits||'')+'</div>'+
+               '</div><p><br></p>';
+    try{ document.execCommand('insertHTML', false, html); }catch(e){ ed.innerHTML += html; }
+    onInput();
+    closeSearch();
+    var inp=document.getElementById('atelier-search-input'); if(inp) inp.value='';
+    var clr=document.getElementById('atelier-search-clear'); if(clr) clr.classList.remove('visible');
+  }
+  var atSearchT=null;
+  function onSearchInput(){
+    var inp=document.getElementById('atelier-search-input'); if(!inp) return;
+    var q=inp.value;
+    var clr=document.getElementById('atelier-search-clear');
+    if(clr){ q ? clr.classList.add('visible') : clr.classList.remove('visible'); }
+    if(atSearchT) clearTimeout(atSearchT);
+    atSearchT=setTimeout(function(){
+      if(q.trim().length<2){
+        var box=document.getElementById('atelier-search-results');
+        if(box) box.hidden=true;
+        return;
+      }
+      var hits = searchCorpus(q);
+      renderSearchResults(hits);
+    }, 140);
+  }
+  function clearSearch(){
+    var inp=document.getElementById('atelier-search-input');
+    var clr=document.getElementById('atelier-search-clear');
+    if(inp) inp.value='';
+    if(clr) clr.classList.remove('visible');
+    closeSearch();
+    if(inp) inp.focus();
+  }
+  function closeSearch(){
+    var box=document.getElementById('atelier-search-results');
+    if(box) box.hidden=true;
+  }
+
   function addPage(){
     var ed=document.getElementById('atelier-editor'); if(!ed) return;
     ed.focus();
@@ -2484,6 +2608,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   window.exportAtelierPDF   = exportPDF;
   window.printAtelierDoc    = printDoc;
   window.addAtelierPage     = addPage;
+  window.onAtelierSearchInput = onSearchInput;
+  window.clearAtelierSearch  = clearSearch;
+  window.closeAtelierSearch  = closeSearch;
 
   // Sens Studio -> Atelier : appelé par onLabEditorInput / onLabTitleChange
   window.atelierMirrorFromStudio = function(){
