@@ -176,6 +176,27 @@
     return data;
   };
 
+  JD.updateEmail = async function (newEmail) {
+    // Supabase enverra un email de confirmation à l'ancienne ET la nouvelle adresse
+    const { data, error } = await JD.supabase.auth.updateUser({ email: newEmail });
+    if (error) throw error;
+    return data;
+  };
+
+  JD.updateProfileName = async function (name) {
+    return await api('/api/account/profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ name })
+    });
+  };
+
+  JD.deleteAccount = async function (confirmText) {
+    return await api('/api/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: confirmText })
+    });
+  };
+
   // ──────── SYNC HELPERS — Atelier docs & Mindmaps ────────
   // Renvoient null si pas de session (les modules locaux retomberont sur localStorage)
   JD.atelierPull = async function () {
@@ -495,6 +516,21 @@
     /* Lien "mot de passe oublié" */
     .jd-link-btn{display:block;width:100%;background:transparent;border:none;color:#7dd3fc;font-size:12px;font-weight:500;cursor:pointer;padding:8px 0 0;margin-top:4px;text-decoration:underline;text-decoration-color:rgba(125,211,252,0.4);text-underline-offset:3px;font-family:inherit}
     .jd-link-btn:hover{color:#38BDF8;text-decoration-color:#38BDF8}
+    /* Account modal — onglets + danger zone */
+    #jd-account-modal .jd-acc-tabs{display:flex;gap:4px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.18);border-radius:10px;padding:4px;margin:14px 0 18px}
+    #jd-account-modal .jd-acc-tab{flex:1;background:transparent;border:none;color:#94a3b8;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit}
+    #jd-account-modal .jd-acc-tab:hover{color:#cbd5e1}
+    #jd-account-modal .jd-acc-tab.on{background:rgba(56,189,248,.12);color:#7dd3fc}
+    #jd-account-modal .jd-acc-tab[data-pane="danger"]{color:#fca5a5}
+    #jd-account-modal .jd-acc-tab[data-pane="danger"].on{background:rgba(248,113,113,.10);color:#fca5a5}
+    #jd-account-modal .jd-acc-pane[hidden]{display:none}
+    .jd-btn-sm{padding:8px 14px;font-size:12.5px;width:auto}
+    .jd-btn-danger{background:#dc2626;color:#fff;border:none;width:100%;padding:11px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px;transition:background .15s}
+    .jd-btn-danger:hover{background:#b91c1c}
+    .jd-hint{font-size:11.5px;color:#94a3b8;margin:6px 0 4px;line-height:1.5}
+    .jd-danger-box{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:10px;padding:14px 16px;color:#fca5a5;font-size:13px;line-height:1.55}
+    .jd-danger-box p{margin:0 0 12px;color:#cbd5e1}
+    .jd-danger-box code{background:rgba(0,0,0,.4);padding:1px 6px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;color:#f87171}
     .jd-pill{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid rgba(56,189,248,0.3);border-radius:999px;padding:6px 14px;font-size:12px;color:#cbd5e1;z-index:5000;display:none;align-items:center;gap:8px;backdrop-filter:blur(10px)}
     .jd-pill.show{display:flex}
     .jd-pill b{color:#38BDF8;font-weight:700}
@@ -661,33 +697,85 @@
           </div>
         </div>
 
-        <div class="jd-section-title">Mon abonnement</div>
-        <div class="jd-plan-box">
-          <div class="jd-plan-row">
-            <div class="jd-plan-name" id="jd-plan-name">Gratuit</div>
-            <div class="jd-badge off" id="jd-plan-badge">Inactif</div>
+        <!-- Onglets compte -->
+        <div class="jd-acc-tabs">
+          <button type="button" class="jd-acc-tab on" data-pane="overview" onclick="JuriDix._switchAccTab('overview')">Compte</button>
+          <button type="button" class="jd-acc-tab" data-pane="settings" onclick="JuriDix._switchAccTab('settings')">Paramètres</button>
+          <button type="button" class="jd-acc-tab" data-pane="danger" onclick="JuriDix._switchAccTab('danger')">Danger</button>
+        </div>
+
+        <!-- Pane: Compte (abonnement) -->
+        <div class="jd-acc-pane" data-pane="overview">
+          <div class="jd-section-title">Mon abonnement</div>
+          <div class="jd-plan-box">
+            <div class="jd-plan-row">
+              <div class="jd-plan-name" id="jd-plan-name">Gratuit</div>
+              <div class="jd-badge off" id="jd-plan-badge">Inactif</div>
+            </div>
+            <div class="jd-plan-detail" id="jd-plan-detail">Tu utilises la version gratuite.</div>
+            <div class="jd-meter" id="jd-meter-wrap" style="display:none"><i id="jd-meter-bar"></i></div>
           </div>
-          <div class="jd-plan-detail" id="jd-plan-detail">Tu utilises la version gratuite.</div>
-          <div class="jd-meter" id="jd-meter-wrap" style="display:none"><i id="jd-meter-bar"></i></div>
+
+          <div class="jd-section-title" id="jd-formulas-title">Choisir une formule</div>
+          <div class="jd-formulas" id="jd-formulas-grid">
+            <button type="button" class="jd-formula" data-mode="RUSH" onclick="JuriDix.startCheckout('RUSH')">
+              <div class="jd-formula-name">⚡ Pass révision</div>
+              <div class="jd-formula-price">9,90 € <small>une fois</small></div>
+              <div class="jd-formula-desc">Accès illimité jusqu'au 30 juin 2026.</div>
+            </button>
+            <button type="button" class="jd-formula" data-mode="ROUTINE" onclick="JuriDix.startCheckout('ROUTINE')">
+              <div class="jd-formula-name">📚 Abonnement</div>
+              <div class="jd-formula-price">6 € <small>/ mois</small></div>
+              <div class="jd-formula-desc">Annulable à tout moment.</div>
+            </button>
+          </div>
+
+          <div class="jd-actions">
+            <button type="button" class="jd-btn" id="jd-portal-btn" onclick="JuriDix.openBillingPortal()" style="display:none">Gérer paiement & factures</button>
+            <button type="button" class="jd-btn jd-btn-sec" onclick="JuriDix.signOut(); JuriDix._hideAccount();">Se déconnecter</button>
+          </div>
         </div>
 
-        <div class="jd-section-title" id="jd-formulas-title">Choisir une formule</div>
-        <div class="jd-formulas" id="jd-formulas-grid">
-          <button type="button" class="jd-formula" data-mode="RUSH" onclick="JuriDix.startCheckout('RUSH')">
-            <div class="jd-formula-name">⚡ Pass révision</div>
-            <div class="jd-formula-price">9,90 € <small>une fois</small></div>
-            <div class="jd-formula-desc">Accès illimité jusqu'au 30 juin 2026.</div>
-          </button>
-          <button type="button" class="jd-formula" data-mode="ROUTINE" onclick="JuriDix.startCheckout('ROUTINE')">
-            <div class="jd-formula-name">📚 Abonnement</div>
-            <div class="jd-formula-price">6 € <small>/ mois</small></div>
-            <div class="jd-formula-desc">Annulable à tout moment.</div>
-          </button>
+        <!-- Pane: Paramètres (modif nom / email / mot de passe) -->
+        <div class="jd-acc-pane" data-pane="settings" hidden>
+          <div class="jd-section-title">Profil</div>
+          <div class="jd-field">
+            <label>Prénom affiché</label>
+            <input type="text" id="jd-set-name" autocomplete="given-name" maxlength="80">
+          </div>
+          <button type="button" class="jd-btn jd-btn-sm" onclick="JuriDix._saveName()">Enregistrer le prénom</button>
+
+          <div class="jd-section-title">Email</div>
+          <div class="jd-field">
+            <label>Adresse email</label>
+            <input type="email" id="jd-set-email" autocomplete="email">
+          </div>
+          <button type="button" class="jd-btn jd-btn-sm" onclick="JuriDix._saveEmail()">Mettre à jour l'email</button>
+          <div class="jd-hint">Tu recevras un mail de confirmation à ton ancienne ET ta nouvelle adresse.</div>
+
+          <div class="jd-section-title">Mot de passe</div>
+          <div class="jd-field">
+            <label>Nouveau mot de passe</label>
+            <input type="password" id="jd-set-pwd" autocomplete="new-password" minlength="6">
+          </div>
+          <button type="button" class="jd-btn jd-btn-sm" onclick="JuriDix._savePassword()">Changer le mot de passe</button>
+
+          <div class="jd-err" id="jd-set-err"></div>
+          <div class="jd-info" id="jd-set-info" hidden></div>
         </div>
 
-        <div class="jd-actions">
-          <button type="button" class="jd-btn" id="jd-portal-btn" onclick="JuriDix.openBillingPortal()" style="display:none">Gérer paiement & factures</button>
-          <button type="button" class="jd-btn jd-btn-sec" onclick="JuriDix.signOut(); JuriDix._hideAccount();">Se déconnecter</button>
+        <!-- Pane: Danger (suppression compte) -->
+        <div class="jd-acc-pane" data-pane="danger" hidden>
+          <div class="jd-section-title" style="color:#fca5a5">Zone dangereuse</div>
+          <div class="jd-danger-box">
+            <p>La suppression du compte est <strong>définitive et immédiate</strong>. Toutes tes données — Atelier, cartes mentales, fiches, abonnement Stripe — seront effacées sans possibilité de récupération.</p>
+            <div class="jd-field">
+              <label>Pour confirmer, tape <code>SUPPRIMER</code> ci-dessous</label>
+              <input type="text" id="jd-del-confirm" autocomplete="off" placeholder="SUPPRIMER">
+            </div>
+            <button type="button" class="jd-btn jd-btn-danger" onclick="JuriDix._deleteAccount()">Supprimer mon compte définitivement</button>
+            <div class="jd-err" id="jd-del-err"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -945,6 +1033,100 @@
 
   JD._hideAccount = function () {
     document.getElementById('jd-account-modal')?.classList.remove('show');
+  };
+
+  // ──────── Account tabs (overview / settings / danger) ────────
+  JD._switchAccTab = function (pane) {
+    document.querySelectorAll('#jd-account-modal .jd-acc-tab').forEach((t) => {
+      t.classList.toggle('on', t.dataset.pane === pane);
+    });
+    document.querySelectorAll('#jd-account-modal .jd-acc-pane').forEach((p) => {
+      p.hidden = (p.dataset.pane !== pane);
+    });
+    if (pane === 'settings') {
+      const u = JD.session?.user;
+      const nameEl = document.getElementById('jd-set-name');
+      const mailEl = document.getElementById('jd-set-email');
+      if (nameEl) nameEl.value = u?.user_metadata?.name || '';
+      if (mailEl) mailEl.value = u?.email || '';
+      const err = document.getElementById('jd-set-err'); if (err) err.classList.remove('show');
+      const info = document.getElementById('jd-set-info'); if (info) info.hidden = true;
+    }
+    if (pane === 'danger') {
+      const conf = document.getElementById('jd-del-confirm'); if (conf) conf.value = '';
+      const err = document.getElementById('jd-del-err'); if (err) err.classList.remove('show');
+    }
+  };
+
+  function _setSettingsMsg(kind, text) {
+    const err = document.getElementById('jd-set-err');
+    const info = document.getElementById('jd-set-info');
+    if (kind === 'err') {
+      if (err) { err.textContent = text; err.classList.add('show'); }
+      if (info) info.hidden = true;
+    } else {
+      if (info) { info.textContent = text; info.hidden = false; }
+      if (err) err.classList.remove('show');
+    }
+  }
+
+  JD._saveName = async function () {
+    const name = (document.getElementById('jd-set-name')?.value || '').trim();
+    if (!name) { _setSettingsMsg('err', 'Le prénom ne peut pas être vide.'); return; }
+    try {
+      await JD.updateProfileName(name);
+      // Met à jour aussi côté session client pour l'affichage immédiat
+      try { await JD.supabase.auth.updateUser({ data: { name } }); } catch (_) {}
+      _setSettingsMsg('info', 'Prénom mis à jour.');
+      _renderAccountBadge();
+      const accName = document.getElementById('jd-acc-name'); if (accName) accName.textContent = name;
+    } catch (e) {
+      _setSettingsMsg('err', 'Erreur : ' + (e.message || 'impossible de sauvegarder'));
+    }
+  };
+
+  JD._saveEmail = async function () {
+    const email = (document.getElementById('jd-set-email')?.value || '').trim();
+    if (!/.+@.+\..+/.test(email)) { _setSettingsMsg('err', 'Email invalide.'); return; }
+    try {
+      await JD.updateEmail(email);
+      _setSettingsMsg('info', 'Mail de confirmation envoyé. Clique sur le lien dans le mail pour valider la nouvelle adresse.');
+    } catch (e) {
+      _setSettingsMsg('err', 'Erreur : ' + (e.message || 'impossible de mettre à jour l\'email'));
+    }
+  };
+
+  JD._savePassword = async function () {
+    const pwd = document.getElementById('jd-set-pwd')?.value || '';
+    if (pwd.length < 6) { _setSettingsMsg('err', 'Mot de passe trop court (6 caractères minimum).'); return; }
+    try {
+      await JD.updatePassword(pwd);
+      const inp = document.getElementById('jd-set-pwd'); if (inp) inp.value = '';
+      _setSettingsMsg('info', 'Mot de passe mis à jour.');
+    } catch (e) {
+      _setSettingsMsg('err', 'Erreur : ' + (e.message || 'impossible de mettre à jour le mot de passe'));
+    }
+  };
+
+  JD._deleteAccount = async function () {
+    const errEl = document.getElementById('jd-del-err');
+    const conf = (document.getElementById('jd-del-confirm')?.value || '').trim();
+    if (errEl) errEl.classList.remove('show');
+    if (conf !== 'SUPPRIMER') {
+      if (errEl) { errEl.textContent = 'Tape exactement "SUPPRIMER" en majuscules pour confirmer.'; errEl.classList.add('show'); }
+      return;
+    }
+    if (!confirm('Dernière confirmation : supprimer ton compte et toutes tes données ? Cette action est irréversible.')) return;
+    try {
+      await JD.deleteAccount('SUPPRIMER');
+      // Le compte est supprimé côté serveur — on déconnecte localement et on recharge
+      try { await JD.supabase.auth.signOut(); } catch (_) {}
+      try { localStorage.clear(); } catch (_) {}
+      alert('Ton compte a été supprimé. Tu vas être redirigé vers l\'accueil.');
+      window.location.href = '/';
+    } catch (e) {
+      if (errEl) { errEl.textContent = 'Erreur : ' + (e.message || 'suppression impossible'); errEl.classList.add('show'); }
+    }
   };
 
   function _showPaywall(out) {

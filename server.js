@@ -101,6 +101,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/config', configRoutes);
 app.use('/api/action', actionRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/account', require('./routes/account'));
 app.use('/api/search', searchRoutes);
 app.use('/api/stripe', stripeRoutes);
 
