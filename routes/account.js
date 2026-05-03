@@ -17,6 +17,12 @@ router.patch('/profile', requireAuth, async (req, res) => {
   if (typeof body.name === 'string') updates.name = body.name.trim().slice(0, 80) || null;
   if (typeof body.year === 'string') updates.year = body.year.trim().slice(0, 8) || null;
   if (typeof body.specialty === 'string') updates.specialty = body.specialty.trim().slice(0, 80) || null;
+  if (typeof body.avatar_emoji === 'string') updates.avatar_emoji = body.avatar_emoji.slice(0, 8) || null;
+  if (typeof body.avatar_color === 'string') {
+    // Whitelist anti-XSS : seules valeurs hexadécimales acceptées
+    const c = body.avatar_color.trim();
+    updates.avatar_color = /^#[0-9a-fA-F]{6}$/.test(c) ? c : null;
+  }
 
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({ error: 'Aucun champ à mettre à jour.' });
@@ -28,7 +34,7 @@ router.patch('/profile', requireAuth, async (req, res) => {
       .from('profiles')
       .update(updates)
       .eq('id', req.user.id)
-      .select('id, name, year, specialty')
+      .select('id, name, year, specialty, avatar_emoji, avatar_color')
       .single();
     if (error) throw error;
 

@@ -190,6 +190,13 @@
     });
   };
 
+  JD.updateAvatar = async function (emoji, color) {
+    return await api('/api/account/profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ avatar_emoji: emoji || '', avatar_color: color || '' })
+    });
+  };
+
   JD.deleteAccount = async function (confirmText) {
     return await api('/api/account', {
       method: 'DELETE',
@@ -531,6 +538,26 @@
     .jd-danger-box{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:10px;padding:14px 16px;color:#fca5a5;font-size:13px;line-height:1.55}
     .jd-danger-box p{margin:0 0 12px;color:#cbd5e1}
     .jd-danger-box code{background:rgba(0,0,0,.4);padding:1px 6px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;color:#f87171}
+    /* Avatar editor */
+    .jd-avatar-edit{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px}
+    .jd-avatar-preview{width:64px;height:64px;border-radius:50%;background:#38BDF8;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:24px;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.06),0 4px 12px rgba(0,0,0,.3);transition:background .25s}
+    .jd-avatar-controls{flex:1;min-width:0}
+    .jd-avatar-label{font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:6px 0 6px}
+    .jd-avatar-controls > .jd-avatar-label:first-child{margin-top:0}
+    .jd-emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:10px}
+    .jd-emoji-cell{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:7px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:inherit;color:#cbd5e1}
+    .jd-emoji-cell:hover{background:rgba(56,189,248,.10);border-color:rgba(56,189,248,.30);transform:scale(1.08)}
+    .jd-emoji-cell.on{background:rgba(56,189,248,.20);border-color:#38BDF8;box-shadow:0 0 0 1px #38BDF8 inset}
+    .jd-emoji-cell.jd-emoji-none{font-size:14px;color:#64748b}
+    .jd-color-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+    .jd-color-cell{height:24px;border-radius:5px;border:2px solid transparent;cursor:pointer;transition:all .12s;padding:0;background:#000}
+    .jd-color-cell:hover{transform:scale(1.15)}
+    .jd-color-cell.on{border-color:#fff;box-shadow:0 0 0 2px rgba(56,189,248,.50)}
+    /* Dot avatar emoji dans le badge topbar */
+    #jd-account .jd-acc-dot.jd-acc-dot-emoji{
+      width:18px;height:18px;font-size:12px;display:inline-flex;align-items:center;justify-content:center;
+      border-radius:50%;box-shadow:none;line-height:1
+    }
     .jd-pill{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid rgba(56,189,248,0.3);border-radius:999px;padding:6px 14px;font-size:12px;color:#cbd5e1;z-index:5000;display:none;align-items:center;gap:8px;backdrop-filter:blur(10px)}
     .jd-pill.show{display:flex}
     .jd-pill b{color:#38BDF8;font-weight:700}
@@ -736,8 +763,20 @@
           </div>
         </div>
 
-        <!-- Pane: Paramètres (modif nom / email / mot de passe) -->
+        <!-- Pane: Paramètres (modif avatar / nom / email / mot de passe) -->
         <div class="jd-acc-pane" data-pane="settings" hidden>
+          <div class="jd-section-title">Avatar</div>
+          <div class="jd-avatar-edit">
+            <div class="jd-avatar-preview" id="jd-set-avatar-preview">?</div>
+            <div class="jd-avatar-controls">
+              <div class="jd-avatar-label">Emoji</div>
+              <div class="jd-emoji-grid" id="jd-set-emoji-grid"></div>
+              <div class="jd-avatar-label">Couleur de fond</div>
+              <div class="jd-color-grid" id="jd-set-color-grid"></div>
+            </div>
+          </div>
+          <button type="button" class="jd-btn jd-btn-sm" onclick="JuriDix._saveAvatar()">Enregistrer l'avatar</button>
+
           <div class="jd-section-title">Profil</div>
           <div class="jd-field">
             <label>Prénom affiché</label>
@@ -802,15 +841,37 @@
   function _renderAccountBadge() {
     const btn = document.getElementById('jd-account');
     const lbl = document.getElementById('jd-account-label');
+    const dot = btn?.querySelector('.jd-acc-dot');
     if (!btn || !lbl) return;
     if (JD.session) {
       btn.classList.remove('guest');
       const name = JD.session.user?.user_metadata?.name
         || (JD.session.user?.email || '').split('@')[0];
       const isPrem = JD.profile?.is_premium;
+      const emoji = JD.profile?.avatar_emoji;
+      const color = JD.profile?.avatar_color;
+      // Si avatar custom : affiche l'emoji à la place du dot
+      if (dot) {
+        if (emoji) {
+          dot.textContent = emoji;
+          dot.classList.add('jd-acc-dot-emoji');
+          if (color) dot.style.background = color;
+          else dot.style.background = '';
+        } else {
+          dot.textContent = '';
+          dot.classList.remove('jd-acc-dot-emoji');
+          if (color) dot.style.background = color;
+          else dot.style.background = '';
+        }
+      }
       lbl.textContent = (isPrem ? '⚡ ' : '') + name;
     } else {
       btn.classList.add('guest');
+      if (dot) {
+        dot.textContent = '';
+        dot.classList.remove('jd-acc-dot-emoji');
+        dot.style.background = '';
+      }
       lbl.textContent = 'Connexion';
     }
   }
@@ -952,6 +1013,8 @@
     setText('jd-acc-avatar', initials);
     setText('jd-acc-name', name);
     setText('jd-acc-mail', email);
+    // Override avatar with emoji + color si défini dans le profil
+    _refreshAvatarInModal();
 
     const profile = JD.profile || {};
     const isPrem = !!profile.is_premium;
@@ -1035,6 +1098,112 @@
     document.getElementById('jd-account-modal')?.classList.remove('show');
   };
 
+  // ──────── Avatar : choix emoji + couleur ────────
+  const AVATAR_EMOJIS = ['⚖️','📚','🦉','🧠','🎓','💼','🦊','🐺','🦁','🦄','🌟','🌙','🔥','⚡','🌊','🌿','🍀','🎯','🎨','🚀','💎','👑','🦅','🐉'];
+  const AVATAR_COLORS = ['#7c6bff','#38BDF8','#22c55e','#f59e0b','#ef4444','#ec4899','#06b6d4','#a855f7','#10b981','#f97316','#0EA5E9','#64748b'];
+  let _avatarPick = { emoji: '', color: AVATAR_COLORS[0] };
+
+  function _renderAvatarPreview() {
+    const el = document.getElementById('jd-set-avatar-preview');
+    if (!el) return;
+    if (_avatarPick.emoji) {
+      el.textContent = _avatarPick.emoji;
+      el.style.fontSize = '24px';
+    } else {
+      const u = JD.session?.user;
+      const name = u?.user_metadata?.name || (u?.email || '?').split('@')[0];
+      el.textContent = (name[0] || '?').toUpperCase();
+      el.style.fontSize = '20px';
+    }
+    el.style.background = _avatarPick.color || '#38BDF8';
+  }
+
+  function _initAvatarGrids() {
+    const eg = document.getElementById('jd-set-emoji-grid');
+    const cg = document.getElementById('jd-set-color-grid');
+    if (eg && !eg.dataset.ready) {
+      eg.dataset.ready = '1';
+      // Bouton "aucun" + emojis
+      const noneBtn = document.createElement('button');
+      noneBtn.type = 'button';
+      noneBtn.className = 'jd-emoji-cell jd-emoji-none';
+      noneBtn.textContent = '∅';
+      noneBtn.title = 'Initiales (aucun emoji)';
+      noneBtn.onclick = () => { _avatarPick.emoji = ''; _markEmoji(); _renderAvatarPreview(); };
+      eg.appendChild(noneBtn);
+      AVATAR_EMOJIS.forEach((e) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'jd-emoji-cell';
+        b.textContent = e;
+        b.dataset.emoji = e;
+        b.onclick = () => { _avatarPick.emoji = e; _markEmoji(); _renderAvatarPreview(); };
+        eg.appendChild(b);
+      });
+    }
+    if (cg && !cg.dataset.ready) {
+      cg.dataset.ready = '1';
+      AVATAR_COLORS.forEach((c) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'jd-color-cell';
+        b.style.background = c;
+        b.dataset.color = c;
+        b.onclick = () => { _avatarPick.color = c; _markColor(); _renderAvatarPreview(); };
+        cg.appendChild(b);
+      });
+    }
+    _markEmoji();
+    _markColor();
+  }
+  function _markEmoji() {
+    document.querySelectorAll('#jd-set-emoji-grid .jd-emoji-cell').forEach((b) => {
+      const isOn = (b.dataset.emoji || '') === _avatarPick.emoji
+                || (b.classList.contains('jd-emoji-none') && !_avatarPick.emoji);
+      b.classList.toggle('on', isOn);
+    });
+  }
+  function _markColor() {
+    document.querySelectorAll('#jd-set-color-grid .jd-color-cell').forEach((b) => {
+      b.classList.toggle('on', b.dataset.color === _avatarPick.color);
+    });
+  }
+
+  JD._saveAvatar = async function () {
+    try {
+      await JD.updateAvatar(_avatarPick.emoji, _avatarPick.color);
+      // Mettre à jour le profil local + UI
+      if (JD.profile) {
+        JD.profile.avatar_emoji = _avatarPick.emoji || null;
+        JD.profile.avatar_color = _avatarPick.color || null;
+      }
+      _renderAccountBadge();
+      _refreshAvatarInModal();
+      _setSettingsMsg('info', 'Avatar mis à jour.');
+    } catch (e) {
+      _setSettingsMsg('err', 'Erreur : ' + (e.message || 'impossible de sauvegarder l\'avatar'));
+    }
+  };
+
+  function _refreshAvatarInModal() {
+    // Recharge l'avatar de l'en-tête du modal compte
+    const av = document.getElementById('jd-acc-avatar');
+    if (!av) return;
+    const u = JD.session?.user;
+    const emoji = JD.profile?.avatar_emoji;
+    const color = JD.profile?.avatar_color;
+    if (emoji) {
+      av.textContent = emoji;
+      av.style.fontSize = '22px';
+    } else {
+      const name = u?.user_metadata?.name || (u?.email || '?').split('@')[0];
+      av.textContent = (name[0] || '?').toUpperCase();
+      av.style.fontSize = '18px';
+    }
+    if (color) av.style.background = color;
+    else av.style.background = '';
+  }
+
   // ──────── Account tabs (overview / settings / danger) ────────
   JD._switchAccTab = function (pane) {
     document.querySelectorAll('#jd-account-modal .jd-acc-tab').forEach((t) => {
@@ -1051,6 +1220,11 @@
       if (mailEl) mailEl.value = u?.email || '';
       const err = document.getElementById('jd-set-err'); if (err) err.classList.remove('show');
       const info = document.getElementById('jd-set-info'); if (info) info.hidden = true;
+      // Init avatar pickers
+      _avatarPick.emoji = JD.profile?.avatar_emoji || '';
+      _avatarPick.color = JD.profile?.avatar_color || AVATAR_COLORS[0];
+      _initAvatarGrids();
+      _renderAvatarPreview();
     }
     if (pane === 'danger') {
       const conf = document.getElementById('jd-del-confirm'); if (conf) conf.value = '';
