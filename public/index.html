@@ -818,11 +818,37 @@ body.light .ttab.on{background:rgba(105,88,232,0.1)}
 body.hub-mode #panel-l{
   width:290px;max-width:none;min-width:0!important;
   flex-direction:column!important;
-  transition:width .25s cubic-bezier(.4,0,.2,1),border-right-color .25s;
+  transition:width .35s cubic-bezier(.2,.8,.3,1),border-right-color .25s,opacity .25s ease;
   border-right:1px solid var(--gb);
 }
-body.hub-mode.drawer-closed #panel-l{width:0!important;overflow:hidden!important;border-right-color:transparent!important}
+body.hub-mode.drawer-closed #panel-l{width:0!important;overflow:hidden!important;border-right-color:transparent!important;opacity:0}
 body.hub-mode.drawer-closed #main-resizer{display:none!important}
+
+/* --- Codes expand tab (bord gauche, miroir du studio-expand-tab) --- */
+#codes-expand-tab{
+  position:fixed;left:0;top:50%;
+  background:rgba(13,13,28,0.95);border:1px solid var(--gb);border-left:none;
+  border-radius:0 8px 8px 0;padding:20px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;z-index:50;
+  font-family:-apple-system,sans-serif;box-shadow:4px 0 20px rgba(0,0,0,.4);
+  /* État réduit par défaut : translaté hors écran à gauche, invisible */
+  transform:translate(-100%,-50%);opacity:0;pointer-events:none;
+  transition:transform .35s cubic-bezier(.2,.8,.3,1),opacity .25s ease,background .2s,border-color .2s;
+}
+#codes-expand-tab:hover{background:rgba(124,107,255,0.15);border-color:var(--acc)}
+#codes-expand-tab .set-icon{font-size:17px}
+#codes-expand-tab .set-label{
+  writing-mode:vertical-rl;font-size:10px;font-weight:700;
+  color:var(--acc2);letter-spacing:.8px;text-transform:uppercase;transform:rotate(180deg);
+}
+/* Quand le panel-l est caché (drawer-closed), on fait glisser l'onglet en place */
+body.hub-mode.drawer-closed #codes-expand-tab{transform:translate(0,-50%);opacity:1;pointer-events:auto}
+/* Masquer dans les modes plein-écran */
+body.hub-mode.studio-fullscreen #codes-expand-tab,
+body.hub-mode.studio-primary #codes-expand-tab,
+body.atelier-mode #codes-expand-tab,
+body.carte-mode #codes-expand-tab{display:none!important}
 /* Scroll visible pour les pages actives dans le tiroir */
 body.hub-mode #page-search,body.hub-mode #page-codes,
 body.hub-mode #page-fiches,body.hub-mode #page-quiz{max-height:none!important}
@@ -2081,6 +2107,11 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 </div>
 
 <!-- STUDIO EXPAND TAB (visible quand studio réduit) -->
+<div id="codes-expand-tab" onclick="expandCodes()" title="Agrandir les Codes">
+  <span class="set-icon">📚</span>
+  <span class="set-label">Codes</span>
+</div>
+
 <div id="studio-expand-tab" onclick="expandStudio()" title="Agrandir le Studio">
   <span class="set-icon">✍️</span>
   <span class="set-label">Studio</span>
@@ -6352,7 +6383,7 @@ function initHubMode(){
 /* Alias pour compatibilité si appelé depuis exitZenMode */
 function enterLabMode(){ initHubMode(); }
 
-/* --- Tiroir gauche --- */
+/* --- Tiroir gauche (panel-l = Codes) --- */
 function toggleDrawer(){
   document.body.classList.toggle('drawer-closed');
 }
@@ -6361,6 +6392,13 @@ function openDrawer(){
 }
 function closeDrawer(){
   document.body.classList.add('drawer-closed');
+}
+/* Alias miroirs du Studio pour le panel Codes */
+function collapseCodes(){ document.body.classList.add('drawer-closed'); }
+function expandCodes(){ document.body.classList.remove('drawer-closed'); }
+function toggleCodes(){
+  if(document.body.classList.contains('drawer-closed')) expandCodes();
+  else collapseCodes();
 }
 
 /* --- Studio droit --- */
