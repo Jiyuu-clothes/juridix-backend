@@ -97,6 +97,19 @@
       await JD.loadStudio().catch(() => {});
     }
 
+    // Si une session est déjà active au boot (page reload / navigation), on déclenche
+    // un signed-in synthétique pour que les modules atelier/carte fassent leur sync cloud.
+    // Délai pour laisser les listeners s'enregistrer (l'IIFE atelier et carte.js se chargent ensuite).
+    if (JD.session) {
+      setTimeout(() => {
+        try {
+          document.dispatchEvent(new CustomEvent('jdx-signed-in', {
+            detail: { user: JD.session.user, initial: true }
+          }));
+        } catch (_) {}
+      }, 600);
+    }
+
     _injectStyles();
     _injectAuthModal();
     _injectAccountBadge();
@@ -223,9 +236,55 @@
   };
 
   JD.signOut = async function () {
-    // Avant de couper la session, on nettoie toutes les données perso stockées
-    // localement pour qu'un autre utilisateur du même navigateur ne voie rien.
-    // On conserve les préférences UI (thème, sons, largeurs de panneaux…).
+    // Last-chance sync : push toutes les données locales en cloud avant le purge,
+    // sinon les docs jamais sauvegardés (ex: créés juste avant le logout) sont perdus.
+    try {
+      if (JD.session) {
+        // Atelier
+        try {
+          const raw = localStorage.getItem('jdx_atelier_docs_v1');
+          if (raw) {
+            const docs = JSON.parse(raw) || [];
+            // Pull cloud pour comparer ce qui existe déjà
+            const cloudDocs = await JD.atelierPull() || [];
+            const cloudIds = new Set(cloudDocs.map(d => d.id));
+            // Push : pour chaque doc local, soit upsert (si UUID présent en cloud), soit bulk-import (sinon)
+            const toBulk = [];
+            for (const d of docs) {
+              const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(d.id || '');
+              if (isUuid && cloudIds.has(d.id)) {
+                await JD.atelierPush(d).catch(() => {});
+              } else {
+                toBulk.push(d);
+              }
+            }
+            if (toBulk.length) await JD.atelierBulkImport(toBulk).catch(() => {});
+          }
+        } catch (_) {}
+        // Mindmaps
+        try {
+          const raw = localStorage.getItem('jdx_mindmaps_v1');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const maps = (parsed && parsed.maps) || [];
+            const cloudMaps = await JD.mindmapsPull() || [];
+            const cloudIds = new Set(cloudMaps.map(m => m.id));
+            const toBulk = [];
+            for (const m of maps) {
+              const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(m.id || '');
+              if (isUuid && cloudIds.has(m.id)) {
+                await JD.mindmapsPush(m).catch(() => {});
+              } else {
+                toBulk.push({ title: m.title, data: { nodes: m.nodes || [], edges: m.edges || [] } });
+              }
+            }
+            if (toBulk.length) await JD.mindmapsBulkImport(toBulk).catch(() => {});
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    // Maintenant on purge le localStorage local
     try {
       const PERSONAL_KEYS = [
         // Atelier — documents multi-pages
