@@ -2249,7 +2249,20 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     }
   }
 
-  function uid(){ return 'd_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
+  function uid(){
+    // UUID v4 pour matcher le schéma Supabase (uuid PK)
+    try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(_){}
+    // Fallback : pseudo-UUID v4 pour navigateurs anciens
+    var h='0123456789abcdef', s='';
+    for(var i=0;i<36;i++){
+      if(i===8||i===13||i===18||i===23) s+='-';
+      else if(i===14) s+='4';
+      else if(i===19) s+=h.charAt((Math.random()*4|0)+8);
+      else s+=h.charAt(Math.random()*16|0);
+    }
+    return s;
+  }
+  function isUUID(id){ return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||''); }
   function loadDocs(){
     try{
       var raw=localStorage.getItem(ATELIER_KEY);
@@ -2338,7 +2351,64 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     syncToStudio(d);
     renderList();
     setSaveState('saved');
+    // Push cloud (debounced) si connecté ET id UUID valide
+    cloudPushDebounced(d);
   }
+  var atCloudT=null;
+  function cloudPushDebounced(d){
+    if(!d) return;
+    if(!window.JuriDix || !window.JuriDix.session) return;
+    if(!isUUID(d.id)) return;
+    if(atCloudT) clearTimeout(atCloudT);
+    atCloudT=setTimeout(function(){
+      try{ window.JuriDix.atelierPush(d); }catch(_){}
+    }, 1500);
+  }
+  async function atelierSyncOnLogin(){
+    var JD = window.JuriDix;
+    if(!JD || !JD.session) return;
+    loadDocs();
+    var localDocs = atDocs.slice();
+    var cloudDocs = await JD.atelierPull();
+    if(!Array.isArray(cloudDocs)) return;
+    if(cloudDocs.length === 0 && localDocs.length){
+      // 1ère sync : push local → cloud (les IDs locaux non-UUID sont remplacés par ceux du serveur)
+      var resp = await JD.atelierBulkImport(localDocs);
+      if(resp && Array.isArray(resp.docs) && resp.docs.length === localDocs.length){
+        atDocs = resp.docs.map(function(s, i){
+          return {
+            id: s.id,
+            title: s.title || localDocs[i].title || 'Sans titre',
+            html: localDocs[i].html || '',
+            created: localDocs[i].created || Date.now(),
+            updated: new Date(s.updated_at).getTime()
+          };
+        });
+        atActive = atDocs[0] ? atDocs[0].id : null;
+        saveDocs();
+      }
+    } else if(cloudDocs.length){
+      // Cloud a des données : il fait foi (override local)
+      atDocs = cloudDocs.map(function(c){
+        return {
+          id: c.id, title: c.title, html: c.html,
+          created: new Date(c.created_at).getTime(),
+          updated: new Date(c.updated_at).getTime()
+        };
+      });
+      // Garder l'actif si toujours présent, sinon premier
+      if(!findDoc(atActive)) atActive = atDocs[0] ? atDocs[0].id : null;
+      saveDocs();
+    }
+    if(document.body.classList.contains('atelier-mode')){
+      renderList();
+      bindCurrentDocToUI();
+    }
+  }
+  // Listen aux événements de session
+  document.addEventListener('jdx-signed-in', function(){
+    atelierSyncOnLogin().catch(function(e){ console.error('[atelier sync]', e); });
+  });
   function debouncedSave(){
     setSaveState('saving');
     if(atSaveT) clearTimeout(atSaveT);
@@ -2422,12 +2492,17 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   function deleteDoc(id){
     var d=findDoc(id); if(!d) return;
     if(!confirm('Supprimer "'+(d.title||'Sans titre')+'" ?')) return;
+    var wasUuid = isUUID(id);
     atDocs = atDocs.filter(function(x){ return x.id!==id; });
     if(atActive===id){
       atActive = atDocs.length ? atDocs[0].id : null;
       if(!atActive){ var nd=newDoc('Nouveau document'); }
     }
     saveDocs(); renderList(); bindCurrentDocToUI();
+    // Suppression cloud si connecté et id valide
+    if(wasUuid && window.JuriDix && window.JuriDix.session){
+      try{ window.JuriDix.atelierDelete(id); }catch(_){}
+    }
   }
   function renameDoc(id){
     var d=findDoc(id); if(!d) return;

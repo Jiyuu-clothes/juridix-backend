@@ -72,7 +72,19 @@
   }
 
   // ---------- Utils ----------
-  function uid(){ return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function uid(){
+    // UUID v4 pour matcher le schéma Supabase (uuid PK)
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_) {}
+    var h = '0123456789abcdef', s = '';
+    for (var i = 0; i < 36; i++){
+      if (i === 8 || i === 13 || i === 18 || i === 23) s += '-';
+      else if (i === 14) s += '4';
+      else if (i === 19) s += h.charAt((Math.random()*4|0)+8);
+      else s += h.charAt(Math.random()*16|0);
+    }
+    return s;
+  }
+  function isUUID(id){ return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||''); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
     return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
   function now(){ return new Date().toISOString(); }
@@ -143,7 +155,72 @@
     var m = activeMap();
     if (m) m.updatedAt = now();
     save();
+    cloudPushDebounced(m);
   }
+  // ---------- Cloud sync (Supabase) ----------
+  var cloudT = null;
+  function cloudPushDebounced(m){
+    if (!m) return;
+    var JD = window.JuriDix;
+    if (!JD || !JD.session) return;
+    if (!isUUID(m.id)) return;
+    if (cloudT) clearTimeout(cloudT);
+    cloudT = setTimeout(function(){
+      try {
+        JD.mindmapsPush({
+          id: m.id,
+          title: m.title || 'Ma carte',
+          data: { nodes: m.nodes || [], edges: m.edges || [] }
+        });
+      } catch (_) {}
+    }, 1500);
+  }
+  async function cloudSyncOnLogin(){
+    var JD = window.JuriDix;
+    if (!JD || !JD.session) return;
+    load();
+    var localMaps = state.maps.slice();
+    var cloudMaps = await JD.mindmapsPull();
+    if (!Array.isArray(cloudMaps)) return;
+    if (cloudMaps.length === 0 && localMaps.length){
+      // 1ère sync : push local → cloud
+      var resp = await JD.mindmapsBulkImport(localMaps.map(function(m){
+        return { title: m.title || 'Ma carte', data: { nodes: m.nodes || [], edges: m.edges || [] } };
+      }));
+      if (resp && Array.isArray(resp.maps) && resp.maps.length === localMaps.length){
+        state.maps = resp.maps.map(function(s, i){
+          return Object.assign({}, localMaps[i], {
+            id: s.id,
+            title: s.title || localMaps[i].title,
+            updatedAt: new Date(s.updated_at).getTime(),
+          });
+        });
+        state.active = state.maps[0] ? state.maps[0].id : null;
+        save();
+      }
+    } else if (cloudMaps.length){
+      // Cloud fait foi
+      state.maps = cloudMaps.map(function(c){
+        var d = c.data || {};
+        return {
+          id: c.id,
+          title: c.title,
+          nodes: Array.isArray(d.nodes) ? d.nodes : [],
+          edges: Array.isArray(d.edges) ? d.edges : [],
+          createdAt: new Date(c.created_at).getTime(),
+          updatedAt: new Date(c.updated_at).getTime(),
+        };
+      });
+      if (!activeMap()) state.active = state.maps[0] ? state.maps[0].id : null;
+      save();
+    }
+    if (document.body.classList.contains('carte-mode')){
+      try { renderNodes(); renderEdges(); } catch (_) {}
+    }
+  }
+  document.addEventListener('jdx-signed-in', function(){
+    cloudSyncOnLogin().catch(function(e){ console.error('[carte sync]', e); });
+  });
   function findNode(id){
     var m = activeMap(); if (!m) return null;
     return m.nodes.find(function(n){ return n.id === id; });
@@ -356,9 +433,14 @@
         if (btn && btn.getAttribute('data-action') === 'del'){
           ev.stopPropagation();
           if (confirm('Supprimer cette carte ?')){
+            var wasUuid = isUUID(id);
             state.maps = state.maps.filter(function(m){ return m.id !== id; });
             if (state.active === id) state.active = state.maps[0] ? state.maps[0].id : null;
             save(); renderList(); renderActive();
+            // Suppression cloud
+            if (wasUuid && window.JuriDix && window.JuriDix.session){
+              try { window.JuriDix.mindmapsDelete(id); } catch (_) {}
+            }
           }
           return;
         }

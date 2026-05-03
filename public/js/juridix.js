@@ -66,9 +66,11 @@
 
     const { data: { session } } = await JD.supabase.auth.getSession();
     JD.session = session;
+    let _prevSess = !!session;
 
     JD.supabase.auth.onAuthStateChange((event, sess) => {
       JD.session = sess;
+      const isIn = !!sess;
       if (sess) {
         // refresh profile + studio on sign-in
         JD.refreshProfile().catch(() => {});
@@ -79,6 +81,15 @@
         JD.profile = null;
         _renderAccountBadge();
       }
+      // Émettre des événements DOM pour que les autres modules (atelier, carte) se synchronisent
+      try {
+        if (isIn && !_prevSess) {
+          document.dispatchEvent(new CustomEvent('jdx-signed-in', { detail: { user: sess.user } }));
+        } else if (!isIn && _prevSess) {
+          document.dispatchEvent(new CustomEvent('jdx-signed-out'));
+        }
+      } catch (_) {}
+      _prevSess = isIn;
     });
 
     if (JD.session) {
@@ -150,6 +161,65 @@
     const { data, error } = await JD.supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     return data;
+  };
+
+  // ──────── SYNC HELPERS — Atelier docs & Mindmaps ────────
+  // Renvoient null si pas de session (les modules locaux retomberont sur localStorage)
+  JD.atelierPull = async function () {
+    if (!JD.session) return null;
+    try { return (await api('/api/sync/atelier')).docs || []; } catch (_) { return null; }
+  };
+  JD.atelierPush = async function (doc) {
+    if (!JD.session || !doc) return null;
+    try {
+      return await api('/api/sync/atelier', {
+        method: 'POST',
+        body: JSON.stringify({ id: doc.id, title: doc.title || 'Sans titre', html: doc.html || '' })
+      });
+    } catch (_) { return null; }
+  };
+  JD.atelierDelete = async function (id) {
+    if (!JD.session || !id) return null;
+    try {
+      return await api('/api/sync/atelier/' + encodeURIComponent(id), { method: 'DELETE' });
+    } catch (_) { return null; }
+  };
+  JD.atelierBulkImport = async function (docs) {
+    if (!JD.session || !docs || !docs.length) return null;
+    try {
+      return await api('/api/sync/atelier/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ docs: docs.map(d => ({ title: d.title || 'Sans titre', html: d.html || '' })) })
+      });
+    } catch (_) { return null; }
+  };
+  JD.mindmapsPull = async function () {
+    if (!JD.session) return null;
+    try { return (await api('/api/sync/mindmaps')).maps || []; } catch (_) { return null; }
+  };
+  JD.mindmapsPush = async function (map) {
+    if (!JD.session || !map) return null;
+    try {
+      return await api('/api/sync/mindmaps', {
+        method: 'POST',
+        body: JSON.stringify({ id: map.id, title: map.title || 'Ma carte', data: map.data || { nodes: map.nodes || [], edges: map.edges || [] } })
+      });
+    } catch (_) { return null; }
+  };
+  JD.mindmapsDelete = async function (id) {
+    if (!JD.session || !id) return null;
+    try {
+      return await api('/api/sync/mindmaps/' + encodeURIComponent(id), { method: 'DELETE' });
+    } catch (_) { return null; }
+  };
+  JD.mindmapsBulkImport = async function (maps) {
+    if (!JD.session || !maps || !maps.length) return null;
+    try {
+      return await api('/api/sync/mindmaps/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ maps })
+      });
+    } catch (_) { return null; }
   };
 
   JD.signOut = async function () {
