@@ -91,6 +91,24 @@
     _injectAccountBadge();
     _renderAccountBadge();
 
+    // Détection du flow "reset password" : Supabase pose un access_token dans l'URL
+    // (hash) après recovery, et nous on ajoute ?reset=1 pour identifier le contexte.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash || '';
+      if (params.get('reset') === '1' || /type=recovery/.test(hash)) {
+        // Une fois la session établie via le lien, on propose de saisir un nouveau mot de passe
+        setTimeout(() => _showResetModal(), 400);
+        // Nettoie l'URL pour éviter de relancer la modal au prochain refresh
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('reset');
+          url.hash = '';
+          window.history.replaceState({}, '', url.toString());
+        } catch (_) {}
+      }
+    } catch (_) {}
+
     _flushReady();
   };
 
@@ -106,6 +124,30 @@
 
   JD.signIn = async function (email, password) {
     const { data, error } = await JD.supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  };
+
+  JD.signInOAuth = async function (provider) {
+    // 'google' | 'apple' | etc. Supabase redirige + revient sur cette page.
+    const { data, error } = await JD.supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
+    if (error) throw error;
+    return data;
+  };
+
+  JD.resetPassword = async function (email) {
+    const { data, error } = await JD.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname + '?reset=1'
+    });
+    if (error) throw error;
+    return data;
+  };
+
+  JD.updatePassword = async function (newPassword) {
+    const { data, error } = await JD.supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     return data;
   };
@@ -279,6 +321,18 @@
     .jd-btn-sec:hover{box-shadow:none;background:rgba(148,163,184,0.08)}
     .jd-err{margin-top:10px;padding:9px 12px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:8px;color:#fca5a5;font-size:12.5px;display:none}
     .jd-err.show{display:block}
+    .jd-info{margin-top:10px;padding:9px 12px;background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.3);border-radius:8px;color:#86efac;font-size:12.5px}
+    .jd-info[hidden]{display:none}
+    /* OAuth row */
+    .jd-oauth-row{display:flex;gap:8px;margin:14px 0 10px}
+    .jd-oauth{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:8px;color:#f1f5f9;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+    .jd-oauth:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.20)}
+    .jd-oauth-apple{color:#fff}
+    .jd-divider{display:flex;align-items:center;gap:10px;margin:6px 0 14px;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+    .jd-divider:before,.jd-divider:after{content:"";flex:1;height:1px;background:rgba(148,163,184,0.18)}
+    /* Lien "mot de passe oublié" */
+    .jd-link-btn{display:block;width:100%;background:transparent;border:none;color:#7dd3fc;font-size:12px;font-weight:500;cursor:pointer;padding:8px 0 0;margin-top:4px;text-decoration:underline;text-decoration-color:rgba(125,211,252,0.4);text-underline-offset:3px;font-family:inherit}
+    .jd-link-btn:hover{color:#38BDF8;text-decoration-color:#38BDF8}
     .jd-pill{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid rgba(56,189,248,0.3);border-radius:999px;padding:6px 14px;font-size:12px;color:#cbd5e1;z-index:5000;display:none;align-items:center;gap:8px;backdrop-filter:blur(10px)}
     .jd-pill.show{display:flex}
     .jd-pill b{color:#38BDF8;font-weight:700}
@@ -368,6 +422,20 @@
           <button class="jd-tab on" data-mode="signin" onclick="JuriDix._switchAuthMode('signin')">Connexion</button>
           <button class="jd-tab" data-mode="signup" onclick="JuriDix._switchAuthMode('signup')">Inscription</button>
         </div>
+
+        <!-- OAuth -->
+        <div class="jd-oauth-row">
+          <button type="button" class="jd-oauth jd-oauth-google" onclick="JuriDix._oauthSignIn('google')" aria-label="Continuer avec Google">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.15-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.85 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.67-2.83z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.67 2.83C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
+            <span>Google</span>
+          </button>
+          <button type="button" class="jd-oauth jd-oauth-apple" onclick="JuriDix._oauthSignIn('apple')" aria-label="Continuer avec Apple">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M16.365 1.43c0 1.14-.413 2.21-1.146 3.012-.835.93-2.16 1.66-3.282 1.567-.143-1.135.42-2.317 1.13-3.075.79-.834 2.123-1.439 3.298-1.504zM21.5 17.06c-.327.756-.475 1.094-.896 1.762-.586.927-1.41 2.082-2.43 2.092-.908.01-1.142-.59-2.376-.583-1.234.007-1.49.594-2.4.583-1.02-.01-1.798-1.05-2.384-1.978C8.44 15.815 7.69 11.42 9.59 8.708c.987-1.413 2.554-2.31 4.044-2.31 1.518 0 2.473.83 3.728.83 1.218 0 1.96-.832 3.715-.832 1.327 0 2.737.722 3.74 1.97-3.286 1.799-2.752 6.488.683 7.694z"/></svg>
+            <span>Apple</span>
+          </button>
+        </div>
+        <div class="jd-divider"><span>ou avec ton email</span></div>
+
         <div id="jd-name-field" class="jd-field" style="display:none">
           <label>Prénom</label>
           <input type="text" id="jd-name" autocomplete="given-name">
@@ -381,7 +449,24 @@
           <input type="password" id="jd-pwd" autocomplete="current-password" minlength="6" required>
         </div>
         <button class="jd-btn" id="jd-auth-submit" onclick="JuriDix._submitAuth()">Se connecter</button>
+        <button type="button" class="jd-link-btn" id="jd-forgot-btn" onclick="JuriDix._forgotPassword()">Mot de passe oublié&nbsp;?</button>
         <div class="jd-err" id="jd-auth-err"></div>
+        <div class="jd-info" id="jd-auth-info" hidden></div>
+      </div>
+    </div>
+
+    <!-- Modal "réinitialiser le mot de passe" (après clic sur lien email) -->
+    <div id="jd-reset-modal" class="jd-modal" onclick="if(event.target===this)JuriDix._hideReset()">
+      <div class="jd-card">
+        <h2>Nouveau mot de passe</h2>
+        <p class="jd-sub">Choisis un nouveau mot de passe pour ton compte.</p>
+        <div class="jd-field">
+          <label>Nouveau mot de passe</label>
+          <input type="password" id="jd-new-pwd" autocomplete="new-password" minlength="6" required>
+        </div>
+        <button class="jd-btn" onclick="JuriDix._submitNewPassword()">Mettre à jour</button>
+        <div class="jd-err" id="jd-reset-err"></div>
+        <div class="jd-info" id="jd-reset-info" hidden></div>
       </div>
     </div>
 
@@ -513,6 +598,80 @@
       : 'Accède à ta bibliothèque juridique.';
     document.getElementById('jd-auth-submit').textContent = isSignup ? 'Créer mon compte' : 'Se connecter';
     document.getElementById('jd-pwd').setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
+  };
+
+  JD._oauthSignIn = async function (provider) {
+    const errEl = document.getElementById('jd-auth-err');
+    if (errEl) { errEl.classList.remove('show'); errEl.textContent = ''; }
+    try {
+      await JD.signInOAuth(provider);
+      // redirige automatiquement vers le provider
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = 'Connexion ' + provider + ' indisponible : ' + (e.message || '');
+        errEl.classList.add('show');
+      }
+    }
+  };
+
+  JD._forgotPassword = async function () {
+    const email = (document.getElementById('jd-email')?.value || '').trim();
+    const errEl = document.getElementById('jd-auth-err');
+    const infoEl = document.getElementById('jd-auth-info');
+    if (errEl) { errEl.classList.remove('show'); errEl.textContent = ''; }
+    if (infoEl) { infoEl.hidden = true; infoEl.textContent = ''; }
+    if (!email || !/.+@.+\..+/.test(email)) {
+      if (errEl) { errEl.textContent = 'Saisis ton email avant de cliquer sur "mot de passe oublié".'; errEl.classList.add('show'); }
+      document.getElementById('jd-email')?.focus();
+      return;
+    }
+    try {
+      await JD.resetPassword(email);
+      if (infoEl) {
+        infoEl.textContent = 'Un email de réinitialisation a été envoyé à ' + email + '. Vérifie ta boîte (et tes spams).';
+        infoEl.hidden = false;
+      }
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = 'Impossible d\'envoyer l\'email : ' + (e.message || 'erreur inconnue');
+        errEl.classList.add('show');
+      }
+    }
+  };
+
+  function _showResetModal() {
+    document.getElementById('jd-reset-modal')?.classList.add('show');
+    setTimeout(() => document.getElementById('jd-new-pwd')?.focus(), 80);
+  }
+  function _hideResetModal() {
+    document.getElementById('jd-reset-modal')?.classList.remove('show');
+  }
+  JD._hideReset = _hideResetModal;
+  JD._showReset = _showResetModal;
+
+  JD._submitNewPassword = async function () {
+    const pwd = document.getElementById('jd-new-pwd')?.value || '';
+    const errEl = document.getElementById('jd-reset-err');
+    const infoEl = document.getElementById('jd-reset-info');
+    if (errEl) { errEl.classList.remove('show'); errEl.textContent = ''; }
+    if (infoEl) { infoEl.hidden = true; }
+    if (pwd.length < 6) {
+      if (errEl) { errEl.textContent = 'Mot de passe trop court (6 caractères minimum).'; errEl.classList.add('show'); }
+      return;
+    }
+    try {
+      await JD.updatePassword(pwd);
+      if (infoEl) {
+        infoEl.textContent = 'Mot de passe mis à jour. Tu es maintenant connecté.';
+        infoEl.hidden = false;
+      }
+      setTimeout(_hideResetModal, 1400);
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = 'Erreur : ' + (e.message || 'mise à jour impossible');
+        errEl.classList.add('show');
+      }
+    }
   };
 
   JD._submitAuth = async function () {
