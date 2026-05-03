@@ -153,7 +153,40 @@
   };
 
   JD.signOut = async function () {
+    // Avant de couper la session, on nettoie toutes les données perso stockées
+    // localement pour qu'un autre utilisateur du même navigateur ne voie rien.
+    // On conserve les préférences UI (thème, sons, largeurs de panneaux…).
+    try {
+      const PERSONAL_KEYS = [
+        // Atelier — documents multi-pages
+        'jdx_atelier_docs_v1',
+        'jdx_atelier_active',
+        'jdx_atelier_studio_linked_id',
+        // Studio (mono-doc) — version localStorage
+        'jdx_lab_content',
+        'jdx_lab_title',
+        // Cartes mentales
+        'jdx_mindmaps_v1',
+        // Fiches / notes / historique de recherche
+        'jdx_fiches_v1',
+        'jdx_notes_v1',
+        'jdx_history_v1',
+        // Code consulté / dernier article ouvert
+        'jdx_last_article',
+        'jdx_last_code',
+      ];
+      PERSONAL_KEYS.forEach(function(k){ try{ localStorage.removeItem(k); }catch(_){} });
+      // Suppression aussi des clés legacy par préfixe au cas où
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('jdx_carte_') || key.startsWith('jdx_doc_') || key.startsWith('jdx_note_'))) {
+          try { localStorage.removeItem(key); } catch(_) {}
+        }
+      }
+    } catch(_) {}
     await JD.supabase.auth.signOut();
+    // Recharger la page pour que toutes les vues repartent vides proprement
+    setTimeout(() => { try { window.location.reload(); } catch(_){} }, 80);
   };
 
   JD.requireAuth = function () {
