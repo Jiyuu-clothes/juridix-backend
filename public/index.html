@@ -1473,7 +1473,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <div class="logo" onclick="switchTab('codes')" style="display:flex;align-items:center;gap:8px">
+  <div class="logo" onclick="goHome()" style="display:flex;align-items:center;gap:8px">
     <svg width="22" height="22" viewBox="0 0 24 24" style="color:#38BDF8;flex-shrink:0" aria-hidden="true">
       <!-- Pilier dorique — JuriDix -->
       <!-- Chapiteau -->
@@ -1501,7 +1501,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   </div>
   <!-- NOUVEAUX ONGLETS HUB -->
   <div id="top-tabs">
-    <button class="ttab" data-tab="codes" onclick="switchTab('codes')">📚 Codes</button>
+    <button class="ttab" data-tab="home" onclick="goHome()">🏠 Accueil</button>
     <button class="ttab" data-tab="atelier" onclick="openAtelier()">✍️ Atelier</button>
     <button class="ttab" data-tab="carte" onclick="openCarte()">🧠 Carte</button>
     <button class="ttab" data-tab="fiches" onclick="switchTab('fiches')">📝 Fiches</button>
@@ -4057,9 +4057,10 @@ function switchTab(tab){
   document.querySelectorAll('#icon-sidebar .nav-icon[id^="ni-"]').forEach(function(el){el.classList.remove('on');});
   var ni = document.getElementById('ni-'+tab);
   if(ni) ni.classList.add('on');
-  // Sync top tabs (.ttab)
+  // Sync top tabs (.ttab) — l'onglet "home" est l'alias visuel de "codes"
   document.querySelectorAll('.ttab').forEach(function(t){t.classList.remove('on');});
-  var tt = document.querySelector('.ttab[data-tab="'+tab+'"]');
+  var ttabKey = (tab === 'codes') ? 'home' : tab;
+  var tt = document.querySelector('.ttab[data-tab="'+ttabKey+'"]');
   if(tt) tt.classList.add('on');
   // Drawer header title
   var dt = document.getElementById('drawer-title');
@@ -6457,6 +6458,25 @@ function initHubMode(){
 
 /* Alias pour compatibilité si appelé depuis exitZenMode */
 function enterLabMode(){ initHubMode(); }
+
+/* --- Accueil global : sort de tous les overlays + ouvre les panneaux --- */
+function goHome(){
+  try{
+    if(document.body.classList.contains('atelier-mode') && typeof window.exitAtelier==='function') window.exitAtelier();
+    if(document.body.classList.contains('carte-mode') && typeof window.closeCarte==='function') window.closeCarte();
+  }catch(e){}
+  // Ouvre Codes (panel-l) et Studio (panel-r) si réduits
+  document.body.classList.remove('drawer-closed');
+  document.body.classList.remove('studio-hidden','studio-fullscreen','studio-primary');
+  // Affiche la Bibliothèque des Codes au centre du tiroir
+  if(typeof switchTab==='function') switchTab('codes');
+  // Marque l'onglet Accueil comme actif
+  try{
+    document.querySelectorAll('#top-tabs .ttab').forEach(function(t){
+      t.classList.toggle('on', t.getAttribute('data-tab')==='home');
+    });
+  }catch(e){}
+}
 
 /* --- Tiroir gauche (panel-l = Codes) --- */
 function toggleDrawer(){
