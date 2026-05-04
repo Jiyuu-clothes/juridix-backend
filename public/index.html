@@ -911,13 +911,18 @@ body.hub-mode.studio-hidden #studio-expand-tab{transform:translate(0,-50%);opaci
   color:var(--acc2);letter-spacing:.8px;text-transform:uppercase
 }
 
-/* --- Studio collapse button --- */
+/* --- Studio collapse button : icône seule, toujours cliquable même panel étroit --- */
 .studio-collapse-btn{
-  background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:6px;
-  padding:4px 8px;color:var(--t3);font-size:11px;cursor:pointer;
-  font-family:-apple-system,sans-serif;transition:all .15s;white-space:nowrap
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;
+  width:32px;height:32px;min-width:32px;flex-shrink:0;
+  color:var(--t2);font-size:14px;cursor:pointer;
+  font-family:-apple-system,sans-serif;transition:all .15s;
+  display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0;
+  margin-left:auto; /* Toujours collé à droite, peu importe la largeur */
 }
-.studio-collapse-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
+.studio-collapse-btn:hover{background:rgba(124,107,255,0.15);color:var(--acc2);border-color:rgba(124,107,255,0.4);transform:scale(1.05)}
+body.light .studio-collapse-btn{background:rgba(15,23,42,0.04);border-color:rgba(15,23,42,0.10);color:var(--t2)}
+body.light .studio-collapse-btn:hover{background:rgba(124,107,255,0.10)}
 
 /* --- Home screen en hub-mode : compact --- */
 body.hub-mode .home-shortcuts{display:none}
@@ -1822,10 +1827,9 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
       <div id="lab-studio-hdr">
         <span class="lab-title-label">✍️ Studio</span>
         <button class="lab-inject-btn" onclick="injectArticleToLab()">📎 Injecter l'article</button>
-        <button class="lab-inject-btn" onclick="injectArticleToCarte()" title="Envoyer l'article vers la carte mentale" style="background:rgba(124,107,255,0.15);border-color:rgba(124,107,255,0.4);color:var(--acc2)">🧠 Carte</button>
         <button class="lab-copy-btn" onclick="copyLabDoc()">📋</button>
         <span id="lab-wcount">0 mot</span>
-        <button class="studio-collapse-btn" onclick="collapseStudio()" title="Réduire le studio">▶ Réduire</button>
+        <button class="studio-collapse-btn" onclick="collapseStudio()" title="Réduire le Studio" aria-label="Réduire le Studio">▶</button>
       </div>
 
       <!-- TOOLBAR ÉDITEUR (Phase 10.2 + 10.3) -->
@@ -1944,6 +1948,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
         <button class="at-btn at-btn-primary" onclick="newAtelierDoc()" title="Créer un nouveau document">＋ Nouveau</button>
         <button class="at-btn" onclick="duplicateAtelierDoc()" title="Dupliquer ce document">⎘ Dupliquer</button>
         <button class="at-btn" onclick="injectArticleToAtelier()" title="Coller le dernier article ouvert">📎 Article</button>
+        <button class="at-btn" onclick="injectArticleToCarte()" title="Envoyer le dernier article ouvert vers la carte mentale active">🧠 Carte</button>
         <button class="at-btn" onclick="printAtelierDoc()" title="Imprimer">🖨 Imprimer</button>
         <button class="at-btn" onclick="exportAtelierPDF()" title="Exporter en PDF">📄 PDF</button>
         <button class="at-btn danger" onclick="exitAtelier()" title="Fermer">✕ Fermer</button>
