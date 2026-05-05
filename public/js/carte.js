@@ -276,6 +276,7 @@
     bindResizer();
     bindSidebarTabs();
     bindMinimap();
+    bindProximityGlow();
     load();
     ui.initialized = true;
   }
@@ -699,7 +700,29 @@
   // ---------- Render: edges ----------
   function renderEdges(){
     var m = activeMap(); if (!m || !ui.edges){ if (ui.edges) ui.edges.innerHTML = ''; return; }
-    var html = '<defs><marker id="cm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--acc)"/></marker></defs>';
+    var html = '<defs>'
+      + '<marker id="cm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
+      +   '<path d="M0,0 L10,5 L0,10 z" fill="url(#cm-edge-grad)"/>'
+      + '</marker>'
+      // Gradient global violet → cyan pour toutes les arêtes
+      + '<linearGradient id="cm-edge-grad" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">'
+      +   '<stop offset="0%" stop-color="#7c6bff"/>'
+      +   '<stop offset="100%" stop-color="#38bdf8"/>'
+      + '</linearGradient>'
+      // Gradient sélectionné — plus saturé
+      + '<linearGradient id="cm-edge-grad-on" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">'
+      +   '<stop offset="0%" stop-color="#a78bfa"/>'
+      +   '<stop offset="100%" stop-color="#7dd3fc"/>'
+      + '</linearGradient>'
+      // Filtre glow pour les arêtes
+      + '<filter id="cm-edge-glow" x="-20%" y="-20%" width="140%" height="140%">'
+      +   '<feGaussianBlur stdDeviation="2.5" result="blur"/>'
+      +   '<feMerge>'
+      +     '<feMergeNode in="blur"/>'
+      +     '<feMergeNode in="SourceGraphic"/>'
+      +   '</feMerge>'
+      + '</filter>'
+      + '</defs>';
     m.edges.forEach(function(e){
       var a = m.nodes.find(function(n){ return n.id === e.from; });
       var b = m.nodes.find(function(n){ return n.id === e.to; });
@@ -714,8 +737,10 @@
       var sel = isSel ? ' selected' : '';
       // Hit zone (wide invisible) for easy clicking
       html += '<path class="cm-edge-hit" d="' + path + '" data-id="' + esc(e.id) + '"></path>';
-      // Visible edge
+      // Visible edge (gradient + glow filter)
       html += '<path class="cm-edge' + sel + '" d="' + path + '" data-id="' + esc(e.id) + '" marker-end="url(#cm-arrow)"></path>';
+      // Shimmer overlay — point lumineux qui parcourt l'arête
+      html += '<path class="cm-edge-shimmer" d="' + path + '"></path>';
       if (e.label){
         var mid = bezierMid(pa, pb);
         html += '<text class="cm-edge-label" x="' + mid.x + '" y="' + mid.y + '" text-anchor="middle" data-id="' + esc(e.id) + '">' + esc(e.label) + '</text>';
@@ -968,6 +993,46 @@
       view.y = cr.height / 2 - ly * view.scale;
       applyViewTransform();
     });
+  }
+
+  // ---------- Hover proximity glow — calcul "soft attractor" ----------
+  // Pour chaque node visible, on calcule la distance entre le curseur et le centre du node.
+  // Le score = clamp(1 - d/THRESHOLD, 0, 1) — courbe linéaire jusqu'à atteindre 0 à la distance seuil.
+  // On expose ce score en variable CSS --proximity sur le node, ce qui pilote l'aura.
+  var PROX_THRESHOLD = 220; // px en espace écran (incluant le scale du viewport)
+  var lastProxMove = 0;
+  function bindProximityGlow(){
+    var c = ui.canvas; if (!c) return;
+    c.addEventListener('mousemove', function(ev){
+      // Throttle ~60 fps max
+      var now = performance.now();
+      if (now - lastProxMove < 16) return;
+      lastProxMove = now;
+      var rect = c.getBoundingClientRect();
+      var mx = ev.clientX - rect.left;
+      var my = ev.clientY - rect.top;
+      var nodes = c.querySelectorAll('.cm-node');
+      nodes.forEach(function(el){
+        // Centre du node en coords du canvas
+        var nr = el.getBoundingClientRect();
+        var cx = (nr.left + nr.right) / 2 - rect.left;
+        var cy = (nr.top + nr.bottom) / 2 - rect.top;
+        var dx = mx - cx, dy = my - cy;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        // Distance du curseur au bord du node (et pas au centre) pour un effet plus naturel
+        var halfW = (nr.right - nr.left) / 2;
+        var halfH = (nr.bottom - nr.top) / 2;
+        var edgeDist = Math.max(0, d - Math.max(halfW, halfH) * 0.7);
+        // Score 0..1 avec ease-out (1 - x²)
+        var raw = 1 - (edgeDist / PROX_THRESHOLD);
+        var score = raw <= 0 ? 0 : (raw >= 1 ? 1 : raw * raw); // ease-out quadratique
+        el.style.setProperty('--proximity', score.toFixed(3));
+      });
+    }, { passive: true });
+    // Reset quand la souris quitte le canvas
+    c.addEventListener('mouseleave', function(){
+      c.querySelectorAll('.cm-node').forEach(function(el){ el.style.setProperty('--proximity', '0'); });
+    }, { passive: true });
   }
 
   function bindCanvas(){
