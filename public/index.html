@@ -254,7 +254,62 @@ body.on-search.hub-mode #main-resizer{display:none!important}
 #omnisearch-footer{padding:8px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;font-size:11px;color:var(--t3)}
 #omnisearch-footer span{display:flex;align-items:center;gap:4px}
 /* V4 — HOME SCREEN */
-#art-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:0;background:#0a0a1a}
+#art-empty{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:0;background:#0a0a1a;overflow:hidden}
+/* Grille de points Figma-style en background, animée par JS via --grid-x / --grid-y */
+.home-bg-grid{position:absolute;inset:-25px;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px, rgba(124,107,255,0.18) 1px, transparent 0);
+  background-size:25px 25px;
+  background-position:calc(var(--grid-x,0px)) calc(var(--grid-y,0px));
+  opacity:.6;
+  mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+body.light .home-bg-grid{background-image:radial-gradient(circle at 1px 1px, rgba(15,23,42,0.18) 1px, transparent 0)}
+/* Vignettage — bords sombres pour focaliser l'attention au centre */
+.home-vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.55) 100%)}
+body.light .home-vignette{background:radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.10) 100%)}
+.home-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;max-width:760px;padding:0 24px}
+#art-empty .home-hint{font-size:13px;color:var(--t3);margin:14px 0 28px;opacity:.85}
+#art-empty .home-hint kbd{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:4px;padding:1px 7px;font-size:11px;font-family:'JetBrains Mono','SF Mono',ui-monospace,monospace;color:var(--acc2)}
+
+/* Grille des Quick Actions */
+.home-quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:560px;margin-bottom:22px}
+@media(max-width:640px){.home-quick-grid{grid-template-columns:1fr}}
+.home-quick-card{
+  display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:6px;
+  padding:18px 20px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:14px;
+  backdrop-filter:blur(20px) saturate(150%);
+  -webkit-backdrop-filter:blur(20px) saturate(150%);
+  box-shadow:0 4px 20px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.06);
+  cursor:pointer;
+  transition:transform .25s cubic-bezier(.2,.8,.3,1),background .2s,border-color .2s,box-shadow .25s;
+  font-family:inherit;color:inherit;
+  opacity:0;animation:hq-fade-up .55s cubic-bezier(.2,.8,.3,1) forwards;
+}
+.home-quick-card:nth-child(1){animation-delay:.05s}
+.home-quick-card:nth-child(2){animation-delay:.12s}
+.home-quick-card:nth-child(3){animation-delay:.19s}
+.home-quick-card:nth-child(4){animation-delay:.26s}
+@keyframes hq-fade-up{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.home-quick-card:hover{
+  background:rgba(124,107,255,0.10);
+  border-color:rgba(124,107,255,0.35);
+  transform:translateY(-3px);
+  box-shadow:0 8px 30px rgba(124,107,255,0.18),0 0 0 1px rgba(124,107,255,0.20),inset 0 1px 0 rgba(255,255,255,0.10);
+}
+body.light .home-quick-card{background:rgba(255,255,255,0.55);border-color:rgba(15,23,42,0.10);color:#0F172A}
+body.light .home-quick-card:hover{background:rgba(124,107,255,0.08)}
+.home-quick-card .hq-icon{font-size:22px;line-height:1;margin-bottom:2px}
+.home-quick-card .hq-title{font-size:14px;font-weight:700;color:var(--t1);letter-spacing:-.005em}
+.home-quick-card .hq-sub{font-size:12px;color:var(--t3);font-weight:400}
+
+/* Mini-shortcuts en chips bas */
+.home-shortcuts-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px;opacity:0;animation:hq-fade-up .55s cubic-bezier(.2,.8,.3,1) .35s forwards}
+.home-shortcut-mini{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:var(--t3);font-size:11.5px;cursor:pointer;font-family:'JetBrains Mono','SF Mono',ui-monospace,monospace;transition:all .15s}
+.home-shortcut-mini:hover{background:rgba(56,189,248,0.10);color:var(--acc2);border-color:rgba(56,189,248,0.30)}
 .home-logo{font-size:48px;font-weight:800;background:linear-gradient(135deg,#a89fff 0%,#7c6bff 50%,#5548cc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-2px;margin-bottom:8px}
 .home-logo span{font-weight:300;opacity:.6}
 .home-sub{font-size:14px;color:var(--t3);margin-bottom:36px;font-family:sans-serif}
@@ -1461,7 +1516,8 @@ body.light .cm-node{background:rgba(255,255,255,0.98);box-shadow:0 4px 16px rgba
 .cm-node[data-color="gold"]{border-color:var(--gold);background:rgba(251,191,36,0.1)}
 .cm-node[data-color="red"]{border-color:var(--red);background:rgba(248,113,113,0.1)}
 .cm-node[data-type="ref"]:hover{border-color:var(--acc2)}
-.cm-node-eyebrow{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--acc2);margin-bottom:3px}
+.cm-node-eyebrow{font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--acc2);margin-bottom:3px;cursor:pointer}
+.cm-node-title:hover,.cm-node-eyebrow:hover{color:#fff}
 .cm-node-title{font-weight:600;color:var(--t1)}
 .cm-node-snippet{font-size:11px;color:var(--t2);margin-top:4px;line-height:1.4;cursor:text;white-space:pre-wrap;word-wrap:break-word;overflow:auto}
 .cm-node:not([style*="height"]) .cm-node-snippet{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
@@ -1813,18 +1869,44 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
           <div class="fd-title" id="fd-title"></div>
           <div id="fd-sections"></div>
         </div>
-        <!-- Home Screen V4 -->
+        <!-- Home Screen V5 — Dashboard Quick Actions -->
         <div id="art-empty">
-          <div class="home-logo">Juri<span>Dix</span></div>
-          <div class="home-sub">Votre bibliothèque juridique intelligente</div>
-          <div class="home-hint" style="font-size:13px;color:var(--t3);margin-bottom:24px;opacity:.75">Tape <kbd style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:4px;padding:1px 6px;font-size:11px;font-family:ui-monospace,Menlo,monospace">⌘K</kbd> pour rechercher</div>
-          <div class="home-shortcuts">
-            <div class="home-shortcut" onclick="exitZenMode();openArticle('cc-1240')">Art. 1240 — Faute</div>
-            <div class="home-shortcut" onclick="exitZenMode();openArticle('cc-1101')">Art. 1101 — Contrat</div>
-            <div class="home-shortcut" onclick="exitZenMode();openArticle('cp-121-1')">Art. 121-1 — Resp. pénale</div>
-            <div class="home-shortcut" onclick="exitZenMode();openArticle('jp-blieck')">Arrêt Blieck</div>
-            <div class="home-shortcut" onclick="exitZenMode();switchTab('codes')">📖 Parcourir les Codes</div>
-            <div class="home-shortcut" onclick="exitZenMode();switchTab('fiches')">📋 Mes fiches</div>
+          <div class="home-bg-grid" aria-hidden="true"></div>
+          <div class="home-vignette" aria-hidden="true"></div>
+          <div class="home-inner">
+            <div class="home-logo">Juri<span>Dix</span></div>
+            <div class="home-sub">Votre bibliothèque juridique intelligente</div>
+            <div class="home-hint">Tape <kbd>⌘K</kbd> pour ouvrir la recherche rapide</div>
+
+            <div class="home-quick-grid">
+              <button type="button" class="home-quick-card" onclick="quickResume()">
+                <div class="hq-icon">⏯</div>
+                <div class="hq-title" id="hq-resume-title">Reprendre le travail</div>
+                <div class="hq-sub" id="hq-resume-sub">Dernier doc d'Atelier</div>
+              </button>
+              <button type="button" class="home-quick-card" onclick="quickNewMap()">
+                <div class="hq-icon">🧠</div>
+                <div class="hq-title">Nouvelle carte mentale</div>
+                <div class="hq-sub">Démarrer une carte vierge</div>
+              </button>
+              <button type="button" class="home-quick-card" onclick="quickSearchCode()">
+                <div class="hq-icon">📚</div>
+                <div class="hq-title">Recherche dans les Codes</div>
+                <div class="hq-sub">Civil, Pénal, Travail, …</div>
+              </button>
+              <button type="button" class="home-quick-card" onclick="quickFiches()">
+                <div class="hq-icon">📋</div>
+                <div class="hq-title">Mes fiches</div>
+                <div class="hq-sub">Parcourir tes notes</div>
+              </button>
+            </div>
+
+            <div class="home-shortcuts-row">
+              <div class="home-shortcut-mini" onclick="openArticle('cc-1240')">Art. 1240 Civ.</div>
+              <div class="home-shortcut-mini" onclick="openArticle('cc-1101')">Art. 1101 Civ.</div>
+              <div class="home-shortcut-mini" onclick="openArticle('cp-121-1')">Art. 121-1 Pén.</div>
+              <div class="home-shortcut-mini" onclick="openArticle('jp-blieck')">Arrêt Blieck</div>
+            </div>
           </div>
         </div>
         <!-- Article content -->
@@ -4031,6 +4113,80 @@ function saveToNote(){
   _noteIdx=-1;
 }
 function printArticle(){window.print();}
+
+/* ===== Quick Actions du dashboard d'accueil ===== */
+function quickResume(){
+  // Reprendre le dernier doc Atelier modifié
+  try{
+    var raw = localStorage.getItem('jdx_atelier_docs_v1');
+    var docs = raw ? JSON.parse(raw) : [];
+    if(Array.isArray(docs) && docs.length){
+      // Atelier ouvre automatiquement le doc actif (le plus récent)
+      if(typeof window.openAtelier === 'function') window.openAtelier();
+      return;
+    }
+  }catch(_){}
+  // Fallback : ouvrir l'Atelier vide
+  if(typeof window.openAtelier === 'function') window.openAtelier();
+  else if(typeof switchTab === 'function') switchTab('codes');
+}
+function quickNewMap(){
+  // Ouvre la Carte mentale (créera une nouvelle carte si aucune n'existe)
+  if(typeof window.openCarte === 'function') window.openCarte();
+}
+function quickSearchCode(){
+  // Focus sur la search bar du topbar
+  var input = document.getElementById('topbar-search');
+  if(input){ input.focus(); input.select(); }
+  if(typeof switchTab === 'function') switchTab('codes');
+}
+function quickFiches(){
+  if(typeof switchTab === 'function') switchTab('fiches');
+}
+// Met à jour le sous-titre "Reprendre" avec le titre du dernier doc
+function refreshResumeCard(){
+  try{
+    var raw = localStorage.getItem('jdx_atelier_docs_v1');
+    if(!raw) return;
+    var docs = JSON.parse(raw);
+    if(!Array.isArray(docs) || !docs.length) return;
+    // Doc le plus récemment modifié
+    var latest = docs.reduce(function(a,b){ return ((a.updated||0) > (b.updated||0)) ? a : b; });
+    var sub = document.getElementById('hq-resume-sub');
+    if(sub && latest && latest.title) sub.textContent = '« ' + (latest.title.slice(0,32)) + (latest.title.length>32?'…':'') + ' »';
+  }catch(_){}
+}
+document.addEventListener('DOMContentLoaded', refreshResumeCard);
+window.addEventListener('focus', refreshResumeCard);
+
+/* ===== Parallax léger sur la grille de points (effet espace infini) ===== */
+(function(){
+  var empty = null;
+  var raf = null;
+  var tx = 0, ty = 0;
+  function tick(){
+    raf = null;
+    if(!empty) empty = document.getElementById('art-empty');
+    if(empty){
+      empty.style.setProperty('--grid-x', tx.toFixed(1) + 'px');
+      empty.style.setProperty('--grid-y', ty.toFixed(1) + 'px');
+    }
+  }
+  document.addEventListener('mousemove', function(ev){
+    if(!document.getElementById('art-empty')) return;
+    if(!empty) empty = document.getElementById('art-empty');
+    if(!empty || empty.offsetParent === null) return; // visible only
+    var rect = empty.getBoundingClientRect();
+    if(rect.width < 1) return;
+    // Centre normalisé entre -1 et 1
+    var nx = ((ev.clientX - rect.left) / rect.width  - 0.5) * 2;
+    var ny = ((ev.clientY - rect.top)  / rect.height - 0.5) * 2;
+    // Décalage faible (parallaxe douce ~12 px max)
+    tx = -nx * 12;
+    ty = -ny * 12;
+    if(!raf) raf = requestAnimationFrame(tick);
+  }, { passive:true });
+})();
 
 function openLegifrance(){
   if(!_art)return;
