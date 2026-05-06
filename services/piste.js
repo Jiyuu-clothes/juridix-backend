@@ -421,12 +421,56 @@ async function getArticleByCodeAndNum(textId, num, headers, cidHint = '') {
   }
 }
 
-async function getArticle(cid) {
+/**
+ * Tentative consult/getArticle avec un id donné. Retourne :
+ *  - { ok: true, art }            si article trouvé avec contenu
+ *  - { ok: false, kind: 'empty' } si 200 mais réponse vide
+ *  - { ok: false, kind: '404' }   si 404
+ *  - throws                       pour toute autre erreur (5xx, timeout, etc.)
+ */
+async function tryGetArticleById(id, headers) {
+  try {
+    const r = await axios.post(`${PISTE_BASE}/consult/getArticle`,
+      { id },
+      { headers, timeout: 8000 }
+    );
+    const art = r.data?.article;
+    if (art && (art.texteHtml || art.texte)) {
+      return { ok: true, art };
+    }
+    console.warn(`[PISTE] consult/getArticle(${id}) — vide (data keys: ${Object.keys(r.data || {}).join(',') || '∅'}).`);
+    return { ok: false, kind: 'empty' };
+  } catch (e) {
+    const status = e?.response?.status;
+    if (status === 404) {
+      console.warn(`[PISTE] consult/getArticle(${id}) — 404.`);
+      return { ok: false, kind: '404' };
+    }
+    const detail = e?.response?.data || e.message;
+    console.error(`[PISTE] consult/getArticle(${id}) — erreur ${status || ''}:`, detail);
+    const err = new Error('PISTE getArticle échoué');
+    err.kind = 'upstream';
+    err.status = status;
+    err.detail = detail;
+    throw err;
+  }
+}
+
+/**
+ * Récupère un article par son identifiant Légifrance.
+ * L'identifiant peut être un `id` (version-spécifique) ou un `cid` (chronique).
+ * On regarde d'abord dans le cache tableMatieres pour résoudre cid → id si besoin,
+ * puis on tente plusieurs stratégies en cascade :
+ *   1. consult/getArticle avec l'id de version (le plus fiable)
+ *   2. consult/getArticle avec l'identifiant brut reçu (cid ou autre)
+ *   3. consult/code via textId+num (version courante en vigueur)
+ */
+async function getArticle(rawId) {
   let token;
   try {
     token = await getAccessToken();
   } catch (e) {
-    console.error(`[PISTE] getArticle(${cid}) — OAuth échoué:`, e.detail || e.message);
+    console.error(`[PISTE] getArticle(${rawId}) — OAuth échoué:`, e.detail || e.message);
     const err = new Error('PISTE OAuth échoué');
     err.kind = 'auth';
     err.detail = e.detail || e.message;
@@ -434,51 +478,34 @@ async function getArticle(cid) {
   }
 
   const headers = makeHeaders(token);
-  const meta = findArticleMeta(cid);  // peut être null si tableMatieres pas en cache
+  const meta = findArticleMeta(rawId);  // peut être null si tableMatieres pas en cache
 
-  // ── 1) Tentative directe : consult/getArticle ──────────────────
-  let directEmpty = false;
-  let direct404 = false;
-  try {
-    const r = await axios.post(`${PISTE_BASE}/consult/getArticle`,
-      { id: cid },
-      { headers, timeout: 8000 }
-    );
-    const art = r.data?.article;
-    const hasContent = art && (art.texteHtml || art.texte);
-    if (hasContent) {
-      return formatArticle(art, {
+  // Construire la liste ordonnée des ids à essayer, sans doublons.
+  const idsToTry = [];
+  if (meta?.id && meta.id !== rawId) idsToTry.push(meta.id);  // priorité : id de version
+  idsToTry.push(rawId);                                        // fallback : ce qu'a envoyé le client
+  if (meta?.cid && meta.cid !== rawId && meta.cid !== meta?.id) idsToTry.push(meta.cid);
+
+  for (const id of idsToTry) {
+    const result = await tryGetArticleById(id, headers);
+    if (result.ok) {
+      console.log(`[PISTE] getArticle — succès avec id=${id} (raw=${rawId}).`);
+      return formatArticle(result.art, {
         codeHint: meta ? (KEY_CODES[meta.textId] || '') : '',
-        cidHint:  cid,
+        cidHint:  rawId,
         numHint:  meta?.num
       });
     }
-    directEmpty = true;
-    console.warn(`[PISTE] getArticle(${cid}) — réponse directe vide ou sans contenu (data keys: ${Object.keys(r.data || {}).join(',') || '∅'}).`);
-  } catch (e) {
-    const status = e?.response?.status;
-    if (status === 404) {
-      direct404 = true;
-      console.warn(`[PISTE] getArticle(${cid}) — 404 sur consult/getArticle.`);
-    } else {
-      // Erreur infra (5xx, timeout, OAuth scope...) → on remonte.
-      const detail = e?.response?.data || e.message;
-      console.error(`[PISTE] getArticle(${cid}) — erreur ${status || ''}:`, detail);
-      const err = new Error('PISTE getArticle échoué');
-      err.kind = 'upstream';
-      err.status = status;
-      err.detail = detail;
-      throw err;
-    }
+    // empty ou 404 → on essaie l'id suivant
   }
 
-  // ── 2) Fallback : consult/code via num+textId (version courante) ─
-  if ((directEmpty || direct404) && meta && meta.textId && meta.num) {
-    console.log(`[PISTE] getArticle(${cid}) — fallback consult/code(${meta.textId}, num=${meta.num})...`);
-    const fallback = await getArticleByCodeAndNum(meta.textId, meta.num, headers, cid);
+  // Dernier recours : consult/code via num+textId (version courante en vigueur)
+  if (meta && meta.textId && meta.num) {
+    console.log(`[PISTE] getArticle(${rawId}) — fallback consult/code(${meta.textId}, num=${meta.num})...`);
+    const fallback = await getArticleByCodeAndNum(meta.textId, meta.num, headers, rawId);
     if (fallback) return fallback;
-  } else if ((directEmpty || direct404) && !meta) {
-    console.warn(`[PISTE] getArticle(${cid}) — pas de méta tableMatieres en cache, fallback impossible.`);
+  } else {
+    console.warn(`[PISTE] getArticle(${rawId}) — pas de méta tableMatieres en cache, fallback consult/code impossible.`);
   }
 
   return null;
