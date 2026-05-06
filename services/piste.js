@@ -215,17 +215,17 @@ async function search(query, filters = {}) {
         const r = await axios.post(`${PISTE_BASE}/search`, {
           recherche: {
             motsCles: query,
-            filtres: buildFilters(filters),
+            filtres: buildFilters(filters, { isJuris: true }),
             pageNumber: 1,
             pageSize: type === 'JURIS' ? 15 : 5,
             operateur: 'ET',
-            typePagination: 'ARTICLE'
+            typePagination: 'DEFAUT'   // jurisprudence : pas 'ARTICLE' (qui est pour les codes)
           },
           fond
         }, { headers, timeout: 10000 });
-        allResults = allResults.concat(
-          (r.data?.results || []).map(i => ({ ...i, _fond: fond }))
-        );
+        const items = r.data?.results || [];
+        console.log(`[PISTE] search(${fond}, "${query}") — ${items.length} résultat(s).`);
+        allResults = allResults.concat(items.map(i => ({ ...i, _fond: fond })));
       } catch (e) {
         console.warn(`[PISTE] search(${fond}) — échec:`, e?.response?.status || '', e?.response?.data || e.message);
       }
@@ -274,7 +274,9 @@ async function search(query, filters = {}) {
         },
         fond: 'CODE_DATE'
       }, { headers, timeout: 10000 });
-      allResults = (r.data?.results || []).map(i => ({ ...i, _fond: 'CODE_DATE' }));
+      const items = r.data?.results || [];
+      console.log(`[PISTE] search(CODE_DATE, "${query}") — ${items.length} résultat(s).`);
+      allResults = items.map(i => ({ ...i, _fond: 'CODE_DATE' }));
     } catch (e) {
       console.warn('[PISTE] search(CODE_DATE) — échec:', e?.response?.status || '', e?.response?.data || e.message);
     }
@@ -363,10 +365,22 @@ function normalizeDate(d) {
   return s;
 }
 
-function buildFilters(filters) {
+/**
+ * Construit la liste des filtres PISTE selon le contexte.
+ * Important : le filtre ETAT=VIGUEUR n'a de sens que pour les textes
+ * législatifs (codes, lois). Pour la jurisprudence (CETAT/CASS/CONSTIT),
+ * l'inclure renvoie systématiquement 0 résultat car les décisions n'ont
+ * pas d'état "VIGUEUR".
+ */
+function buildFilters(filters, opts = {}) {
+  const { isJuris = false } = opts;
   const out = [];
-  if (filters.date_debut) out.push({ facette: 'DATE_VERSION', valeurDebut: filters.date_debut });
-  if (filters.en_vigueur !== false) out.push({ facette: 'ETAT', valeur: 'VIGUEUR' });
+  if (filters.date_debut) {
+    out.push({ facette: 'DATE_VERSION', valeurDebut: filters.date_debut });
+  }
+  if (!isJuris && filters.en_vigueur !== false) {
+    out.push({ facette: 'ETAT', valeur: 'VIGUEUR' });
+  }
   return out;
 }
 
