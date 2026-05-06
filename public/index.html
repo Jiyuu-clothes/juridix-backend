@@ -5404,8 +5404,22 @@ async function openNavArticle(cid, el){
 
   try {
     var r = await fetch('/api/search/article/'+cid);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    var art = await r.json();
+    var payload = null;
+    try { payload = await r.json(); } catch(_) {}
+    if(!r.ok){
+      var msg = (payload && payload.error) ? payload.error : ('HTTP '+r.status);
+      var safeMsg = String(msg).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+      var legifrance = 'https://www.legifrance.gouv.fr/codes/article_lc/'+encodeURIComponent(cid);
+      document.getElementById('ac-texte').innerHTML =
+        '<em style="color:#f87171">⚠ '+safeMsg+'</em>'
+        + '<div style="margin-top:8px;font-size:0.9em;opacity:0.8">Tu peux toujours consulter cet article directement sur '
+        + '<a href="'+legifrance+'" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc">Légifrance ↗</a>.</div>';
+      console.warn('[openNavArticle]', cid, r.status, payload);
+      return;
+    }
+    var art = payload;
     _art = art;
     document.getElementById('ac-code').textContent = art.code || 'Légifrance';
     document.getElementById('ac-ref').textContent = art.article ? 'Art. '+art.article : cid;
@@ -5420,7 +5434,8 @@ async function openNavArticle(cid, el){
     // Jurisprudence liée — préfère le numéro d'article (plus précis que le titre)
     loadRelatedJurisprudence(art.article||art.title||'', art.code||'', false);
   } catch(err){
-    document.getElementById('ac-texte').innerHTML = '<em style="color:#f87171">⚠ Impossible de charger cet article.</em>';
+    console.error('[openNavArticle]', cid, err);
+    document.getElementById('ac-texte').innerHTML = '<em style="color:#f87171">⚠ Erreur réseau pendant le chargement de l\'article. Réessaie dans un instant.</em>';
   }
 }
 

@@ -151,18 +151,30 @@ router.post('/', async (req, res) => {
 
 // GET /api/search/article/:cid — texte complet d'un article par CID
 router.get('/article/:cid', async (req, res) => {
+  const { cid } = req.params;
   try {
-    const { cid } = req.params;
     if (!cid || !cid.startsWith('LEGIARTI')) {
       return res.status(400).json({ error: 'CID invalide (doit commencer par LEGIARTI).' });
     }
     const hasCreds = !!(process.env.PISTE_CLIENT_ID && process.env.PISTE_CLIENT_SECRET);
-    if (!hasCreds) return res.status(503).json({ error: 'PISTE non configuré.' });
+    if (!hasCreds) return res.status(503).json({ error: 'PISTE non configuré sur le serveur.' });
     const article = await piste.getArticle(cid);
-    if (!article) return res.status(404).json({ error: 'Article non trouvé.' });
+    if (!article) return res.status(404).json({ error: `Article ${cid} introuvable côté Légifrance.` });
     return res.json(article);
   } catch (err) {
-    console.error('[Article] Erreur:', err);
+    console.error(`[Article ${cid}] Erreur:`, err.kind || '', err.detail || err.message);
+    if (err.kind === 'auth') {
+      return res.status(502).json({
+        error: 'Authentification PISTE échouée. Vérifie PISTE_CLIENT_ID / PISTE_CLIENT_SECRET et que PISTE_OAUTH_URL pointe vers la prod (pas le sandbox).',
+        ...(process.env.NODE_ENV !== 'production' ? { detail: err.detail } : {})
+      });
+    }
+    if (err.kind === 'upstream') {
+      return res.status(502).json({
+        error: `PISTE a renvoyé une erreur (${err.status || 'inconnue'}).`,
+        ...(process.env.NODE_ENV !== 'production' ? { detail: err.detail } : {})
+      });
+    }
     return res.status(500).json({ error: 'Erreur lors de la récupération de l\'article.' });
   }
 });

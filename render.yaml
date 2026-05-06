@@ -47,9 +47,9 @@ services:
       - key: PISTE_CLIENT_SECRET
         sync: false
       - key: PISTE_BASE_URL
-        value: https://sandbox-api.piste.gouv.fr/dila/legifrance/lf-engine-app
+        value: https://api.piste.gouv.fr/dila/legifrance/lf-engine-app
       - key: PISTE_OAUTH_URL
-        value: https://sandbox-oauth.piste.gouv.fr/api/oauth/token
+        value: https://oauth.piste.gouv.fr/api/oauth/token
 
       # ── Server ─────────────────────────────────────────────
       - key: NODE_ENV

@@ -209,7 +209,9 @@ async function search(query, filters = {}) {
         allResults = allResults.concat(
           (r.data?.results || []).map(i => ({ ...i, _fond: fond }))
         );
-      } catch {}
+      } catch (e) {
+        console.warn(`[PISTE] search(${fond}) — échec:`, e?.response?.status || '', e?.response?.data || e.message);
+      }
     }
   }
 
@@ -256,7 +258,9 @@ async function search(query, filters = {}) {
         fond: 'CODE_DATE'
       }, { headers, timeout: 10000 });
       allResults = (r.data?.results || []).map(i => ({ ...i, _fond: 'CODE_DATE' }));
-    } catch {}
+    } catch (e) {
+      console.warn('[PISTE] search(CODE_DATE) — échec:', e?.response?.status || '', e?.response?.data || e.message);
+    }
   }
 
   // ── 4. Trier : résultats avec texte en premier ───────────
@@ -352,7 +356,17 @@ function buildFilters(filters) {
 // ─── Récupère un article par CID ─────────────────────────────
 
 async function getArticle(cid) {
-  const token   = await getAccessToken();
+  let token;
+  try {
+    token = await getAccessToken();
+  } catch (e) {
+    console.error(`[PISTE] getArticle(${cid}) — OAuth échoué:`, e.detail || e.message);
+    const err = new Error('PISTE OAuth échoué');
+    err.kind = 'auth';
+    err.detail = e.detail || e.message;
+    throw err;
+  }
+
   const headers = makeHeaders(token);
 
   try {
@@ -361,22 +375,36 @@ async function getArticle(cid) {
       { headers, timeout: 8000 }
     );
     const art = r.data?.article;
-    if (art) {
-      return {
-        id:      art.id || cid,
-        title:   art.titre || (art.num ? `Article ${art.num}` : 'Article'),
-        code:    art.codeTitle || art.origine || '',
-        article: art.num || '',
-        content: art.texteHtml || art.texte || '',
-        url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id || cid}`,
-        date:    normalizeDate(art.dateDebut || art.dateDebutVersion || null),
-        dateKind: 'envigueur',
-        source:  'piste'
-      };
+    if (!art) {
+      console.warn(`[PISTE] getArticle(${cid}) — réponse vide (article introuvable côté Légifrance).`);
+      return null;
     }
-  } catch {}
-
-  return null;
+    return {
+      id:      art.id || cid,
+      title:   art.titre || (art.num ? `Article ${art.num}` : 'Article'),
+      code:    art.codeTitle || art.origine || '',
+      article: art.num || '',
+      content: art.texteHtml || art.texte || '',
+      url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id || cid}`,
+      date:    normalizeDate(art.dateDebut || art.dateDebutVersion || null),
+      dateKind: 'envigueur',
+      source:  'piste'
+    };
+  } catch (e) {
+    // 404 PISTE = article inexistant → on remonte null (404 propre côté route).
+    const status = e?.response?.status;
+    if (status === 404) {
+      console.warn(`[PISTE] getArticle(${cid}) — 404 PISTE.`);
+      return null;
+    }
+    const detail = e?.response?.data || e.message;
+    console.error(`[PISTE] getArticle(${cid}) — erreur:`, status || '', detail);
+    const err = new Error('PISTE getArticle échoué');
+    err.kind = 'upstream';
+    err.status = status;
+    err.detail = detail;
+    throw err;
+  }
 }
 
 module.exports = { search, getArticle, getAccessToken, searchCodeArticles, getCodeArticles, KEY_CODES };
