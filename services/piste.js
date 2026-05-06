@@ -70,9 +70,11 @@ function makeHeaders(token) {
 // ─── Table des matières ───────────────────────────────────────
 
 /**
- * Aplatit récursivement les articles d'un nœud de tableMatieres
+ * Aplatit récursivement les articles d'un nœud de tableMatieres.
+ * Capture aussi le textId du code parent pour permettre un fallback
+ * via consult/code (qui prend textId+num+date).
  */
-function flattenArticles(node, path = []) {
+function flattenArticles(node, path = [], textId = null) {
   const result = [];
   const currentPath = node.title ? [...path, node.title] : path;
 
@@ -82,6 +84,7 @@ function flattenArticles(node, path = []) {
         id:        art.id,
         cid:       art.cid || art.id,
         num:       art.num || '',
+        textId,                          // pour fallback consult/code
         path:      currentPath,
         dateDebut: art.dateDebut || art.dateDebutVersion || null,
         dateFin:   art.dateFin   || art.dateFinVersion   || null,
@@ -90,7 +93,7 @@ function flattenArticles(node, path = []) {
   }
 
   for (const section of node.sections || []) {
-    result.push(...flattenArticles(section, currentPath));
+    result.push(...flattenArticles(section, currentPath, textId));
   }
 
   return result;
@@ -112,9 +115,23 @@ async function getCodeArticles(textId) {
     { headers: makeHeaders(token), timeout: 15000 }
   );
 
-  const articles = flattenArticles(r.data);
+  const articles = flattenArticles(r.data, [], textId);
   codeArticleCache.set(textId, { articles, expires: now + CACHE_TTL });
   return articles;
+}
+
+/**
+ * Cherche les métadonnées (textId, num) d'un article dans tous les caches
+ * de tableMatieres déjà chargés. Utilisé par getArticle() comme fallback
+ * quand consult/getArticle renvoie vide.
+ */
+function findArticleMeta(cid) {
+  if (!cid) return null;
+  for (const cached of codeArticleCache.values()) {
+    const match = cached.articles.find(a => a.id === cid || a.cid === cid);
+    if (match) return match;
+  }
+  return null;
 }
 
 /**
@@ -355,6 +372,55 @@ function buildFilters(filters) {
 
 // ─── Récupère un article par CID ─────────────────────────────
 
+/**
+ * Met en forme un article PISTE brut vers le format JuriDix.
+ * Accepte aussi un fallback `code` (nom lisible) et `cidHint` (CID d'origine
+ * passé par le front) au cas où l'article PISTE ne le re-fournit pas.
+ */
+function formatArticle(art, { codeHint = '', cidHint = '', numHint = '' } = {}) {
+  if (!art) return null;
+  const id = art.id || cidHint;
+  return {
+    id,
+    title:    art.titre || (art.num ? `Article ${art.num}` : 'Article'),
+    code:     art.codeTitle || art.origine || codeHint || '',
+    article:  art.num || numHint || '',
+    content:  art.texteHtml || art.texte || '',
+    url:      `https://www.legifrance.gouv.fr/codes/article_lc/${id}`,
+    date:     normalizeDate(art.dateDebut || art.dateDebutVersion || null),
+    dateKind: 'envigueur',
+    source:   'piste'
+  };
+}
+
+/**
+ * Fallback : récupère un article via consult/code (textId + num + date).
+ * Cet endpoint sert toujours la version courante en vigueur, ce qui contourne
+ * les cas où consult/getArticle renvoie vide pour un ID de version ancien.
+ */
+async function getArticleByCodeAndNum(textId, num, headers, cidHint = '') {
+  const today = new Date().toISOString().split('T')[0];
+  const codeHint = KEY_CODES[textId] || '';
+  try {
+    const r = await axios.post(`${PISTE_BASE}/consult/code`,
+      { textId, num, date: today },
+      { headers, timeout: 8000 }
+    );
+    const art = r.data?.article || r.data?.articles?.[0];
+    if (!art) {
+      console.warn(`[PISTE] consult/code(${textId}, num=${num}) — réponse vide.`);
+      return null;
+    }
+    console.log(`[PISTE] consult/code(${textId}, num=${num}) — OK (id=${art.id || '?'}).`);
+    return formatArticle(art, { codeHint, cidHint, numHint: num });
+  } catch (e) {
+    const status = e?.response?.status;
+    const detail = e?.response?.data || e.message;
+    console.warn(`[PISTE] consult/code(${textId}, num=${num}) — erreur ${status || ''}:`, detail);
+    return null;
+  }
+}
+
 async function getArticle(cid) {
   let token;
   try {
@@ -368,43 +434,54 @@ async function getArticle(cid) {
   }
 
   const headers = makeHeaders(token);
+  const meta = findArticleMeta(cid);  // peut être null si tableMatieres pas en cache
 
+  // ── 1) Tentative directe : consult/getArticle ──────────────────
+  let directEmpty = false;
+  let direct404 = false;
   try {
     const r = await axios.post(`${PISTE_BASE}/consult/getArticle`,
       { id: cid },
       { headers, timeout: 8000 }
     );
     const art = r.data?.article;
-    if (!art) {
-      console.warn(`[PISTE] getArticle(${cid}) — réponse vide (article introuvable côté Légifrance).`);
-      return null;
+    const hasContent = art && (art.texteHtml || art.texte);
+    if (hasContent) {
+      return formatArticle(art, {
+        codeHint: meta ? (KEY_CODES[meta.textId] || '') : '',
+        cidHint:  cid,
+        numHint:  meta?.num
+      });
     }
-    return {
-      id:      art.id || cid,
-      title:   art.titre || (art.num ? `Article ${art.num}` : 'Article'),
-      code:    art.codeTitle || art.origine || '',
-      article: art.num || '',
-      content: art.texteHtml || art.texte || '',
-      url:     `https://www.legifrance.gouv.fr/codes/article_lc/${art.id || cid}`,
-      date:    normalizeDate(art.dateDebut || art.dateDebutVersion || null),
-      dateKind: 'envigueur',
-      source:  'piste'
-    };
+    directEmpty = true;
+    console.warn(`[PISTE] getArticle(${cid}) — réponse directe vide ou sans contenu (data keys: ${Object.keys(r.data || {}).join(',') || '∅'}).`);
   } catch (e) {
-    // 404 PISTE = article inexistant → on remonte null (404 propre côté route).
     const status = e?.response?.status;
     if (status === 404) {
-      console.warn(`[PISTE] getArticle(${cid}) — 404 PISTE.`);
-      return null;
+      direct404 = true;
+      console.warn(`[PISTE] getArticle(${cid}) — 404 sur consult/getArticle.`);
+    } else {
+      // Erreur infra (5xx, timeout, OAuth scope...) → on remonte.
+      const detail = e?.response?.data || e.message;
+      console.error(`[PISTE] getArticle(${cid}) — erreur ${status || ''}:`, detail);
+      const err = new Error('PISTE getArticle échoué');
+      err.kind = 'upstream';
+      err.status = status;
+      err.detail = detail;
+      throw err;
     }
-    const detail = e?.response?.data || e.message;
-    console.error(`[PISTE] getArticle(${cid}) — erreur:`, status || '', detail);
-    const err = new Error('PISTE getArticle échoué');
-    err.kind = 'upstream';
-    err.status = status;
-    err.detail = detail;
-    throw err;
   }
+
+  // ── 2) Fallback : consult/code via num+textId (version courante) ─
+  if ((directEmpty || direct404) && meta && meta.textId && meta.num) {
+    console.log(`[PISTE] getArticle(${cid}) — fallback consult/code(${meta.textId}, num=${meta.num})...`);
+    const fallback = await getArticleByCodeAndNum(meta.textId, meta.num, headers, cid);
+    if (fallback) return fallback;
+  } else if ((directEmpty || direct404) && !meta) {
+    console.warn(`[PISTE] getArticle(${cid}) — pas de méta tableMatieres en cache, fallback impossible.`);
+  }
+
+  return null;
 }
 
 module.exports = { search, getArticle, getAccessToken, searchCodeArticles, getCodeArticles, KEY_CODES };
