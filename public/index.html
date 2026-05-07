@@ -3907,15 +3907,22 @@ async function loadRelatedJurisprudence(ref, codeName, append){
     container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée</div><div class="rel-loading"><div class="spinner"></div><span>Recherche Légifrance en cours…</span></div></div>';
   }
 
-  // Construit une requête plus pertinente : le numéro d'article + nom du code en priorité.
-  // Ex : "1240 code civil", "L1232-1 code travail". À défaut, fallback aux mots-clés du titre.
+  // Construit une requête haute précision pour la jurisprudence Légifrance.
+  // Pour un article identifié → phrase exacte "article X du code Y" (entourée de
+  // guillemets : le backend déclenche alors l'opérateur EXACTE de PISTE, qui
+  // ne remonte que les décisions citant littéralement cette référence).
+  // Sans numéro d'article → fallback sur les mots-clés saillants du titre.
   function buildQuery(){
-    var refStr=(ref||'').toString();
-    var num=refStr.match(/(\d+(?:[\-.\s]\d+)?)/);
-    num = num ? num[1].replace(/\s+/g,'-') : null;
-    var codeShort=(codeName||'').replace(/^Code\s+/i,'').toLowerCase().trim();
+    var refStr=(ref||'').toString().trim();
+    // Tolère "L1232-1", "L. 1232-1", "R-123", "1240", "121-3", etc.
+    var m=refStr.match(/([LRDA]?\.?\s*\d+(?:[\-.\s]\d+)?)/i);
+    var num=m ? m[1].replace(/\s+/g,'').replace(/^([LRDA])\./i,'$1') : null;
+    var codeFull=(codeName||'').trim();           // ex: "Code civil" — on garde la forme complète
+    if(num && codeFull){
+      return '"article '+num+' du '+codeFull.toLowerCase()+'"';
+    }
     if(num){
-      return codeShort ? (num+' '+codeShort) : num;
+      return '"article '+num+'"';
     }
     var titleWords=(artSnap&&artSnap.title?artSnap.title:'').toLowerCase()
       .replace(/[^a-zàâäéèêëîïôöùûüç\s]/gi,' ')

@@ -26,7 +26,7 @@ setTimeout(async () => {
 function getType(filters) {
   const f = (filters.fond || filters.type || '').toLowerCase();
   if (f.includes('code') || f === 'code_date') return 'CODE';
-  if (f.includes('juris') || f === 'cetat' || f === 'cass') return 'JURIS';
+  if (f.includes('juris') || f === 'cetat' || f === 'cass' || f === 'juri') return 'JURIS';
   return 'ALL';
 }
 

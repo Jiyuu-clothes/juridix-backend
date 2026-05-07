@@ -205,26 +205,35 @@ async function search(query, filters = {}) {
   const headers = makeHeaders(token);
   const type    = filters.type || 'ALL';
 
+  // Si la requête est entourée de guillemets, on traite comme phrase exacte
+  // (haute précision, utile pour citer un article spécifique).
+  const quotedMatch = String(query || '').trim().match(/^"(.+)"$/);
+  const isExact   = !!quotedMatch;
+  const motsCles  = isExact ? quotedMatch[1] : query;
+  const operateur = isExact ? 'EXACTE' : 'ET';
+
   let allResults = [];
 
-  // ── 1. Jurisprudence (CETAT, CASS, CONSTIT) ──────────────
+  // ── 1. Jurisprudence (JURI, CETAT, CONSTIT) ──────────────
   if (type === 'ALL' || type === 'JURIS') {
-    const jurisFonds = ['CETAT', 'CASS', 'CONSTIT'];
+    // ⚠ Fonds jurisprudence PISTE : 'JURI' (Cour de cassation, pas 'CASS'),
+    // 'CETAT' (Conseil d'État), 'CONSTIT' (Conseil constitutionnel).
+    const jurisFonds = ['JURI', 'CETAT', 'CONSTIT'];
     for (const fond of jurisFonds) {
       try {
         const r = await axios.post(`${PISTE_BASE}/search`, {
           recherche: {
-            motsCles: query,
+            motsCles,
             filtres: buildFilters(filters, { isJuris: true }),
             pageNumber: 1,
             pageSize: type === 'JURIS' ? 15 : 5,
-            operateur: 'ET',
+            operateur,
             typePagination: 'DEFAUT'   // jurisprudence : pas 'ARTICLE' (qui est pour les codes)
           },
           fond
         }, { headers, timeout: 10000 });
         const items = r.data?.results || [];
-        console.log(`[PISTE] search(${fond}, "${query}") — ${items.length} résultat(s).`);
+        console.log(`[PISTE] search(${fond}, "${motsCles}", op=${operateur}) — ${items.length} résultat(s).`);
         allResults = allResults.concat(items.map(i => ({ ...i, _fond: fond })));
       } catch (e) {
         console.warn(`[PISTE] search(${fond}) — échec:`, e?.response?.status || '', e?.response?.data || e.message);
@@ -320,17 +329,18 @@ function formatItem(item, query) {
     || '';
 
   const sourceLabel = {
+    JURI:      'Cour de cassation',
+    CASS:      'Cour de cassation',          // legacy
     CETAT:     'Conseil d\'État',
-    CASS:      'Cour de cassation',
     CONSTIT:   'Conseil constitutionnel',
     CODE_DATE: 'Code en vigueur',
     JORF:      'Journal Officiel'
   }[fond] || fond || 'Légifrance';
 
   // Extraction de la date pertinente :
-  //  • Jurisprudence (CETAT/CASS/CONSTIT) → date de la décision
+  //  • Jurisprudence (JURI/CETAT/CONSTIT) → date de la décision
   //  • Article de code (LEGIARTI) → date d'entrée en vigueur de la version
-  const isJuris = fond === 'CETAT' || fond === 'CASS' || fond === 'CONSTIT';
+  const isJuris = fond === 'JURI' || fond === 'CETAT' || fond === 'CASS' || fond === 'CONSTIT';
   const rawDate = isJuris
     ? (item.datePublication || item.dateText || mainTitle?.dateText || mainTitle?.datePubli || null)
     : (item.dateDebut || mainTitle?.dateDebut || mainTitle?.dateVersion || null);
