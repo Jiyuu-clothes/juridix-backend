@@ -315,11 +315,30 @@ async function search(query, filters = {}) {
     }
   }
 
-  // ── 4. Trier : résultats avec texte en premier ───────────
+  // ── 4. Tri : (a) résultats avec contenu d'abord ; (b) puis date décroissante
+  // pour la jurisprudence (les arrêts récents sont plus utiles pour l'étude).
+  // Helper : extrait une date triable (YYYYMMDD entier) depuis un item brut.
+  const extractDate = (item) => {
+    if (item._fromCode) return parseInt((item.date || '').replace(/-/g, '') || '0', 10);
+    const mainTitle = item.titles?.[0];
+    const raw = item.datePublication || item.dateText || mainTitle?.dateText
+              || mainTitle?.datePubli || item.dateDebut || mainTitle?.dateDebut || null;
+    if (!raw) return 0;
+    if (typeof raw === 'number') return parseInt(new Date(raw).toISOString().slice(0, 10).replace(/-/g, ''), 10) || 0;
+    const s = String(raw);
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return parseInt(iso[1] + iso[2] + iso[3], 10);
+    const fr = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (fr) return parseInt(fr[3] + fr[2] + fr[1], 10);
+    return 0;
+  };
+
   allResults.sort((a, b) => {
-    const aText = !!(a.content || a.text || (a.resumePrincipal?.length));
-    const bText = !!(b.content || b.text || (b.resumePrincipal?.length));
-    return (bText ? 1 : 0) - (aText ? 1 : 0);
+    const aText = !!(a.content || a.text || (a.resumePrincipal?.length) || a._fromCode);
+    const bText = !!(b.content || b.text || (b.resumePrincipal?.length) || b._fromCode);
+    if (aText !== bText) return (bText ? 1 : 0) - (aText ? 1 : 0);
+    // À texte égal, on privilégie la date la plus récente.
+    return extractDate(b) - extractDate(a);
   });
 
   return allResults.slice(0, 20).map(item => {
@@ -352,14 +371,26 @@ function formatItem(item, query) {
     || (item.autreResume || []).join(' ')
     || '';
 
-  const sourceLabel = {
-    JURI:      'Cour de cassation',
-    CASS:      'Cour de cassation',          // legacy
-    CETAT:     'Conseil d\'État',
-    CONSTIT:   'Conseil constitutionnel',
-    CODE_DATE: 'Code en vigueur',
-    JORF:      'Journal Officiel'
-  }[fond] || fond || 'Légifrance';
+  // Le fond JURI mélange Cassation et Cours d'appel ; CETAT mélange CE et CAA.
+  // On lit le titre brut pour afficher la juridiction réelle, pas juste le fond.
+  const rawTitle = mainTitle?.title || item.titre || item.title || '';
+  function deriveLabel() {
+    const t = rawTitle.toLowerCase();
+    if (/^cour de cassation/.test(t)) return 'Cour de cassation';
+    if (/^cour d'appel/.test(t))      return 'Cour d\'appel';
+    if (/^cour administrative d'appel|^caa\b/.test(t)) return 'Cour administrative d\'appel';
+    if (/^conseil d'état|^ce\b/.test(t)) return 'Conseil d\'État';
+    if (/^conseil constitutionnel/.test(t)) return 'Conseil constitutionnel';
+    return {
+      JURI:      'Cour de cassation',
+      CASS:      'Cour de cassation',          // legacy
+      CETAT:     'Conseil d\'État',
+      CONSTIT:   'Conseil constitutionnel',
+      CODE_DATE: 'Code en vigueur',
+      JORF:      'Journal Officiel'
+    }[fond] || fond || 'Légifrance';
+  }
+  const sourceLabel = deriveLabel();
 
   // Extraction de la date pertinente :
   //  • Jurisprudence (JURI/CETAT/CONSTIT) → date de la décision
