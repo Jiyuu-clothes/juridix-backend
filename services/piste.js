@@ -214,31 +214,55 @@ async function search(query, filters = {}) {
 
   let allResults = [];
 
-  // ── 1. Jurisprudence (JURI, CETAT, CONSTIT) ──────────────
-  if (type === 'ALL' || type === 'JURIS') {
-    // ⚠ Fonds jurisprudence PISTE : 'JURI' (Cour de cassation, pas 'CASS'),
-    // 'CETAT' (Conseil d'État), 'CONSTIT' (Conseil constitutionnel).
+  // Fonction pour interroger les fonds jurisprudence avec un opérateur donné.
+  const queryJuris = async (mc, op) => {
+    const out = [];
     const jurisFonds = ['JURI', 'CETAT', 'CONSTIT'];
     for (const fond of jurisFonds) {
       try {
         const r = await axios.post(`${PISTE_BASE}/search`, {
           recherche: {
-            motsCles,
+            motsCles: mc,
             filtres: buildFilters(filters, { isJuris: true }),
             pageNumber: 1,
             pageSize: type === 'JURIS' ? 15 : 5,
-            operateur,
-            typePagination: 'DEFAUT'   // jurisprudence : pas 'ARTICLE' (qui est pour les codes)
+            operateur: op,
+            typePagination: 'DEFAUT'
           },
           fond
         }, { headers, timeout: 10000 });
         const items = r.data?.results || [];
-        console.log(`[PISTE] search(${fond}, "${motsCles}", op=${operateur}) — ${items.length} résultat(s).`);
-        allResults = allResults.concat(items.map(i => ({ ...i, _fond: fond })));
+        console.log(`[PISTE] search(${fond}, "${mc}", op=${op}) — ${items.length} résultat(s).`);
+        out.push(...items.map(i => ({ ...i, _fond: fond })));
       } catch (e) {
-        console.warn(`[PISTE] search(${fond}) — échec:`, e?.response?.status || '', e?.response?.data || e.message);
+        console.warn(`[PISTE] search(${fond}, op=${op}) — échec:`, e?.response?.status || '', e?.response?.data || e.message);
       }
     }
+    return out;
+  };
+
+  // ── 1. Jurisprudence (JURI, CETAT, CONSTIT) ──────────────
+  // ⚠ Fonds jurisprudence PISTE : 'JURI' (Cour de cassation, pas 'CASS'),
+  // 'CETAT' (Conseil d'État), 'CONSTIT' (Conseil constitutionnel).
+  if (type === 'ALL' || type === 'JURIS') {
+    let jurisHits = await queryJuris(motsCles, operateur);
+
+    // Cascade : si EXACTE n'a rien donné, retomber sur ET avec une version
+    // « déballée » de la phrase (mots-clés simples). Garantit qu'on n'affiche
+    // jamais un panneau "Jurisprudence liée" vide quand l'article existe
+    // mais que sa formulation littérale n'est pas indexée par PISTE.
+    if (isExact && jurisHits.length === 0) {
+      // Extrait des mots-clés saillants (numéro d'article + nom du code).
+      const fallbackMc = motsCles
+        .replace(/^article\s+/i, '')
+        .replace(/\bdu\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      console.log(`[PISTE] EXACTE vide pour "${motsCles}" — fallback ET sur "${fallbackMc}".`);
+      jurisHits = await queryJuris(fallbackMc, 'ET');
+    }
+
+    allResults = allResults.concat(jurisHits);
   }
 
   // ── 2. Articles de codes (tableMatieres + getArticle) ─────
