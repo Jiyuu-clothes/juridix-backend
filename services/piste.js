@@ -317,28 +317,12 @@ async function search(query, filters = {}) {
 
   // ── 4. Tri : (a) résultats avec contenu d'abord ; (b) puis date décroissante
   // pour la jurisprudence (les arrêts récents sont plus utiles pour l'étude).
-  // Helper : extrait une date triable (YYYYMMDD entier) depuis un item brut.
-  const extractDate = (item) => {
-    if (item._fromCode) return parseInt((item.date || '').replace(/-/g, '') || '0', 10);
-    const mainTitle = item.titles?.[0];
-    const raw = item.datePublication || item.dateText || mainTitle?.dateText
-              || mainTitle?.datePubli || item.dateDebut || mainTitle?.dateDebut || null;
-    if (!raw) return 0;
-    if (typeof raw === 'number') return parseInt(new Date(raw).toISOString().slice(0, 10).replace(/-/g, ''), 10) || 0;
-    const s = String(raw);
-    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (iso) return parseInt(iso[1] + iso[2] + iso[3], 10);
-    const fr = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (fr) return parseInt(fr[3] + fr[2] + fr[1], 10);
-    return 0;
-  };
-
   allResults.sort((a, b) => {
     const aText = !!(a.content || a.text || (a.resumePrincipal?.length) || a._fromCode);
     const bText = !!(b.content || b.text || (b.resumePrincipal?.length) || b._fromCode);
     if (aText !== bText) return (bText ? 1 : 0) - (aText ? 1 : 0);
     // À texte égal, on privilégie la date la plus récente.
-    return extractDate(b) - extractDate(a);
+    return extractSortDate(b) - extractSortDate(a);
   });
 
   return allResults.slice(0, 20).map(item => {
@@ -349,6 +333,48 @@ async function search(query, filters = {}) {
     }
     return formatItem(item, query);
   });
+}
+
+// Parse une date FR du titre d'un arrêt (ex: "22 avril 2021", "12/11/2025") ou
+// d'un champ PISTE brut. Retourne YYYY-MM-DD ou null.
+const FR_MONTHS = {
+  janvier: 1, fevrier: 2, février: 2, mars: 3, avril: 4, mai: 5, juin: 6,
+  juillet: 7, aout: 8, août: 8, septembre: 9, octobre: 10, novembre: 11,
+  decembre: 12, décembre: 12
+};
+function parseDateFromTitle(title) {
+  if (!title) return null;
+  const t = String(title).toLowerCase();
+  // "22 avril 2021"
+  const m1 = t.match(/(\d{1,2})\s+(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre)\s+(\d{4})/);
+  if (m1) {
+    const day = String(m1[1]).padStart(2, '0');
+    const month = String(FR_MONTHS[m1[2]]).padStart(2, '0');
+    return `${m1[3]}-${month}-${day}`;
+  }
+  // "12/11/2025"
+  const m2 = t.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m2) return `${m2[3]}-${m2[2]}-${m2[1]}`;
+  return null;
+}
+
+// Extrait la "meilleure" date d'un item PISTE brut (jurisprudence ou code).
+function extractItemDate(item) {
+  if (item._fromCode) return item.date || null;
+  const mainTitle = item.titles?.[0];
+  const fromFields = item.datePublication || item.dateText || mainTitle?.dateText
+                  || mainTitle?.datePubli || item.dateDebut || mainTitle?.dateDebut || null;
+  if (fromFields) return normalizeDate(fromFields);
+  // Fallback : la date est souvent dans le titre lui-même pour la jurisprudence.
+  return parseDateFromTitle(mainTitle?.title || item.titre || item.title);
+}
+
+// Représentation triable (YYYYMMDD entier) d'une date d'item.
+function extractSortDate(item) {
+  const d = extractItemDate(item);
+  if (!d) return 0;
+  const iso = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return iso ? parseInt(iso[1] + iso[2] + iso[3], 10) : 0;
 }
 
 function formatItem(item, query) {
@@ -393,12 +419,10 @@ function formatItem(item, query) {
   const sourceLabel = deriveLabel();
 
   // Extraction de la date pertinente :
-  //  • Jurisprudence (JURI/CETAT/CONSTIT) → date de la décision
+  //  • Jurisprudence (JURI/CETAT/CONSTIT) → date de la décision (peut nécessiter
+  //    un parsing du titre car PISTE ne la remonte pas dans un champ dédié).
   //  • Article de code (LEGIARTI) → date d'entrée en vigueur de la version
   const isJuris = fond === 'JURI' || fond === 'CETAT' || fond === 'CASS' || fond === 'CONSTIT';
-  const rawDate = isJuris
-    ? (item.datePublication || item.dateText || mainTitle?.dateText || mainTitle?.datePubli || null)
-    : (item.dateDebut || mainTitle?.dateDebut || mainTitle?.dateVersion || null);
 
   return {
     id:      cid,
@@ -407,7 +431,7 @@ function formatItem(item, query) {
     article: item.num || '',
     content,
     url,
-    date:    normalizeDate(rawDate),
+    date:    extractItemDate(item),
     dateKind: isJuris ? 'decision' : 'envigueur',
     source:  'piste'
   };
