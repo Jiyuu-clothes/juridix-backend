@@ -9,12 +9,16 @@ const PISTE_BASE = process.env.PISTE_BASE_URL || 'https://sandbox-api.piste.gouv
 const OAUTH_URL  = process.env.PISTE_OAUTH_URL  || 'https://sandbox-oauth.piste.gouv.fr/api/oauth/token';
 
 // ─── Codes principaux à indexer ──────────────────────────────
+// IMPORTANT : ces LEGITEXT ont été vérifiés un par un. Ne pas réutiliser ceux
+// qu'on trouve sur d'anciens tutos — beaucoup sont obsolètes ou pointent en
+// fait vers des codes sans rapport (ex: LEGITEXT000006069414 = Code de la
+// propriété intellectuelle, pas Code pénal).
 const KEY_CODES = {
   'LEGITEXT000006070721': 'Code civil',
-  'LEGITEXT000006069414': 'Code pénal',
+  'LEGITEXT000006070719': 'Code pénal',                  // corrigé (était LEGITEXT000006069414 = CPI)
   'LEGITEXT000005634379': 'Code de commerce',
   'LEGITEXT000006072050': 'Code du travail',
-  'LEGITEXT000006074233': 'Code de procédure civile',
+  'LEGITEXT000006070716': 'Code de procédure civile',    // corrigé (était LEGITEXT000006074233 = ports maritimes)
   'LEGITEXT000006071154': 'Code de procédure pénale',
 };
 
