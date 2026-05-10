@@ -1,8 +1,22 @@
 const express  = require('express');
+const fs       = require('fs');
+const path     = require('path');
 const router   = express.Router();
 const piste    = require('../services/piste');
 const corpus   = require('../services/corpus');
 const citation = require('../services/citation');
+
+// Corpus curé de grands arrêts (JSON statique chargé une fois au démarrage).
+let GRANDS_ARRETS = { articles: {} };
+try {
+  const p = path.join(__dirname, '..', 'data', 'grands-arrets.json');
+  GRANDS_ARRETS = JSON.parse(fs.readFileSync(p, 'utf8'));
+  const total = Object.values(GRANDS_ARRETS.articles || {})
+    .reduce((sum, arr) => sum + arr.length, 0);
+  console.log(`[GrandsArrets] Corpus chargé : ${Object.keys(GRANDS_ARRETS.articles || {}).length} articles, ${total} arrêts.`);
+} catch (e) {
+  console.warn(`[GrandsArrets] Impossible de charger data/grands-arrets.json :`, e.message);
+}
 
 // Pré-charger le cache des codes principaux au démarrage (async, non bloquant)
 const WARMUP_CODES = [
@@ -177,6 +191,17 @@ router.get('/article/:cid', async (req, res) => {
     }
     return res.status(500).json({ error: 'Erreur lors de la récupération de l\'article.' });
   }
+});
+
+// GET /api/search/grands-arrets?code=Code+civil&num=1240
+// Retourne le corpus curé d'arrêts mappés à un article. Vide si rien.
+router.get('/grands-arrets', (req, res) => {
+  const code = (req.query.code || '').trim();
+  const num  = (req.query.num || '').trim();
+  if (!code || !num) return res.json({ arrets: [] });
+  const key = `${code}:${num}`;
+  const arrets = GRANDS_ARRETS.articles?.[key] || [];
+  res.json({ key, arrets });
 });
 
 // GET /api/search/credits

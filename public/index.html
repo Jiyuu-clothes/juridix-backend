@@ -3933,13 +3933,26 @@ async function loadRelatedJurisprudence(ref, codeName, append){
 
   try {
     var query=buildQuery();
-    var resp=await fetch('/api/search',{
+    // Pour le filtrage par domaine côté backend, on passe aussi le nom du code.
+    var codeForFilter = (codeName || (artSnap && artSnap.code) || '').trim();
+    var refForCurated = (ref || (artSnap && artSnap.article) || '').toString().trim();
+
+    // Lance en parallèle : (1) corpus curé local, (2) recherche PISTE.
+    var curatedPromise = fetch('/api/search/grands-arrets?code='
+      + encodeURIComponent(codeForFilter) + '&num=' + encodeURIComponent(refForCurated))
+      .then(function(r){ return r.ok ? r.json() : { arrets: [] }; })
+      .catch(function(){ return { arrets: [] }; });
+
+    var pisteResp=await fetch('/api/search',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({query:query,filters:{type:'JURIS'}})
+      body:JSON.stringify({query:query,filters:{type:'JURIS', code: codeForFilter || undefined}})
     });
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    var data=await resp.json();
+    if(!pisteResp.ok)throw new Error('HTTP '+pisteResp.status);
+    var data=await pisteResp.json();
+
+    var curated = (await curatedPromise).arrets || [];
+
     var items=(data.results||[]).filter(function(r){
       return r.content&&r.content.length>10;
     }).slice(0,5);
@@ -3960,9 +3973,27 @@ async function loadRelatedJurisprudence(ref, codeName, append){
     }
 
     _relatedJuris=items;
-    // Pass the array index instead of inlining attacker-influenceable strings into onclick.
-    // Caller looks up _relatedJuris[i] via openRelatedJurisIdx().
     window._relatedJurisItems = items;
+
+    // Bloc 1 : arrêts de référence curés (corpus pédagogique stable)
+    var curatedHtml = '';
+    if(curated.length){
+      var curatedInner='';
+      curated.forEach(function(a){
+        var label = a.title ? (a.title + ' — ' + a.ref) : a.ref;
+        var retenir = (a.retenir || '').slice(0, 220);
+        curatedInner += '<div class="related-item" style="border-left:3px solid var(--acc2)">'
+          + '<div class="ri2-ref">📚 Arrêt de référence · ' + escHtml(a.date || '') + '</div>'
+          + '<div class="ri2-title">' + escHtml(label) + '</div>'
+          + '<div class="ri2-exc">' + escHtml(retenir) + '</div>'
+          + '</div>';
+      });
+      curatedHtml = '<div class="art-related" style="margin-bottom:14px">'
+        + '<div class="art-related-title">📚 Arrêts de référence (' + curated.length + ')</div>'
+        + curatedInner + '</div>';
+    }
+
+    // Bloc 2 : décisions Légifrance
     var inner='';
     items.forEach(function(item, idx){
       var excerpt=(item.content||'').replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ').trim().slice(0,150)+'…';
@@ -3970,14 +4001,15 @@ async function loadRelatedJurisprudence(ref, codeName, append){
     });
 
     if(append){
-      // Ajoute un second bloc « Légifrance » sous le bloc corpus existant.
       var extra=document.createElement('div');
       extra.className='art-related';
       extra.style.marginTop='14px';
-      extra.innerHTML='<div class="art-related-title">⚖️ Légifrance · décisions associées ('+items.length+')</div>'+inner;
+      extra.innerHTML = curatedHtml
+        + '<div class="art-related-title">⚖️ Légifrance · décisions associées ('+items.length+')</div>'+inner;
       container.appendChild(extra);
     } else {
-      container.innerHTML='<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>'+inner+'</div>';
+      container.innerHTML = curatedHtml
+        + '<div class="art-related"><div class="art-related-title">⚖️ Jurisprudence liée ('+items.length+')</div>'+inner+'</div>';
     }
   } catch(e){
     if(_art !== artSnap) return;

@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "version": "0.1",
+    "description": "Corpus curé de grands arrêts mappés aux articles. Chaque entrée d'article contient une liste d'arrêts de référence avec leur retentissement pédagogique. À enrichir progressivement.",
+    "format": {
+      "key": "Numéro d'article (ex: '1240', 'L1232-1', '121-3')",
+      "value": "Nom du code (ex: 'Code civil') → liste d'arrêts",
+      "arret": {
+        "id": "Identifiant interne stable (slug)",
+        "ref": "Référence officielle (ex: 'Cass. ass. plén. 29 mars 1991')",
+        "title": "Nom commun de l'arrêt si connu (ex: 'Blieck')",
+        "date": "YYYY-MM-DD",
+        "juridiction": "cass | ce | cc | ca | tc",
+        "chambre": "civ | crim | com | soc | mixte | plen | ...",
+        "retenir": "Apport jurisprudentiel en 1-3 phrases",
+        "legifrance_url": "Lien Légifrance officiel si dispo"
+      }
+    }
+  },
+  "articles": {
+    "Code civil:1240": [
+      {
+        "id": "jp-jandheur",
+        "ref": "Cass. ch. réunies, 13 fév. 1930",
+        "title": "Jand'heur",
+        "date": "1930-02-13",
+        "juridiction": "cass",
+        "chambre": "plen",
+        "retenir": "Présomption de responsabilité du gardien d'une chose. Pose le fondement moderne de la responsabilité du fait des choses (art. 1242 al. 1)."
+      },
+      {
+        "id": "jp-blieck",
+        "ref": "Cass. ass. plén., 29 mars 1991",
+        "title": "Blieck",
+        "date": "1991-03-29",
+        "juridiction": "cass",
+        "chambre": "plen",
+        "retenir": "Principe général de responsabilité du fait d'autrui (art. 1242 al. 1). Une association acceptant la charge d'organiser et de contrôler à titre permanent le mode de vie d'un handicapé répond des dommages qu'il cause."
+      },
+      {
+        "id": "jp-bertrand",
+        "ref": "Cass. 2e civ., 19 fév. 1997",
+        "title": "Bertrand",
+        "date": "1997-02-19",
+        "juridiction": "cass",
+        "chambre": "civ",
+        "retenir": "Présomption irréfragable de responsabilité des parents pour les actes de leurs enfants mineurs. Seule la force majeure ou la faute de la victime exonèrent."
+      }
+    ],
+    "Code civil:1242": [
+      {
+        "id": "jp-jandheur",
+        "ref": "Cass. ch. réunies, 13 fév. 1930",
+        "title": "Jand'heur",
+        "date": "1930-02-13",
+        "juridiction": "cass",
+        "chambre": "plen",
+        "retenir": "Présomption de responsabilité du gardien d'une chose. L'article 1384 al. 1 (devenu 1242 al. 1) pose une présomption de responsabilité que seule la cause étrangère permet de combattre."
+      }
+    ],
+    "Code civil:1103": [
+      {
+        "id": "jp-canal-craponne",
+        "ref": "Cass. civ., 6 mars 1876",
+        "title": "Canal de Craponne",
+        "date": "1876-03-06",
+        "juridiction": "cass",
+        "chambre": "civ",
+        "retenir": "Refus de la théorie de l'imprévision en droit civil. Le juge ne peut pas modifier les conventions des parties même en cas de circonstances nouvelles. Renversé partiellement par la réforme 2016 (art. 1195)."
+      }
+    ],
+    "Code civil:1382": [
+      {
+        "id": "jp-jandheur",
+        "ref": "Cass. ch. réunies, 13 fév. 1930",
+        "title": "Jand'heur",
+        "date": "1930-02-13",
+        "juridiction": "cass",
+        "chambre": "plen",
+        "retenir": "Article 1382 ancien (devenu 1240 depuis 2016) : faute civile générique. Cet arrêt fonde la responsabilité du fait des choses indépendante de toute faute prouvée."
+      }
+    ]
+  }
+}

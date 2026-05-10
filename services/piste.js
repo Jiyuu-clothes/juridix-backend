@@ -198,11 +198,123 @@ async function searchCodeArticles(textId, query, maxResults = 5) {
   }
 }
 
+// ─── Pertinence par domaine juridique ─────────────────────────
+//
+// Problème : PISTE indexe en plein texte, donc une mention "article 221-1 du
+// code pénal" dans le visa d'un arrêt fiscal CAA matche autant qu'un arrêt
+// Cass. crim. sur le meurtre. Pour un usage pédagogique, c'est inutilisable.
+//
+// Solution : quand on détecte le code visé par la requête, on filtre les
+// résultats pour ne garder que les juridictions pertinentes. Cass. crim. pour
+// le pénal, Cass. soc. pour le travail, etc.
+//
+// ⚠ Le filtrage se base sur le titre brut de l'arrêt (ex: "Cour de cassation,
+// civile, Chambre commerciale, 5 mai 2021"). Si PISTE change le format, il
+// faudra adapter parseChambre().
+
+function parseChambre(title) {
+  if (!title) return null;
+  const t = title.toLowerCase();
+  if (/chambre\s+criminelle|cass\.\s*crim|^cour de cassation,\s*criminelle/.test(t)) return 'crim';
+  if (/chambre\s+sociale|cass\.\s*soc/.test(t)) return 'soc';
+  if (/chambre\s+commerciale|cass\.\s*com/.test(t)) return 'com';
+  if (/chambre\s+civile|cass\.\s*civ/.test(t)) return 'civ';
+  if (/chambre\s+mixte/.test(t)) return 'mixte';
+  if (/assembl[éeée]e\s+pl[ée]ni[èe]re|ass\.\s+pl[ée]n/.test(t)) return 'plen';
+  return null;
+}
+
+// Détermine la nature de la juridiction depuis le titre brut.
+function parseJuridiction(title) {
+  if (!title) return 'unknown';
+  const t = title.toLowerCase();
+  if (/^cour de cassation/.test(t)) return 'cass';
+  if (/^cour d'appel/.test(t)) return 'ca';
+  if (/cour administrative d'appel|^caa/.test(t)) return 'caa';
+  if (/^conseil d'[ée]tat/.test(t)) return 'ce';
+  if (/^conseil constitutionnel/.test(t)) return 'cc';
+  if (/^tribunal des conflits/.test(t)) return 'tc';
+  return 'autre';
+}
+
+// Mapping code → juridictions+chambres pertinentes pour ce domaine de droit.
+// `chambres` : chambres Cass. à conserver (ou null = toutes les Cass.)
+// `juridictions` : autres juridictions à conserver
+const CODE_DOMAINS = {
+  'Code civil': {
+    chambres: ['civ', 'mixte', 'plen', 'com'],   // com car nb d'arrêts contractuels
+    juridictions: ['cass', 'ca', 'cc'],
+  },
+  'Code pénal': {
+    chambres: ['crim', 'mixte', 'plen'],
+    juridictions: ['cass', 'ca', 'cc'],
+  },
+  'Code de commerce': {
+    chambres: ['com', 'mixte', 'plen', 'civ'],
+    juridictions: ['cass', 'ca', 'cc'],
+  },
+  'Code du travail': {
+    chambres: ['soc', 'mixte', 'plen'],
+    juridictions: ['cass', 'ca', 'cc'],
+  },
+  'Code de procédure civile': {
+    chambres: ['civ', 'com', 'soc', 'mixte', 'plen'],
+    juridictions: ['cass', 'ca'],
+  },
+  'Code de procédure pénale': {
+    chambres: ['crim', 'mixte', 'plen'],
+    juridictions: ['cass', 'ca', 'cc'],
+  },
+};
+
+/**
+ * Filtre les résultats pour ne garder que ceux pertinents pour le code donné.
+ * - codeName : "Code civil", "Code pénal", etc. (passé via filters.code)
+ * - results : items PISTE bruts ou formatés
+ * Retourne un sous-ensemble pertinent.
+ */
+function filterByDomain(items, codeName) {
+  if (!codeName || !CODE_DOMAINS[codeName]) return items;
+  const domain = CODE_DOMAINS[codeName];
+
+  return items.filter(item => {
+    // On lit le titre depuis l'item brut PISTE ou l'item formaté.
+    const title = item.titles?.[0]?.title || item.title || item.titre || '';
+    const jur = parseJuridiction(title);
+
+    if (!domain.juridictions.includes(jur)) return false;
+
+    // Si c'est une Cass., on vérifie aussi la chambre.
+    if (jur === 'cass') {
+      const ch = parseChambre(title);
+      // Si on n'arrive pas à parser la chambre, on garde par prudence (mieux
+      // vaut un arrêt potentiellement hors-sujet qu'un panneau vide).
+      return !ch || domain.chambres.includes(ch);
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Score "qualité institutionnelle" d'un arrêt selon son statut de publication.
+ * Utilisé pour le tri secondaire (les arrêts de principe remontent en premier).
+ */
+function bulletinScore(item) {
+  const title = item.titles?.[0]?.title || item.title || item.titre || '';
+  const t = title.toLowerCase();
+  if (/publi[ée]\s+au\s+bulletin/.test(t))     return 100;  // Cass. publiée = arrêt de principe
+  if (/publi[ée]\s+au\s+recueil\s+lebon/.test(t)) return 90;   // CE recueil = idem
+  if (/mentionn[ée]\s+aux\s+tables/.test(t))   return 50;
+  return 0;
+}
+
 // ─── Recherche principale ─────────────────────────────────────
 
 /**
  * Recherche Légifrance — retourne [{id, title, code, article, content, url, source}]
  * filters.type: 'ALL' | 'CODE' | 'JURIS'
+ * filters.code: nom du code détecté (ex: "Code civil") pour filtrage par domaine
  */
 async function search(query, filters = {}) {
   const token   = await getAccessToken();
@@ -251,12 +363,8 @@ async function search(query, filters = {}) {
   if (type === 'ALL' || type === 'JURIS') {
     let jurisHits = await queryJuris(motsCles, operateur);
 
-    // Cascade : si EXACTE n'a rien donné, retomber sur ET avec une version
-    // « déballée » de la phrase (mots-clés simples). Garantit qu'on n'affiche
-    // jamais un panneau "Jurisprudence liée" vide quand l'article existe
-    // mais que sa formulation littérale n'est pas indexée par PISTE.
+    // Cascade 1 : si EXACTE n'a rien donné, retomber sur ET déballé.
     if (isExact && jurisHits.length === 0) {
-      // Extrait des mots-clés saillants (numéro d'article + nom du code).
       const fallbackMc = motsCles
         .replace(/^article\s+/i, '')
         .replace(/\bdu\b/gi, '')
@@ -264,6 +372,27 @@ async function search(query, filters = {}) {
         .trim();
       console.log(`[PISTE] EXACTE vide pour "${motsCles}" — fallback ET sur "${fallbackMc}".`);
       jurisHits = await queryJuris(fallbackMc, 'ET');
+    }
+
+    // Filtrage par domaine : on rejette les juridictions hors-sujet
+    // (ex: pas de CAA pour une recherche de Code pénal).
+    // Cascade 2 : si le filtre laisse moins de 5 arrêts, on relâche pour
+    // éviter un panneau vide.
+    if (filters.code && CODE_DOMAINS[filters.code]) {
+      const filtered = filterByDomain(jurisHits, filters.code);
+      console.log(`[PISTE] Filtre domaine "${filters.code}" : ${jurisHits.length} → ${filtered.length} résultat(s).`);
+      if (filtered.length >= 5) {
+        jurisHits = filtered;
+      } else if (filtered.length > 0) {
+        // On garde les filtrés en priorité + on complète avec les non-filtrés
+        const filteredIds = new Set(filtered.map(r => r.titles?.[0]?.cid || r.id || r.cid));
+        const others = jurisHits.filter(r => {
+          const cid = r.titles?.[0]?.cid || r.id || r.cid;
+          return !filteredIds.has(cid);
+        });
+        jurisHits = [...filtered, ...others];
+        console.log(`[PISTE] Filtre relâché : ${filtered.length} pertinents + ${others.length} bonus.`);
+      } // sinon (0 résultat filtré), on garde tout l'original
     }
 
     allResults = allResults.concat(jurisHits);
@@ -319,13 +448,23 @@ async function search(query, filters = {}) {
     }
   }
 
-  // ── 4. Tri : (a) résultats avec contenu d'abord ; (b) puis date décroissante
-  // pour la jurisprudence (les arrêts récents sont plus utiles pour l'étude).
+  // ── 4. Tri en cascade :
+  //   (a) résultats avec contenu d'abord
+  //   (b) score "publication officielle" (bulletin/Lebon) — signal de qualité
+  //   (c) date décroissante (arrêts récents en priorité)
   allResults.sort((a, b) => {
     const aText = !!(a.content || a.text || (a.resumePrincipal?.length) || a._fromCode);
     const bText = !!(b.content || b.text || (b.resumePrincipal?.length) || b._fromCode);
     if (aText !== bText) return (bText ? 1 : 0) - (aText ? 1 : 0);
-    // À texte égal, on privilégie la date la plus récente.
+
+    // Boost : "Publié au bulletin" > "Mentionné aux tables" > inédit.
+    // Filtre les arrêts d'appel et CAA inédits qui polluent les premières
+    // positions, surface les arrêts de principe.
+    const aBull = bulletinScore(a);
+    const bBull = bulletinScore(b);
+    if (aBull !== bBull) return bBull - aBull;
+
+    // À qualité égale, on privilégie la date la plus récente.
     return extractSortDate(b) - extractSortDate(a);
   });
 
