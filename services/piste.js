@@ -376,23 +376,34 @@ async function search(query, filters = {}) {
 
     // Filtrage par domaine : on rejette les juridictions hors-sujet
     // (ex: pas de CAA pour une recherche de Code pénal).
-    // Cascade 2 : si le filtre laisse moins de 5 arrêts, on relâche pour
-    // éviter un panneau vide.
     if (filters.code && CODE_DOMAINS[filters.code]) {
       const filtered = filterByDomain(jurisHits, filters.code);
-      console.log(`[PISTE] Filtre domaine "${filters.code}" : ${jurisHits.length} → ${filtered.length} résultat(s).`);
+      console.log(`[PISTE] Filtre domaine "${filters.code}" : ${jurisHits.length} → ${filtered.length} pertinent(s).`);
+
       if (filtered.length >= 5) {
+        // Filtre fin satisfaisant : on garde uniquement les pertinents.
         jurisHits = filtered;
       } else if (filtered.length > 0) {
-        // On garde les filtrés en priorité + on complète avec les non-filtrés
+        // Filtre fin insuffisant : on met les pertinents en premier, puis
+        // on complète avec les autres pour éviter un panneau quasi-vide.
         const filteredIds = new Set(filtered.map(r => r.titles?.[0]?.cid || r.id || r.cid));
         const others = jurisHits.filter(r => {
           const cid = r.titles?.[0]?.cid || r.id || r.cid;
           return !filteredIds.has(cid);
         });
         jurisHits = [...filtered, ...others];
-        console.log(`[PISTE] Filtre relâché : ${filtered.length} pertinents + ${others.length} bonus.`);
-      } // sinon (0 résultat filtré), on garde tout l'original
+      } else {
+        // Filtre fin rejette tout : on rejette au moins les juridictions
+        // clairement hors-sujet (CAA fiscal pour une question pénale, etc.).
+        // On garde les Cass. toutes chambres + CA + CC plutôt que de
+        // remettre la pollution administrative.
+        const allowedJur = CODE_DOMAINS[filters.code].juridictions;
+        jurisHits = jurisHits.filter(item => {
+          const title = item.titles?.[0]?.title || item.title || item.titre || '';
+          return allowedJur.includes(parseJuridiction(title));
+        });
+        console.log(`[PISTE] Filtre fin vide, rétention par juridiction seulement : ${jurisHits.length} arrêt(s).`);
+      }
     }
 
     allResults = allResults.concat(jurisHits);
