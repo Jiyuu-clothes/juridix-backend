@@ -15,8 +15,11 @@
 const axios = require('axios');
 const piste = require('./piste');
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1h
-let cache = { data: null, expires: 0 };
+const CACHE_TTL_MS    = 60 * 60 * 1000; // 1h pour servir le cache
+const REFRESH_EVERY   = 60 * 60 * 1000; // refresh proactif toutes les heures
+let cache = { data: null, expires: 0, lastUpdated: null };
+let refreshTimer = null;
+let refreshInFlight = false;
 
 // ─── Définition des sources RSS publiques ────────────────────────
 // On essaie chaque URL ; si elle échoue, on passe à la suivante.
@@ -234,13 +237,45 @@ async function fetchAll() {
 async function getNews({ source, matiere, limit = 50 } = {}) {
   const now = Date.now();
   if (!cache.data || now > cache.expires) {
-    cache.data = await fetchAll();
-    cache.expires = now + CACHE_TTL_MS;
+    await refreshCache();
   }
-  let out = cache.data;
+  let out = cache.data || [];
   if (source)  out = out.filter(x => x.source === source);
   if (matiere) out = out.filter(x => x.matiere === matiere);
-  return out.slice(0, limit);
+  return {
+    items: out.slice(0, limit),
+    lastUpdated: cache.lastUpdated,
+    total: out.length,
+  };
+}
+
+// Refresh atomique (évite les fetchs concurrents).
+async function refreshCache() {
+  if (refreshInFlight) return cache.data; // déjà en cours
+  refreshInFlight = true;
+  try {
+    const data = await fetchAll();
+    cache.data        = data;
+    cache.expires     = Date.now() + CACHE_TTL_MS;
+    cache.lastUpdated = new Date().toISOString();
+    console.log(`[News] Cache rafraîchi : ${data.length} items.`);
+    return data;
+  } finally {
+    refreshInFlight = false;
+  }
+}
+
+// Démarre le refresh proactif périodique (idempotent : ne lance qu'un timer).
+function startScheduledRefresh() {
+  if (refreshTimer) return;
+  refreshTimer = setInterval(() => {
+    refreshCache().catch(e => console.warn('[News] Refresh planifié échoué :', e.message));
+  }, REFRESH_EVERY);
+  // Premier warm-up rapide (5s après le boot pour ne pas bloquer le démarrage).
+  setTimeout(() => {
+    refreshCache().catch(e => console.warn('[News] Warm-up échoué :', e.message));
+  }, 5000);
+  console.log(`[News] Refresh proactif activé (toutes les ${REFRESH_EVERY/1000}s).`);
 }
 
 function listSources() {
@@ -250,4 +285,7 @@ function listSources() {
   ];
 }
 
-module.exports = { getNews, listSources, fetchAll };
+// Démarre automatiquement le refresh planifié à l'import du module.
+startScheduledRefresh();
+
+module.exports = { getNews, listSources, fetchAll, refreshCache };

@@ -1621,6 +1621,8 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
 body.light #actu-overlay{ background:rgba(248,250,255,0.97) }
 #actu-overlay.on{ display:flex }
 @keyframes actuFade { from{opacity:0} to{opacity:1} }
+@keyframes actuSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+#actu-refresh-icon{ display:inline-block }
 #actu-header{
   display:flex; align-items:center; gap:14px;
   padding:18px 24px; border-bottom:1px solid var(--gb);
@@ -1836,8 +1838,15 @@ body.light .actu-card:hover{ background:rgba(15,23,42,0.025) }
 <div id="actu-overlay" role="dialog" aria-labelledby="actu-title">
   <div id="actu-header">
     <div id="actu-title"><span class="actu-tag">📰</span>Actualités juridiques</div>
-    <div style="flex:1"></div>
+    <div id="actu-last-update" style="flex:1;font-size:12px;color:var(--t2);padding:0 14px;opacity:.8"></div>
+    <button class="actu-close" id="actu-refresh-btn" onclick="actuRefresh(true)" type="button" title="Rafraîchir le flux" style="margin-right:8px">
+      <span id="actu-refresh-icon">↻</span> Rafraîchir
+    </button>
     <button class="actu-close" onclick="closeActualites()" type="button">✕ Fermer</button>
+  </div>
+  <!-- Banner "X nouveaux articles" qui apparaît si l'auto-poll détecte du neuf -->
+  <div id="actu-new-banner" style="display:none;position:absolute;top:74px;left:50%;transform:translateX(-50%);z-index:10;background:var(--acc2);color:#fff;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(124,107,255,.4)" onclick="actuLoadNew()">
+    ↑ <span id="actu-new-count">0</span> nouvel article
   </div>
   <div id="actu-body">
     <!-- ─── Sidebar gauche : filtres par source et matière ─── -->
@@ -1974,39 +1983,130 @@ body.light #actu-reader{ background:rgba(248,250,255,0.95) }
 
 <script>
 /* ───── État du panneau Actualités ───── */
-var _actuItems = [];
-var _actuFilter = 'all';
-var _actuLoaded = false;
+var _actuItems       = [];
+var _actuFilter      = 'all';
+var _actuLoaded      = false;
+var _actuLastUpdated = null;   // timestamp ISO du dernier refresh côté serveur
+var _actuPollTimer   = null;
+var _actuNewItems    = [];     // items reçus pendant le poll mais pas encore intégrés
+var _actuOpen        = false;
 
 async function openActualites(){
-  // Ferme les autres modes plein écran si actifs
   try{
     if(document.body.classList.contains('atelier-mode') && typeof window.exitAtelier==='function') window.exitAtelier();
     if(document.body.classList.contains('carte-mode') && typeof window.closeCarte==='function') window.closeCarte();
   }catch(e){}
-  // Marque l'onglet actif
   document.querySelectorAll('#top-tabs .ttab').forEach(function(t){
     t.classList.toggle('on', t.getAttribute('data-tab')==='actus');
   });
-  // Ouvre l'overlay
   document.getElementById('actu-overlay').classList.add('on');
   document.body.style.overflow = 'hidden';
+  _actuOpen = true;
   // Charge le feed (avec cache local 5 min)
   if(!_actuLoaded || (Date.now() - _actuLoaded) > 5*60*1000){
     await loadActualites();
   } else {
     renderActu();
+    actuUpdateLastUpdated();
   }
+  // Démarre le polling auto toutes les 5 min
+  actuStartPolling();
 }
 
 function closeActualites(){
   document.getElementById('actu-overlay').classList.remove('on');
   document.body.style.overflow = '';
-  // Retire l'état actif de l'onglet
+  _actuOpen = false;
+  actuStopPolling();
   document.querySelectorAll('#top-tabs .ttab').forEach(function(t){
     if(t.getAttribute('data-tab')==='actus') t.classList.remove('on');
   });
 }
+
+/* ───── Refresh manuel ───── */
+async function actuRefresh(force){
+  var btn = document.getElementById('actu-refresh-icon');
+  if(btn){ btn.style.display='inline-block'; btn.style.animation='actuSpin 1s linear infinite'; }
+  try {
+    if(force){
+      // Force le refresh côté serveur
+      try { await fetch('/api/news/refresh', { method: 'POST' }); } catch(_){}
+    }
+    await loadActualites();
+  } finally {
+    if(btn){ btn.style.animation=''; }
+  }
+}
+
+/* ───── Auto-polling pendant que le panneau est ouvert ───── */
+function actuStartPolling(){
+  if(_actuPollTimer) return;
+  _actuPollTimer = setInterval(actuPoll, 5 * 60 * 1000); // 5 min
+}
+function actuStopPolling(){
+  if(_actuPollTimer){ clearInterval(_actuPollTimer); _actuPollTimer = null; }
+  // Reset banner si encore visible
+  var banner = document.getElementById('actu-new-banner');
+  if(banner) banner.style.display = 'none';
+  _actuNewItems = [];
+}
+async function actuPoll(){
+  if(!_actuOpen) return;
+  try {
+    var r = await fetch('/api/news?limit=80');
+    if(!r.ok) return;
+    var data = await r.json();
+    var fresh = data.items || [];
+    // Détecte les nouveaux par id
+    var knownIds = new Set(_actuItems.map(function(x){ return x.id; }));
+    var newOnes  = fresh.filter(function(x){ return !knownIds.has(x.id); });
+    if(newOnes.length){
+      _actuNewItems = newOnes.concat(_actuNewItems);
+      // Dédoublonne par id au cas où
+      var seen = new Set();
+      _actuNewItems = _actuNewItems.filter(function(x){
+        if(seen.has(x.id)) return false; seen.add(x.id); return true;
+      });
+      var banner = document.getElementById('actu-new-banner');
+      var count  = document.getElementById('actu-new-count');
+      count.textContent = _actuNewItems.length;
+      banner.querySelector('span:nth-of-type(1)').nextSibling.textContent = ' nouvel'+(_actuNewItems.length>1?'s':'')+' article'+(_actuNewItems.length>1?'s':'');
+      banner.style.display = 'block';
+    }
+    // Met à jour le timestamp serveur
+    _actuLastUpdated = data.lastUpdated;
+    actuUpdateLastUpdated();
+  } catch(e){
+    console.warn('[Actu] Poll échec:', e);
+  }
+}
+function actuLoadNew(){
+  if(!_actuNewItems.length) return;
+  _actuItems = _actuNewItems.concat(_actuItems);
+  _actuNewItems = [];
+  document.getElementById('actu-new-banner').style.display = 'none';
+  actuUpdateCounts();
+  actuRenderTrends();
+  renderActu();
+  // Scroll en haut du feed
+  document.querySelector('.actu-feed-wrap').scrollTop = 0;
+}
+
+/* ───── Indicateur "Mis à jour il y a X" ───── */
+function actuUpdateLastUpdated(){
+  var el = document.getElementById('actu-last-update');
+  if(!el) return;
+  if(!_actuLastUpdated){ el.textContent = ''; return; }
+  var diff = Math.floor((Date.now() - new Date(_actuLastUpdated).getTime()) / 1000);
+  var label;
+  if(diff < 60)        label = 'à l\'instant';
+  else if(diff < 3600) label = 'il y a '+Math.floor(diff/60)+' min';
+  else if(diff < 86400)label = 'il y a '+Math.floor(diff/3600)+' h';
+  else                 label = 'il y a '+Math.floor(diff/86400)+' j';
+  el.textContent = '⟳ Mis à jour ' + label;
+}
+// Rafraîchit l'indicateur toutes les 30s tant que le panneau est ouvert
+setInterval(function(){ if(_actuOpen) actuUpdateLastUpdated(); }, 30000);
 
 async function loadActualites(){
   var feed = document.getElementById('actu-feed-container');
@@ -2016,9 +2116,13 @@ async function loadActualites(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     var data = await r.json();
     _actuItems = data.items || [];
+    _actuLastUpdated = data.lastUpdated || new Date().toISOString();
     _actuLoaded = Date.now();
+    _actuNewItems = [];
+    document.getElementById('actu-new-banner').style.display = 'none';
     actuUpdateCounts();
     actuRenderTrends();
+    actuUpdateLastUpdated();
     renderActu();
   } catch(e){
     feed.innerHTML = '<div class="actu-empty">⚠ Impossible de charger les actualités. Vérifie ta connexion.</div>';
