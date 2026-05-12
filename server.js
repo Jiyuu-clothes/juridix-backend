@@ -103,6 +103,7 @@ app.use('/api/action', actionRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/account', require('./routes/account'));
 app.use('/api/search', searchRoutes);
+app.use('/api/news', require('./routes/news'));
 app.use('/api/stripe', stripeRoutes);
 
 // ─── Health ───────────────────────────────────────────────

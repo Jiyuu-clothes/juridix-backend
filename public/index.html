@@ -1606,6 +1606,221 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════
+     ACTUALITÉS JURIDIQUES — overlay plein écran
+     Affiche les dernières actus agrégées depuis Cass, CE, CC,
+     Village Justice, Dalloz Actu… via /api/news.
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+#actu-overlay{
+  position:fixed; inset:0; z-index:9000;
+  background:rgba(8,8,18,0.96); backdrop-filter:blur(14px);
+  display:none; flex-direction:column;
+  animation:actuFade .2s ease;
+}
+body.light #actu-overlay{ background:rgba(248,250,255,0.97) }
+#actu-overlay.on{ display:flex }
+@keyframes actuFade { from{opacity:0} to{opacity:1} }
+#actu-header{
+  display:flex; align-items:center; gap:14px;
+  padding:18px 24px; border-bottom:1px solid var(--gb);
+  background:rgba(13,13,28,0.6);
+}
+body.light #actu-header{ background:rgba(255,255,255,0.7) }
+#actu-title{ font-size:22px; font-weight:700; color:var(--t1); flex:0 0 auto; }
+#actu-title .actu-tag{ color:var(--acc2); margin-right:6px }
+#actu-filters{ display:flex; gap:6px; flex-wrap:wrap; flex:1; padding:0 8px }
+.actu-filter{
+  padding:6px 12px; border-radius:18px; cursor:pointer;
+  background:rgba(255,255,255,0.04); border:1px solid var(--gb);
+  color:var(--t2); font-size:12px; transition:all .15s ease;
+}
+.actu-filter:hover{ background:rgba(124,107,255,0.12); color:var(--t1) }
+.actu-filter.on{ background:var(--acc2); color:#fff; border-color:var(--acc2) }
+body.light .actu-filter{ background:rgba(15,23,42,0.04); border-color:rgba(15,23,42,0.08); color:var(--t2) }
+body.light .actu-filter.on{ background:var(--acc2); color:#fff }
+.actu-close{
+  padding:8px 16px; border-radius:10px; cursor:pointer; border:1px solid var(--gb);
+  background:rgba(255,255,255,0.04); color:var(--t1); font-size:13px;
+}
+.actu-close:hover{ background:rgba(255,107,107,0.15); border-color:#f87171; color:#f87171 }
+#actu-body{
+  flex:1; overflow-y:auto; padding:20px 24px;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+  gap:14px; align-content:start;
+}
+.actu-card{
+  background:rgba(255,255,255,0.03); border:1px solid var(--gb);
+  border-radius:14px; padding:16px; cursor:pointer;
+  transition:all .15s ease; min-height:140px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.actu-card:hover{
+  background:rgba(124,107,255,0.06); border-color:var(--acc2);
+  transform:translateY(-2px);
+}
+body.light .actu-card{ background:#fff; border-color:var(--gb) }
+.actu-meta{
+  display:flex; align-items:center; gap:8px;
+  font-size:11px; color:var(--t2);
+}
+.actu-badge{ font-size:14px }
+.actu-source{ font-weight:600 }
+.actu-date{ margin-left:auto; opacity:.75 }
+.actu-card-title{
+  font-size:14px; font-weight:600; color:var(--t1);
+  line-height:1.4; overflow:hidden;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+}
+.actu-card-excerpt{
+  font-size:12px; color:var(--t2); line-height:1.5;
+  overflow:hidden; display:-webkit-box;
+  -webkit-line-clamp:3; -webkit-box-orient:vertical;
+}
+.actu-card-foot{
+  margin-top:auto; display:flex; gap:8px; align-items:center;
+  font-size:11px; color:var(--t2); padding-top:6px;
+}
+.actu-matiere{
+  padding:2px 8px; border-radius:10px; background:rgba(124,107,255,0.15);
+  color:var(--acc2); font-weight:600; font-size:10px; text-transform:uppercase;
+}
+.actu-loading, .actu-empty{
+  grid-column:1 / -1; text-align:center; padding:40px;
+  color:var(--t2); font-size:14px;
+}
+@media (max-width:760px){
+  #actu-header{ padding:14px 12px; flex-wrap:wrap }
+  #actu-title{ font-size:18px }
+  #actu-body{ padding:12px; grid-template-columns:1fr; gap:10px }
+}
+</style>
+
+<div id="actu-overlay" role="dialog" aria-labelledby="actu-title">
+  <div id="actu-header">
+    <div id="actu-title"><span class="actu-tag">📰</span>Actualités juridiques</div>
+    <div id="actu-filters">
+      <div class="actu-filter on"      data-src="all"             onclick="actuSetFilter('all')">Toutes</div>
+      <div class="actu-filter"         data-src="cassation"       onclick="actuSetFilter('cassation')">⚖️ Cassation</div>
+      <div class="actu-filter"         data-src="conseil-etat"    onclick="actuSetFilter('conseil-etat')">⚖️ Conseil d'État</div>
+      <div class="actu-filter"         data-src="conseil-constit" onclick="actuSetFilter('conseil-constit')">🏛 Constit.</div>
+      <div class="actu-filter"         data-src="village-justice" onclick="actuSetFilter('village-justice')">📚 Village J.</div>
+      <div class="actu-filter"         data-src="dalloz-actu"     onclick="actuSetFilter('dalloz-actu')">📕 Dalloz</div>
+      <div class="actu-filter"         data-src="actu-juridique"  onclick="actuSetFilter('actu-juridique')">📰 Actu-Jur.</div>
+    </div>
+    <button class="actu-close" onclick="closeActualites()" type="button">✕ Fermer</button>
+  </div>
+  <div id="actu-body">
+    <div class="actu-loading">Chargement du flux…</div>
+  </div>
+</div>
+
+<script>
+/* ───── État du panneau Actualités ───── */
+var _actuItems = [];
+var _actuFilter = 'all';
+var _actuLoaded = false;
+
+async function openActualites(){
+  // Ferme les autres modes plein écran si actifs
+  try{
+    if(document.body.classList.contains('atelier-mode') && typeof window.exitAtelier==='function') window.exitAtelier();
+    if(document.body.classList.contains('carte-mode') && typeof window.closeCarte==='function') window.closeCarte();
+  }catch(e){}
+  // Marque l'onglet actif
+  document.querySelectorAll('#top-tabs .ttab').forEach(function(t){
+    t.classList.toggle('on', t.getAttribute('data-tab')==='actus');
+  });
+  // Ouvre l'overlay
+  document.getElementById('actu-overlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+  // Charge le feed (avec cache local 5 min)
+  if(!_actuLoaded || (Date.now() - _actuLoaded) > 5*60*1000){
+    await loadActualites();
+  } else {
+    renderActu();
+  }
+}
+
+function closeActualites(){
+  document.getElementById('actu-overlay').classList.remove('on');
+  document.body.style.overflow = '';
+  // Retire l'état actif de l'onglet
+  document.querySelectorAll('#top-tabs .ttab').forEach(function(t){
+    if(t.getAttribute('data-tab')==='actus') t.classList.remove('on');
+  });
+}
+
+async function loadActualites(){
+  var body = document.getElementById('actu-body');
+  body.innerHTML = '<div class="actu-loading">Chargement du flux…</div>';
+  try {
+    var r = await fetch('/api/news?limit=80');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var data = await r.json();
+    _actuItems = data.items || [];
+    _actuLoaded = Date.now();
+    renderActu();
+  } catch(e){
+    body.innerHTML = '<div class="actu-empty">⚠ Impossible de charger les actualités. Vérifie ta connexion.</div>';
+    console.error('[Actu]', e);
+  }
+}
+
+function actuSetFilter(src){
+  _actuFilter = src;
+  document.querySelectorAll('#actu-filters .actu-filter').forEach(function(f){
+    f.classList.toggle('on', f.getAttribute('data-src')===src);
+  });
+  renderActu();
+}
+
+function renderActu(){
+  var body = document.getElementById('actu-body');
+  var items = _actuItems;
+  if(_actuFilter !== 'all'){
+    items = items.filter(function(i){ return i.source === _actuFilter; });
+  }
+  if(!items.length){
+    body.innerHTML = '<div class="actu-empty">Aucune actualité dans cette source pour le moment.</div>';
+    return;
+  }
+  var html = '';
+  items.forEach(function(it){
+    var date = it.date ? new Date(it.date).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '';
+    var matiereTag = it.matiere && it.matiere !== 'general' ? '<span class="actu-matiere">'+actuEscape(it.matiere)+'</span>' : '';
+    var refTag = it.articleRef ? '<span style="color:var(--acc2);font-weight:600">Art. '+actuEscape(it.articleRef)+'</span>' : '';
+    html += '<div class="actu-card" onclick="actuOpenItem(\''+actuEscape(it.url||'#').replace(/\'/g,'%27')+'\')">'
+         +    '<div class="actu-meta">'
+         +      '<span class="actu-badge">'+(it.badge||'📰')+'</span>'
+         +      '<span class="actu-source">'+actuEscape(it.sourceLabel||it.source||'')+'</span>'
+         +      '<span class="actu-date">'+actuEscape(date)+'</span>'
+         +    '</div>'
+         +    '<div class="actu-card-title">'+actuEscape(it.title||'')+'</div>'
+         +    '<div class="actu-card-excerpt">'+actuEscape(it.excerpt||'')+'</div>'
+         +    '<div class="actu-card-foot">'+matiereTag+refTag+'</div>'
+         +  '</div>';
+  });
+  body.innerHTML = html;
+}
+
+function actuOpenItem(url){
+  if(!url || url === '#') return;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function actuEscape(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Esc pour fermer
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && document.getElementById('actu-overlay').classList.contains('on')){
+    closeActualites();
+  }
+});
+</script>
+
 <!-- TOPBAR -->
 <div id="topbar">
   <div class="logo" onclick="goHome()" style="display:flex;align-items:center;gap:8px">
@@ -1641,6 +1856,7 @@ body.light .cm-node-colors{background:rgba(255,255,255,0.99)}
     <button class="ttab" data-tab="carte" onclick="openCarte()">🧠 Carte</button>
     <button class="ttab" data-tab="fiches" onclick="switchTab('fiches')">📝 Fiches</button>
     <button class="ttab" data-tab="quiz" onclick="switchTab('quiz')">⚡ Quiz</button>
+    <button class="ttab" data-tab="actus" onclick="openActualites()">📰 Actualités</button>
   </div>
   <!-- ===== COMMAND BAR PERSISTANTE ===== -->
   <div id="topbar-search-wrap">
