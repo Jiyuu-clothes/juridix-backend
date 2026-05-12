@@ -1647,58 +1647,107 @@ body.light .actu-filter.on{ background:var(--acc2); color:#fff }
 #actu-body{
   flex:1; overflow-y:auto;
   display:flex; flex-direction:column; align-items:center;
-  padding:0 16px 40px;
+  padding:0;
 }
 .actu-feed{
-  width:100%; max-width:640px;
+  width:100%; max-width:600px;
   display:flex; flex-direction:column;
+  border-left:1px solid var(--gb);
+  border-right:1px solid var(--gb);
 }
-/* Carte type Twitter : verticale, séparation par bordure inférieure */
+/* Tweet façon X/Twitter : avatar à gauche + colonne de contenu à droite */
 .actu-card{
-  display:flex; flex-direction:column; gap:6px;
-  padding:16px 4px; cursor:pointer;
+  display:flex; gap:12px;
+  padding:14px 16px; cursor:pointer;
   border-bottom:1px solid var(--gb);
-  transition:background .15s ease;
+  transition:background .12s ease;
 }
-.actu-card:hover{ background:rgba(124,107,255,0.04) }
-body.light .actu-card:hover{ background:rgba(124,107,255,0.05) }
-.actu-card:first-child{ padding-top:24px }
+.actu-card:hover{ background:rgba(255,255,255,0.025) }
+body.light .actu-card:hover{ background:rgba(15,23,42,0.025) }
+/* Avatar coloré rond */
+.actu-avatar{
+  flex:0 0 44px; width:44px; height:44px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+  background:linear-gradient(135deg,#7c6bff 0%,#5d4ee3 100%);
+  color:#fff;
+}
+.actu-avatar.av-cass    { background:linear-gradient(135deg,#1e3a8a,#1e40af) }
+.actu-avatar.av-ce      { background:linear-gradient(135deg,#0e7490,#155e75) }
+.actu-avatar.av-cc      { background:linear-gradient(135deg,#7e22ce,#581c87) }
+.actu-avatar.av-village { background:linear-gradient(135deg,#16a34a,#15803d) }
+.actu-avatar.av-dalloz  { background:linear-gradient(135deg,#dc2626,#991b1b) }
+.actu-avatar.av-actu    { background:linear-gradient(135deg,#ea580c,#9a3412) }
+/* Colonne de contenu */
+.actu-content{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px }
 .actu-meta{
-  display:flex; align-items:center; gap:8px;
-  font-size:13px; color:var(--t2);
+  display:flex; align-items:center; gap:5px;
+  font-size:14px; color:var(--t2);
+  white-space:nowrap; overflow:hidden;
 }
-.actu-badge{ font-size:16px }
-.actu-source{ font-weight:600; color:var(--t1) }
-.actu-source-handle{ opacity:.65 }
-.actu-date{ margin-left:auto; opacity:.7; font-size:12px }
+.actu-source{
+  font-weight:700; color:var(--t1);
+  overflow:hidden; text-overflow:ellipsis;
+  max-width:200px;
+}
+.actu-source-handle{ opacity:.6; font-weight:400 }
+.actu-meta-sep{ opacity:.5; margin:0 2px }
+.actu-date{ opacity:.7 }
 .actu-card-title{
-  font-size:16px; font-weight:600; color:var(--t1);
-  line-height:1.45; margin:2px 0;
+  font-size:15px; font-weight:700; color:var(--t1);
+  line-height:1.35; margin:3px 0 2px;
 }
 .actu-card-excerpt{
-  font-size:14px; color:var(--t2); line-height:1.55;
+  font-size:14px; color:var(--t1); line-height:1.45;
   overflow:hidden; display:-webkit-box;
-  -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  -webkit-line-clamp:4; -webkit-box-orient:vertical;
+  opacity:.85;
 }
-.actu-card-foot{
-  margin-top:4px; display:flex; gap:8px; align-items:center;
-  font-size:11px; color:var(--t2);
+.actu-tags{
+  margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;
 }
 .actu-matiere{
-  padding:3px 9px; border-radius:11px; background:rgba(124,107,255,0.15);
-  color:var(--acc2); font-weight:600; font-size:10px; text-transform:uppercase;
-  letter-spacing:.3px;
+  padding:2px 9px; border-radius:11px;
+  background:rgba(124,107,255,0.12); color:var(--acc2);
+  font-weight:600; font-size:11px; text-transform:lowercase;
+  letter-spacing:.2px;
 }
+.actu-ref-tag{
+  padding:2px 9px; border-radius:11px;
+  background:rgba(14,165,233,0.12); color:#0ea5e9;
+  font-weight:600; font-size:11px;
+}
+/* Barre d'actions style Twitter */
+.actu-actions{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:10px; max-width:420px;
+  color:var(--t2); font-size:13px;
+}
+.actu-action{
+  display:flex; align-items:center; gap:6px;
+  padding:5px 8px; border-radius:18px;
+  transition:all .15s ease; cursor:pointer;
+}
+.actu-action:hover{ background:rgba(124,107,255,0.12); color:var(--acc2) }
+.actu-action.act-link:hover{ background:rgba(14,165,233,0.12); color:#0ea5e9 }
+.actu-action.act-save:hover{ background:rgba(245,158,11,0.12); color:#f59e0b }
+.actu-action.act-share:hover{ background:rgba(16,185,129,0.12); color:#10b981 }
+.actu-action svg{ width:16px; height:16px; flex:0 0 16px }
+
 .actu-loading, .actu-empty{
   text-align:center; padding:60px 20px;
   color:var(--t2); font-size:14px;
 }
+
 @media (max-width:760px){
   #actu-header{ padding:14px 12px; flex-wrap:wrap }
   #actu-title{ font-size:18px }
-  #actu-body{ padding:0 12px 30px }
-  .actu-card-title{ font-size:15px }
-  .actu-card-excerpt{ font-size:13px }
+  .actu-feed{ border:none }
+  .actu-card{ padding:12px 14px }
+  .actu-avatar{ flex:0 0 40px; width:40px; height:40px; font-size:20px }
+  .actu-card-title{ font-size:14px }
+  .actu-card-excerpt{ font-size:13px; -webkit-line-clamp:3 }
 }
 </style>
 
@@ -1810,24 +1859,72 @@ function renderActu(){
                 'village-justice':'@VillageJustice', 'dalloz-actu':'@DallozActu', 'actu-juridique':'@ActuJuridique' };
     return map[src] || '@'+src;
   }
+  // Classe d'avatar selon la source (couleur dédiée)
+  function avatarClass(src){
+    var map = { 'cassation':'av-cass', 'conseil-etat':'av-ce', 'conseil-constit':'av-cc',
+                'village-justice':'av-village', 'dalloz-actu':'av-dalloz', 'actu-juridique':'av-actu' };
+    return map[src] || '';
+  }
+  // Icônes SVG pour les actions (style Twitter/X)
+  var iconLink  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  var iconShare = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>';
+  var iconSave  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+  var iconView  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+
   var html = '<div class="actu-feed">';
   items.forEach(function(it){
+    var url = actuEscape(it.url || '#');
     var matiereTag = it.matiere && it.matiere !== 'general' ? '<span class="actu-matiere">'+actuEscape(it.matiere)+'</span>' : '';
-    var refTag = it.articleRef ? '<span style="color:var(--acc2);font-weight:600">Art. '+actuEscape(it.articleRef)+'</span>' : '';
-    html += '<div class="actu-card" onclick="actuOpenItem(\''+actuEscape(it.url||'#').replace(/\'/g,'%27')+'\')">'
-         +    '<div class="actu-meta">'
-         +      '<span class="actu-badge">'+(it.badge||'📰')+'</span>'
-         +      '<span class="actu-source">'+actuEscape(it.sourceLabel||it.source||'')+'</span>'
-         +      '<span class="actu-source-handle">·  '+actuEscape(handle(it.source))+'</span>'
-         +      '<span class="actu-date">'+actuEscape(relativeDate(it.date))+'</span>'
+    var refTag = it.articleRef ? '<span class="actu-ref-tag">Art. '+actuEscape(it.articleRef)+'</span>' : '';
+    var tagsHtml = (matiereTag || refTag) ? '<div class="actu-tags">'+matiereTag+refTag+'</div>' : '';
+
+    html += '<div class="actu-card" onclick="actuOpenItem(\''+url.replace(/\'/g,'%27')+'\')">'
+         +    '<div class="actu-avatar '+avatarClass(it.source)+'">'+(it.badge||'📰')+'</div>'
+         +    '<div class="actu-content">'
+         +      '<div class="actu-meta">'
+         +        '<span class="actu-source">'+actuEscape(it.sourceLabel||it.source||'')+'</span>'
+         +        '<span class="actu-source-handle">'+actuEscape(handle(it.source))+'</span>'
+         +        '<span class="actu-meta-sep">·</span>'
+         +        '<span class="actu-date">'+actuEscape(relativeDate(it.date))+'</span>'
+         +      '</div>'
+         +      '<div class="actu-card-title">'+actuEscape(it.title||'')+'</div>'
+         +      (it.excerpt ? '<div class="actu-card-excerpt">'+actuEscape(it.excerpt)+'</div>' : '')
+         +      tagsHtml
+         +      '<div class="actu-actions" onclick="event.stopPropagation()">'
+         +        '<div class="actu-action act-link" onclick="actuOpenItem(\''+url.replace(/\'/g,'%27')+'\')">'+iconView+'<span>Lire</span></div>'
+         +        '<div class="actu-action act-share" onclick="actuShare(\''+url.replace(/\'/g,'%27')+'\', \''+actuEscape(it.title||'').replace(/\'/g,'%27')+'\')">'+iconShare+'<span>Partager</span></div>'
+         +        '<div class="actu-action act-save" onclick="actuCopyLink(\''+url.replace(/\'/g,'%27')+'\', this)">'+iconLink+'<span>Copier</span></div>'
+         +      '</div>'
          +    '</div>'
-         +    '<div class="actu-card-title">'+actuEscape(it.title||'')+'</div>'
-         +    '<div class="actu-card-excerpt">'+actuEscape(it.excerpt||'')+'</div>'
-         +    (matiereTag || refTag ? '<div class="actu-card-foot">'+matiereTag+refTag+'</div>' : '')
          +  '</div>';
   });
   html += '</div>';
   body.innerHTML = html;
+}
+
+// Partage natif si dispo (mobile), sinon copie du lien
+function actuShare(url, title){
+  url = decodeURIComponent(url.replace(/%27/g, "'"));
+  title = decodeURIComponent(title.replace(/%27/g, "'"));
+  if(navigator.share){
+    navigator.share({ title: title, url: url }).catch(function(){});
+  } else {
+    actuCopyLink(encodeURIComponent(url));
+  }
+}
+
+// Copie du lien dans le presse-papier avec retour visuel
+function actuCopyLink(url, el){
+  url = decodeURIComponent(url.replace(/%27/g, "'"));
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(function(){
+      if(el){
+        var orig = el.querySelector('span').textContent;
+        el.querySelector('span').textContent = '✓ Copié';
+        setTimeout(function(){ el.querySelector('span').textContent = orig; }, 1500);
+      }
+    });
+  }
 }
 
 function actuOpenItem(url){
