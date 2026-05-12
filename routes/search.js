@@ -6,16 +6,37 @@ const piste    = require('../services/piste');
 const corpus   = require('../services/corpus');
 const citation = require('../services/citation');
 
-// Corpus curé de grands arrêts (JSON statique chargé une fois au démarrage).
-let GRANDS_ARRETS = { articles: {} };
-try {
-  const p = path.join(__dirname, '..', 'data', 'grands-arrets.json');
-  GRANDS_ARRETS = JSON.parse(fs.readFileSync(p, 'utf8'));
-  const total = Object.values(GRANDS_ARRETS.articles || {})
-    .reduce((sum, arr) => sum + arr.length, 0);
-  console.log(`[GrandsArrets] Corpus chargé : ${Object.keys(GRANDS_ARRETS.articles || {}).length} articles, ${total} arrêts.`);
-} catch (e) {
-  console.warn(`[GrandsArrets] Impossible de charger data/grands-arrets.json :`, e.message);
+// Corpus de grands arrêts : deux sources fusionnées.
+//   - data/grands-arrets.json       : curation manuelle (qualité haute, faible volume)
+//   - data/grands-arrets-auto.json  : extrait automatiquement de l'open data Cassation
+//                                     via scripts/build-cassation-corpus.js
+// On fusionne en priorisant le manuel (sa portée pédagogique est meilleure).
+let GRANDS_ARRETS_MANUAL = { articles: {} };
+let GRANDS_ARRETS_AUTO   = { articles: {} };
+function loadCorpus(filename, varSetter) {
+  try {
+    const p = path.join(__dirname, '..', 'data', filename);
+    const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const total = Object.values(data.articles || {}).reduce((s, arr) => s + arr.length, 0);
+    console.log(`[GrandsArrets] ${filename} : ${Object.keys(data.articles || {}).length} articles, ${total} arrêts.`);
+    return data;
+  } catch (e) {
+    console.warn(`[GrandsArrets] ${filename} non chargé :`, e.message);
+    return { articles: {} };
+  }
+}
+GRANDS_ARRETS_MANUAL = loadCorpus('grands-arrets.json');
+GRANDS_ARRETS_AUTO   = loadCorpus('grands-arrets-auto.json');
+
+// Retourne la liste fusionnée d'arrêts pour une clé "Code:num".
+// Curé manuel d'abord (si dispo), puis auto en complément (sans doublon par id).
+function getMergedArrets(key) {
+  const manual = GRANDS_ARRETS_MANUAL.articles?.[key] || [];
+  const auto   = GRANDS_ARRETS_AUTO.articles?.[key]   || [];
+  if (!manual.length && !auto.length) return [];
+  const seenIds = new Set(manual.map(a => a.id).filter(Boolean));
+  const autoFiltered = auto.filter(a => !a.id || !seenIds.has(a.id));
+  return [...manual, ...autoFiltered];
 }
 
 // Pré-charger le cache des codes principaux au démarrage (async, non bloquant)
@@ -194,14 +215,14 @@ router.get('/article/:cid', async (req, res) => {
 });
 
 // GET /api/search/grands-arrets?code=Code+civil&num=1240
-// Retourne le corpus curé d'arrêts mappés à un article. Vide si rien.
+// Fusionne le corpus curé manuel + l'index auto Cassation.
 router.get('/grands-arrets', (req, res) => {
   const code = (req.query.code || '').trim();
   const num  = (req.query.num || '').trim();
   if (!code || !num) return res.json({ arrets: [] });
   const key = `${code}:${num}`;
-  const arrets = GRANDS_ARRETS.articles?.[key] || [];
-  res.json({ key, arrets });
+  const arrets = getMergedArrets(key);
+  res.json({ key, arrets, total: arrets.length });
 });
 
 // GET /api/search/credits
