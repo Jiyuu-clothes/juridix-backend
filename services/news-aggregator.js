@@ -315,8 +315,81 @@ async function fetchAll() {
   // Tri chronologique décroissant
   dedup.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
+  // Enrichissement og:image pour les items sans image RSS (Village Justice,
+  // sources institutionnelles…). Concurrent limité pour ne pas saturer.
+  await enrichWithOgImages(dedup);
+
   console.log(`[News] ${dedup.length} actu(s) agrégée(s) depuis ${results.length} source(s).`);
   return dedup;
+}
+
+// ─── Enrichissement og:image ─────────────────────────────────────
+// Pour les items sans image, fetch la page de l'article (premiers 64 KB
+// seulement) et extrait <meta property="og:image"> / <meta name="twitter:image">.
+// Limite à N requêtes concurrentes pour ne pas surcharger.
+async function enrichWithOgImages(items) {
+  const missing = items.filter(it => !it.image && it.url);
+  if (!missing.length) return;
+  console.log(`[News] Enrichissement og:image pour ${missing.length} article(s)…`);
+
+  const CONCURRENCY = 8;
+  let cursor = 0;
+  let found = 0;
+
+  async function worker() {
+    while (cursor < missing.length) {
+      const idx = cursor++;
+      const it = missing[idx];
+      try {
+        const og = await fetchOgImage(it.url);
+        if (og) {
+          it.image = og;
+          found++;
+        }
+      } catch {/* silencieux : c'est best-effort */}
+    }
+  }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+  console.log(`[News] og:image trouvées : ${found}/${missing.length}`);
+}
+
+async function fetchOgImage(url) {
+  try {
+    const r = await axios.get(url, {
+      timeout: 6000,
+      maxRedirects: 3,
+      maxContentLength: 200 * 1024,   // limite à ~200 KB
+      responseType: 'text',
+      transformResponse: [(d) => d],
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; JuriDixBot/1.0; +https://juridix-backend.onrender.com)',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      validateStatus: s => s >= 200 && s < 400,
+    });
+    const html = String(r.data || '').slice(0, 64 * 1024); // 64 KB max suffisent pour <head>
+    return extractOgImageFromHtml(html, url);
+  } catch {
+    return null;
+  }
+}
+
+function extractOgImageFromHtml(html, baseUrl) {
+  if (!html) return null;
+  // og:image (Open Graph) puis twitter:image (Twitter Cards)
+  let m = html.match(/<meta[^>]+(?:property|name)=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i);
+  if (!m) m = html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
+  if (!m) m = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+  if (!m) m = html.match(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i);
+  if (!m) return null;
+  let raw = decodeEntities(m[1].trim());
+  // URLs relatives → absolues
+  if (raw.startsWith('//')) raw = 'https:' + raw;
+  else if (raw.startsWith('/')) {
+    try { const u = new URL(baseUrl); raw = u.origin + raw; } catch {}
+  }
+  return cleanImageUrl(raw);
 }
 
 async function getNews({ source, matiere, limit = 50 } = {}) {
