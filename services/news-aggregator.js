@@ -249,7 +249,7 @@ async function fetchRssSource(source) {
           title:       stripHtml(item.title),
           excerpt:     stripHtml(item.desc).slice(0, 280),
           date:        normalizeDate(item.pubDate),
-          url:         item.link,
+          url:         decodeEntities(item.link || ''),   // décode &amp; etc. dans l'URL
           image:       item.image || null,
           matiere:     detectMatiere(item.title),
           articleRef:  detectArticleRef(item.title, item.desc),
@@ -357,20 +357,30 @@ async function enrichWithOgImages(items) {
 async function fetchOgImage(url) {
   try {
     const r = await axios.get(url, {
-      timeout: 6000,
+      timeout: 7000,
       maxRedirects: 3,
-      maxContentLength: 200 * 1024,   // limite à ~200 KB
+      maxContentLength: 2 * 1024 * 1024,   // 2 MB — la plupart des pages modernes
+      maxBodyLength: 2 * 1024 * 1024,
       responseType: 'text',
       transformResponse: [(d) => d],
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; JuriDixBot/1.0; +https://juridix-backend.onrender.com)',
-        'Accept': 'text/html,application/xhtml+xml',
+        // User-Agent réaliste de navigateur — certains sites bloquent les bots
+        // (Légifrance via Cloudflare notamment). On reste honnête en gardant
+        // un suffixe d'identification.
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 JuriDixBot/1.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
       },
       validateStatus: s => s >= 200 && s < 400,
     });
-    const html = String(r.data || '').slice(0, 64 * 1024); // 64 KB max suffisent pour <head>
+    // Le head suffit pour og:image, on coupe à 128 KB pour l'analyse regex
+    const html = String(r.data || '').slice(0, 128 * 1024);
     return extractOgImageFromHtml(html, url);
-  } catch {
+  } catch (e) {
+    // Log discret pour diagnostic — on garde silencieux niveau erreur
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[News] og:image fetch failed for ${url.slice(0, 80)} :`, e.code || e.message);
+    }
     return null;
   }
 }
