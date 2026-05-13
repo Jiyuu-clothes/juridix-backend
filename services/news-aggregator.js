@@ -98,8 +98,48 @@ function extract(xml, tag) {
   return (xml.match(reCData)?.[1] || xml.match(reNorm)?.[1] || xml.match(reAttr)?.[1] || '').trim();
 }
 
+// Décode les entités HTML courantes (numériques + nommées). Indispensable
+// pour les flux français qui sont souvent encodés en &eacute; etc. dans le RSS.
+const HTML_ENTITIES = {
+  amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", nbsp:' ',
+  eacute:'é', egrave:'è', ecirc:'ê', euml:'ë',
+  agrave:'à', acirc:'â', auml:'ä', aring:'å', atilde:'ã',
+  iacute:'í', igrave:'ì', icirc:'î', iuml:'ï',
+  oacute:'ó', ograve:'ò', ocirc:'ô', ouml:'ö', otilde:'õ',
+  uacute:'ú', ugrave:'ù', ucirc:'û', uuml:'ü',
+  yacute:'ý', yuml:'ÿ',
+  ccedil:'ç', ntilde:'ñ',
+  Eacute:'É', Egrave:'È', Ecirc:'Ê', Euml:'Ë',
+  Agrave:'À', Acirc:'Â', Auml:'Ä', Aring:'Å',
+  Iacute:'Í', Igrave:'Ì', Icirc:'Î', Iuml:'Ï',
+  Oacute:'Ó', Ograve:'Ò', Ocirc:'Ô', Ouml:'Ö',
+  Uacute:'Ú', Ugrave:'Ù', Ucirc:'Û', Uuml:'Ü',
+  Ccedil:'Ç', Ntilde:'Ñ',
+  laquo:'«', raquo:'»', hellip:'…', middot:'·',
+  ldquo:'"', rdquo:'"', lsquo:"'", rsquo:"'", sbquo:'‚', bdquo:'„',
+  mdash:'—', ndash:'–', copy:'©', reg:'®', trade:'™',
+  deg:'°', euro:'€', pound:'£', yen:'¥', cent:'¢',
+  times:'×', divide:'÷', plusmn:'±', frac12:'½',
+  Oelig:'Œ', oelig:'œ', AElig:'Æ', aelig:'æ',
+  szlig:'ß', shy:'-', bull:'•',
+};
+function decodeEntities(s) {
+  if (!s) return '';
+  return String(s)
+    // entités hexadécimales : &#xE9;
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => {
+      try { return String.fromCodePoint(parseInt(h, 16)); } catch { return ''; }
+    })
+    // entités décimales : &#233;
+    .replace(/&#(\d+);/g, (_, d) => {
+      try { return String.fromCodePoint(parseInt(d, 10)); } catch { return ''; }
+    })
+    // entités nommées : &eacute;
+    .replace(/&([a-z][a-z0-9]+);/gi, (full, name) => HTML_ENTITIES[name] || full);
+}
+
 function stripHtml(s) {
-  return (s || '').replace(/<[^>]+>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
+  return decodeEntities((s || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 }
 
 function normalizeDate(d) {
