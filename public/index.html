@@ -1778,6 +1778,32 @@ body.light .actu-card:hover{ background:rgba(15,23,42,0.025) }
   background:rgba(14,165,233,0.12); color:#0ea5e9;
   font-weight:600; font-size:11px;
 }
+/* Preview image style Twitter (carte avec ratio 16/9) */
+.actu-preview{
+  margin-top:10px; border-radius:14px; overflow:hidden;
+  border:1px solid var(--gb); background:rgba(0,0,0,0.2);
+  aspect-ratio:16/9; max-height:280px;
+  display:flex; align-items:center; justify-content:center;
+}
+body.light .actu-preview{ background:rgba(15,23,42,0.05) }
+.actu-preview img{
+  width:100%; height:100%; object-fit:cover;
+  display:block; transition:transform .3s ease;
+}
+.actu-card:hover .actu-preview img{ transform:scale(1.02) }
+.actu-preview-fallback{
+  font-size:32px; opacity:.3;
+}
+/* Image hero dans le lecteur inline */
+.actu-reader-image{
+  margin:-32px -36px 20px; max-height:320px; overflow:hidden;
+  background:rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;
+}
+.actu-reader-image img{
+  width:100%; height:100%; object-fit:cover;
+  max-height:320px; display:block;
+}
+body.light .actu-reader-image{ background:rgba(15,23,42,0.05) }
 /* Barre d'actions style Twitter */
 .actu-actions{
   display:flex; justify-content:space-between; align-items:center;
@@ -2240,6 +2266,15 @@ function renderActu(){
     var refTag = it.articleRef ? '<span class="actu-ref-tag">Art. '+actuEscape(it.articleRef)+'</span>' : '';
     var tagsHtml = (matiereTag || refTag) ? '<div class="actu-tags">'+matiereTag+refTag+'</div>' : '';
 
+    // Preview image si dispo dans le flux RSS de la source
+    var previewHtml = '';
+    if(it.image){
+      previewHtml = '<div class="actu-preview">'
+                  +   '<img src="'+actuEscape(it.image)+'" loading="lazy" alt="" '
+                  +     'onerror="this.parentNode.innerHTML=\'<div class=actu-preview-fallback>📄</div>\'">'
+                  + '</div>';
+    }
+
     html += '<div class="actu-card" onclick="actuOpenItem(\''+url.replace(/\'/g,'%27')+'\')">'
          +    '<div class="actu-avatar '+avatarClass(it.source)+'">'+(it.badge||'📰')+'</div>'
          +    '<div class="actu-content">'
@@ -2252,6 +2287,7 @@ function renderActu(){
          +      '<div class="actu-card-title">'+actuEscape(it.title||'')+'</div>'
          +      (it.excerpt ? '<div class="actu-card-excerpt">'+actuEscape(it.excerpt)+'</div>' : '')
          +      tagsHtml
+         +      previewHtml
          +      '<div class="actu-actions" onclick="event.stopPropagation()">'
          +        '<div class="actu-action act-link" onclick="actuOpenItem(\''+url.replace(/\'/g,'%27')+'\')">'+iconView+'<span>Lire</span></div>'
          +        '<div class="actu-action act-share" onclick="actuShare(\''+url.replace(/\'/g,'%27')+'\', \''+actuEscape(it.title||'').replace(/\'/g,'%27')+'\')">'+iconShare+'<span>Partager</span></div>'
@@ -2322,8 +2358,18 @@ function openActuReader(it){
     ? '<span class="actu-ref-tag">Art. '+actuEscape(it.articleRef)+'</span>' : '';
   var tagsHtml = (matiereTag || refTag) ? '<div class="actu-tags" style="margin-bottom:14px">'+matiereTag+refTag+'</div>' : '';
 
+  // Image hero si dispo
+  var heroHtml = '';
+  if(it.image){
+    heroHtml = '<div class="actu-reader-image">'
+             +   '<img src="'+actuEscape(it.image)+'" alt="" '
+             +     'onerror="this.parentNode.style.display=\'none\'">'
+             + '</div>';
+  }
+
   var content =
     '<button class="actu-reader-close" onclick="closeActuReader()" type="button" aria-label="Fermer">✕</button>'
+  + heroHtml
   + '<div class="actu-reader-source">'
   +   '<div class="actu-avatar '+avatarClass(it.source)+'">'+icon+'</div>'
   +   '<div>'

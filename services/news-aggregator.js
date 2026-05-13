@@ -84,9 +84,53 @@ function parseRss(xml) {
       link:    extract(block, 'link') || extract(block, 'guid'),
       pubDate: extract(block, 'pubDate') || extract(block, 'published') || extract(block, 'updated') || extract(block, 'dc:date'),
       desc:    extract(block, 'description') || extract(block, 'summary') || extract(block, 'content:encoded') || extract(block, 'content'),
+      image:   extractImage(block),
     });
   }
   return items;
+}
+
+// Cherche l'URL d'une image associée à l'item, par ordre de fiabilité :
+//   1. <media:thumbnail url="..."/>   (RSS Media)
+//   2. <media:content url="..." medium="image"/>
+//   3. <enclosure url="..." type="image/*"/>
+//   4. <itunes:image href="..."/>
+//   5. première <img src="..."/> dans description / content:encoded
+//   6. og:image dans le contenu (rare dans RSS, mais on tente)
+function extractImage(block) {
+  if (!block) return null;
+  // 1 & 2 : balises Media RSS
+  let m = block.match(/<media:thumbnail[^>]+url=["']([^"']+)["']/i);
+  if (m) return cleanImageUrl(m[1]);
+  m = block.match(/<media:content[^>]+url=["']([^"']+)["'][^>]*(?:type=["']image|medium=["']image)/i);
+  if (m) return cleanImageUrl(m[1]);
+  m = block.match(/<media:content[^>]+(?:type=["']image|medium=["']image)[^>]*url=["']([^"']+)["']/i);
+  if (m) return cleanImageUrl(m[1]);
+  // 3 : enclosure
+  m = block.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]*type=["']image\//i);
+  if (m) return cleanImageUrl(m[1]);
+  m = block.match(/<enclosure[^>]+type=["']image\/[^"']+["'][^>]*url=["']([^"']+)["']/i);
+  if (m) return cleanImageUrl(m[1]);
+  // 4 : itunes:image
+  m = block.match(/<itunes:image[^>]+href=["']([^"']+)["']/i);
+  if (m) return cleanImageUrl(m[1]);
+  // 5 : première <img> dans le contenu (description ou content:encoded)
+  const descContent = (extract(block, 'description') || '') + ' ' + (extract(block, 'content:encoded') || '') + ' ' + (extract(block, 'content') || '');
+  m = descContent.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (m) return cleanImageUrl(m[1]);
+  return null;
+}
+
+// Nettoie une URL d'image : décode les entités, force https si possible,
+// rejette les data URIs et les pixels de tracking (1x1).
+function cleanImageUrl(url) {
+  if (!url) return null;
+  url = decodeEntities(String(url).trim());
+  if (!/^https?:\/\//i.test(url)) return null;
+  if (/data:image/i.test(url)) return null;
+  // Filtre les pixels de tracking et trop petites images détectables par URL
+  if (/[?&](w|width)=1(&|$)/i.test(url) || /1x1/.test(url)) return null;
+  return url;
 }
 
 function extract(xml, tag) {
@@ -206,6 +250,7 @@ async function fetchRssSource(source) {
           excerpt:     stripHtml(item.desc).slice(0, 280),
           date:        normalizeDate(item.pubDate),
           url:         item.link,
+          image:       item.image || null,
           matiere:     detectMatiere(item.title),
           articleRef:  detectArticleRef(item.title, item.desc),
         })).filter(x => x.title);
