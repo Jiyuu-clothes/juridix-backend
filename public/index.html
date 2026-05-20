@@ -1794,6 +1794,39 @@ body.light .actu-preview{ background:rgba(15,23,42,0.05) }
 .actu-preview-fallback{
   font-size:32px; opacity:.3;
 }
+/* Bannière générée pour les arrêts sans image (Cassation/CE/CC).
+   Look : dégradé sombre thématique + grosse icône à gauche + numéro d'arrêt à droite. */
+.actu-banner{
+  margin-top:10px; border-radius:14px; overflow:hidden;
+  aspect-ratio:16/9; max-height:200px;
+  display:flex; align-items:center; gap:18px;
+  padding:0 26px; position:relative;
+  color:#fff;
+}
+.actu-banner.bn-cass    { background:linear-gradient(135deg,#1e3a8a 0%,#0c1f4a 100%) }
+.actu-banner.bn-ce      { background:linear-gradient(135deg,#0e7490 0%,#053946 100%) }
+.actu-banner.bn-cc      { background:linear-gradient(135deg,#7e22ce 0%,#3b0764 100%) }
+.actu-banner.bn-generic { background:linear-gradient(135deg,#374151 0%,#1f2937 100%) }
+.actu-banner-icon{
+  font-size:56px; flex:0 0 auto; opacity:.95;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+}
+.actu-banner-info{ flex:1; min-width:0 }
+.actu-banner-label{
+  font-size:11px; font-weight:600; letter-spacing:1.5px;
+  text-transform:uppercase; opacity:.75;
+}
+.actu-banner-number{
+  font-size:22px; font-weight:700;
+  font-family:'SF Mono','Courier New',monospace;
+  margin-top:4px; letter-spacing:-.5px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.actu-banner-pattern{
+  position:absolute; right:-30px; bottom:-30px;
+  font-size:160px; opacity:.06; transform:rotate(-15deg);
+  pointer-events:none;
+}
 /* Image hero dans le lecteur inline */
 .actu-reader-image{
   margin:-32px -36px 20px; max-height:320px; overflow:hidden;
@@ -2266,13 +2299,17 @@ function renderActu(){
     var refTag = it.articleRef ? '<span class="actu-ref-tag">Art. '+actuEscape(it.articleRef)+'</span>' : '';
     var tagsHtml = (matiereTag || refTag) ? '<div class="actu-tags">'+matiereTag+refTag+'</div>' : '';
 
-    // Preview image si dispo dans le flux RSS de la source
+    // Preview image si dispo dans le flux RSS de la source.
+    // Sinon, pour les sources juridictionnelles (Cassation, CE, CC), on génère
+    // une bannière colorée stylisée avec dégradé + emoji + numéro d'arrêt.
     var previewHtml = '';
     if(it.image){
       previewHtml = '<div class="actu-preview">'
                   +   '<img src="'+actuEscape(it.image)+'" loading="lazy" alt="" '
-                  +     'onerror="this.parentNode.innerHTML=\'<div class=actu-preview-fallback>📄</div>\'">'
+                  +     'onerror="this.parentNode.outerHTML=actuBannerFor('+JSON.stringify(JSON.stringify({source:it.source, sourceLabel:it.sourceLabel, title:it.title, articleRef:it.articleRef}))+')">'
                   + '</div>';
+    } else if(it.source === 'cassation' || it.source === 'conseil-etat' || it.source === 'conseil-constit'){
+      previewHtml = actuBannerFor(JSON.stringify({source:it.source, sourceLabel:it.sourceLabel, title:it.title, articleRef:it.articleRef}));
     }
 
     html += '<div class="actu-card" onclick="actuOpenItem(\''+url.replace(/\'/g,'%27')+'\')">'
@@ -2407,6 +2444,48 @@ document.addEventListener('keydown', function(e){
 
 function actuEscape(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* Génère une bannière stylisée pour un arrêt sans image.
+   Reçoit un JSON stringifié pour pouvoir être appelée depuis onerror=""
+   sans souci d'échappement. */
+function actuBannerFor(payloadJson){
+  var it;
+  try { it = typeof payloadJson === 'string' ? JSON.parse(payloadJson) : payloadJson; }
+  catch(e){ return ''; }
+  var theme = { cls: 'bn-generic', icon: '📰', label: 'Décision juridique', pattern: '§' };
+  if(it.source === 'cassation'){
+    theme = { cls: 'bn-cass', icon: '⚖️', label: 'Cour de cassation', pattern: '⚖' };
+  } else if(it.source === 'conseil-etat'){
+    theme = { cls: 'bn-ce', icon: '⚖️', label: 'Conseil d\'État', pattern: '🏛' };
+  } else if(it.source === 'conseil-constit'){
+    theme = { cls: 'bn-cc', icon: '🏛', label: 'Conseil constitutionnel', pattern: 'QPC' };
+  }
+  // Numéro extrait du titre : ex "Cour de cassation, civile, Chambre civile 2, 22 avril 2021, 21-70.003"
+  // → on cherche un motif numéro d'arrêt (XX-XX.XXX) ou date FR
+  var ref = it.articleRef || '';
+  if(!ref){
+    var t = String(it.title||'');
+    var m = t.match(/\b(\d{2}-\d{2}\.\d{3,5})\b/);                  // n° pourvoi Cass
+    if(m) ref = 'n° '+m[1];
+    else {
+      var m2 = t.match(/\b(\d{1,2})\s+(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)\s+(\d{4})\b/i);
+      if(m2) ref = m2[1]+' '+m2[2]+' '+m2[3];
+      else {
+        var m3 = t.match(/(\d{2}\/\d{2}\/\d{4})/);
+        if(m3) ref = m3[1];
+        else ref = it.sourceLabel || '';
+      }
+    }
+  }
+  return '<div class="actu-banner '+theme.cls+'">'
+       +   '<div class="actu-banner-icon">'+theme.icon+'</div>'
+       +   '<div class="actu-banner-info">'
+       +     '<div class="actu-banner-label">'+actuEscape(theme.label)+'</div>'
+       +     '<div class="actu-banner-number">'+actuEscape(ref)+'</div>'
+       +   '</div>'
+       +   '<div class="actu-banner-pattern">'+theme.pattern+'</div>'
+       + '</div>';
 }
 
 // Esc pour fermer
