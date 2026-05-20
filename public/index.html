@@ -1623,6 +1623,166 @@ body.light #actu-overlay{ background:rgba(248,250,255,0.97) }
 @keyframes actuFade { from{opacity:0} to{opacity:1} }
 @keyframes actuSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 #actu-refresh-icon{ display:inline-block }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE — Nav adaptée
+   Bottom tab bar + drawer Codes + hamburger
+   Tous ces éléments sont CACHÉS par défaut sur desktop, ne s'affichent
+   que via les @media query ci-dessous.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* États par défaut : cachés (desktop) */
+#mobile-menu-btn,
+#mobile-drawer-backdrop,
+#mobile-bottom-nav{
+  display:none;
+}
+
+/* Style du hamburger */
+#mobile-menu-btn{
+  position:fixed;
+  top:14px; left:14px;
+  z-index:1500;
+  width:42px; height:42px;
+  border-radius:11px;
+  background:rgba(13,13,28,0.85); backdrop-filter:blur(12px);
+  border:1px solid var(--gb);
+  color:var(--t1);
+  align-items:center; justify-content:center;
+  cursor:pointer; padding:0;
+  transition:all .15s ease;
+}
+body.light #mobile-menu-btn{
+  background:rgba(255,255,255,0.92);
+  border-color:rgba(15,23,42,0.10);
+}
+#mobile-menu-btn:hover{
+  background:var(--acc2); color:#fff; border-color:var(--acc2);
+}
+
+/* Backdrop semi-transparent quand drawer ouvert */
+#mobile-drawer-backdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);
+  z-index:1400;
+  animation:mobileFade .2s ease;
+}
+@keyframes mobileFade { from{opacity:0} to{opacity:1} }
+@keyframes mobileSlideIn { from{transform:translateX(-100%)} to{transform:translateX(0)} }
+
+/* Bottom tab bar */
+#mobile-bottom-nav{
+  position:fixed;
+  bottom:0; left:0; right:0;
+  z-index:1300;
+  background:rgba(13,13,28,0.96); backdrop-filter:blur(20px);
+  border-top:1px solid var(--gb);
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom));
+  justify-content:space-around;
+  align-items:center;
+}
+body.light #mobile-bottom-nav{
+  background:rgba(255,255,255,0.97);
+  border-top-color:rgba(15,23,42,0.08);
+  box-shadow:0 -4px 20px rgba(15,23,42,0.06);
+}
+.mbn-tab{
+  flex:1; max-width:80px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:8px 4px;
+  background:none; border:none;
+  color:var(--t2); cursor:pointer;
+  transition:all .15s ease;
+  min-height:54px;
+  -webkit-tap-highlight-color:transparent;
+}
+.mbn-tab:active{ transform:scale(.92) }
+.mbn-tab.on{ color:var(--acc2) }
+.mbn-tab.on .mbn-icon{ transform:translateY(-1px) }
+.mbn-icon{
+  font-size:22px; line-height:1;
+  transition:transform .15s ease;
+}
+.mbn-label{
+  font-size:10px; font-weight:600; letter-spacing:.2px;
+}
+
+/* ═══ Activation MOBILE (≤ 768px) ═══ */
+@media (max-width: 768px){
+  /* Affiche les éléments mobile */
+  #mobile-menu-btn{ display:flex }
+  #mobile-bottom-nav{ display:flex }
+  body.mobile-drawer-open #mobile-drawer-backdrop{ display:block }
+
+  /* Cache les nav desktop */
+  #top-tabs{ display:none !important }
+  #icon-sidebar{ display:none !important }
+
+  /* Topbar : laisser de la place pour le hamburger + simplifier */
+  #topbar{
+    padding-left:64px !important;
+    padding-right:14px !important;
+    gap:8px !important;
+  }
+  #topbar .logo{ font-size:16px }
+  #topbar .logo svg{ width:20px; height:20px }
+  /* Cache les icônes secondaires de la topbar pour gagner de la place */
+  #topbar .tb-right .btn-icon#notes-quick-btn,
+  #topbar .tb-right .btn-icon#sound-btn{ display:none }
+  #topbar-search-wrap .tb-kbd{ display:none }
+  #topbar-search-wrap{ min-width:0; flex:1 }
+  #topbar-search{ font-size:16px !important; /* anti-zoom iOS */ }
+
+  /* Main : laisser de la place en bas pour le bottom tab bar */
+  #main{
+    margin-left:0 !important;
+    padding-bottom:72px !important;
+  }
+
+  /* Panel-l (Codes) devient un drawer overlay sur mobile */
+  #panel-l{
+    position:fixed !important;
+    top:0; left:0; bottom:0;
+    width:88vw !important; max-width:340px;
+    z-index:1450;
+    transform:translateX(-100%);
+    transition:transform .25s cubic-bezier(.2,.8,.3,1);
+    box-shadow:8px 0 32px rgba(0,0,0,0.4);
+    border-right:1px solid var(--gb);
+    background:var(--bg) !important;
+  }
+  body.mobile-drawer-open #panel-l{
+    transform:translateX(0);
+  }
+  /* Le resizer entre panneaux n'a plus de sens sur mobile */
+  #main-resizer{ display:none !important }
+
+  /* Reader pane et studio prennent toute la largeur restante */
+  #reader-pane{ width:100% !important; max-width:100% !important; }
+  #panel-r{ width:100% !important; max-width:100% !important; }
+
+  /* Cards et boutons : touch-friendly */
+  button, .ttab, .actu-action, .actu-close, .actu-side-item{
+    min-height:40px;
+  }
+
+  /* Panel actualités : header compact, bottom nav visible */
+  #actu-overlay{ padding-bottom:72px }
+  #actu-header{ padding:12px 14px 12px 64px !important }
+  #actu-title{ font-size:16px !important }
+  #actu-last-update{ display:none !important }   /* pas la place sur mobile */
+  .actu-close{ padding:6px 12px !important; font-size:12px !important }
+
+  /* Anti-zoom iOS sur tous les inputs */
+  input, textarea, select{ font-size:16px !important }
+}
+
+/* Très petits écrans (≤ 380px) : encore plus serré */
+@media (max-width: 380px){
+  .mbn-label{ font-size:9px }
+  .mbn-icon{ font-size:20px }
+  #topbar .logo span{ display:none }   /* garde juste le logo SVG */
+}
 #actu-header{
   display:flex; align-items:center; gap:14px;
   padding:18px 24px; border-bottom:1px solid var(--gb);
@@ -2497,6 +2657,42 @@ document.addEventListener('keydown', function(e){
 </script>
 
 <!-- TOPBAR -->
+<!-- Bouton hamburger mobile : ouvre la Bibliothèque des Codes en drawer overlay -->
+<button id="mobile-menu-btn" type="button" onclick="mobileToggleDrawer()" aria-label="Menu Codes" title="Bibliothèque des Codes">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+</button>
+
+<!-- Backdrop pour fermer le drawer en cliquant à côté -->
+<div id="mobile-drawer-backdrop" onclick="mobileCloseDrawer()"></div>
+
+<!-- Bottom tab bar mobile : nav principale sur petit écran -->
+<nav id="mobile-bottom-nav" aria-label="Navigation principale">
+  <button class="mbn-tab" data-tab="home"    onclick="goHome()">
+    <span class="mbn-icon">🏠</span>
+    <span class="mbn-label">Accueil</span>
+  </button>
+  <button class="mbn-tab" data-tab="atelier" onclick="openAtelier()">
+    <span class="mbn-icon">✍️</span>
+    <span class="mbn-label">Atelier</span>
+  </button>
+  <button class="mbn-tab" data-tab="carte"   onclick="openCarte()">
+    <span class="mbn-icon">🧠</span>
+    <span class="mbn-label">Carte</span>
+  </button>
+  <button class="mbn-tab" data-tab="fiches"  onclick="switchTab('fiches')">
+    <span class="mbn-icon">📝</span>
+    <span class="mbn-label">Fiches</span>
+  </button>
+  <button class="mbn-tab" data-tab="actus"   onclick="openActualites()">
+    <span class="mbn-icon">📰</span>
+    <span class="mbn-label">Actu</span>
+  </button>
+</nav>
+
 <div id="topbar">
   <div class="logo" onclick="goHome()" style="display:flex;align-items:center;gap:8px">
     <svg width="22" height="22" viewBox="0 0 24 24" style="color:#38BDF8;flex-shrink:0" aria-hidden="true">
@@ -7661,6 +7857,63 @@ function goHome(){
 function toggleDrawer(){
   document.body.classList.toggle('drawer-closed');
 }
+
+/* ───── Mobile : drawer Codes overlay ─────
+   Sur mobile, le panel-l devient un overlay glissant depuis la gauche.
+   Activé via le bouton hamburger en haut de l'écran.                  */
+function mobileToggleDrawer(){
+  document.body.classList.toggle('mobile-drawer-open');
+  // Si on ouvre, on s'assure qu'on est sur l'onglet "codes" pour voir
+  // la Bibliothèque (pas la recherche).
+  if(document.body.classList.contains('mobile-drawer-open')){
+    if(typeof switchTab === 'function') switchTab('codes');
+  }
+}
+function mobileCloseDrawer(){
+  document.body.classList.remove('mobile-drawer-open');
+}
+/* Esc ferme aussi le drawer mobile */
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && document.body.classList.contains('mobile-drawer-open')){
+    mobileCloseDrawer();
+  }
+});
+/* Ferme le drawer automatiquement quand on clique sur un article du menu */
+document.addEventListener('click', function(e){
+  if(!document.body.classList.contains('mobile-drawer-open')) return;
+  // Si on clique sur un item d'article dans le panneau gauche
+  var inPanelL = e.target.closest && e.target.closest('#panel-l');
+  if(inPanelL){
+    var artLink = e.target.closest && e.target.closest('[onclick*="openArticle"], [onclick*="openNavArticle"]');
+    if(artLink){
+      // Petit délai pour laisser le clic s'effectuer avant de fermer
+      setTimeout(mobileCloseDrawer, 100);
+    }
+  }
+});
+
+/* Synchronise l'état actif du bottom tab bar avec les onglets du haut.
+   On hook sur les fonctions de navigation existantes via un MutationObserver
+   sur le classList de #top-tabs.                                         */
+(function syncBottomNav(){
+  function update(activeTab){
+    document.querySelectorAll('#mobile-bottom-nav .mbn-tab').forEach(function(t){
+      t.classList.toggle('on', t.getAttribute('data-tab') === activeTab);
+    });
+  }
+  // Observe les changements de classe sur les onglets top pour propager.
+  document.addEventListener('DOMContentLoaded', function(){
+    var topTabs = document.getElementById('top-tabs');
+    if(!topTabs) return;
+    var mo = new MutationObserver(function(){
+      var active = topTabs.querySelector('.ttab.on');
+      if(active) update(active.getAttribute('data-tab'));
+    });
+    topTabs.querySelectorAll('.ttab').forEach(function(t){
+      mo.observe(t, { attributes:true, attributeFilter:['class'] });
+    });
+  });
+})();
 function openDrawer(){
   document.body.classList.remove('drawer-closed');
 }
