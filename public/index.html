@@ -1754,12 +1754,27 @@ body.light #mobile-bottom-nav{
   body.mobile-drawer-open #panel-l{
     transform:translateX(0);
   }
-  /* Le resizer entre panneaux n'a plus de sens sur mobile */
-  #main-resizer{ display:none !important }
+  /* Panel-r (Studio) caché par défaut sur mobile, accessible via Atelier
+     dans la bottom tab bar qui ouvre son propre overlay plein écran. */
+  #panel-r,
+  #main-resizer,
+  #right-resizer,
+  #split-r{ display:none !important }
 
-  /* Reader pane et studio prennent toute la largeur restante */
-  #reader-pane{ width:100% !important; max-width:100% !important; }
-  #panel-r{ width:100% !important; max-width:100% !important; }
+  /* Reader pane prend toute la largeur restante */
+  #reader-pane{
+    width:100% !important;
+    max-width:100% !important;
+    flex:1 1 100% !important;
+  }
+
+  /* Bouton compte : juste l'icône, pas le label "Connexion" */
+  #jd-account{
+    padding:5px 8px !important;
+    font-size:0 !important;   /* cache le texte */
+  }
+  #jd-account .jd-acc-dot{ font-size:14px }   /* garde l'icône visible */
+  #jd-account-label{ display:none !important }
 
   /* Cards et boutons : touch-friendly */
   button, .ttab, .actu-action, .actu-close, .actu-side-item{
