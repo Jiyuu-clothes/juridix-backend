@@ -1,5 +1,8 @@
 # Scripts JuriDix
 
+> 🚀 Auto-push opérationnel — fswatch détecte les changements et pousse automatiquement avec auto-cleanup des locks Git.
+
+
 ## `build-cassation-corpus.js`
 
 Construit un index **Article → Arrêts publiés au Bulletin de la Cour de cassation** à partir de l'open data DILA.
