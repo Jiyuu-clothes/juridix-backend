@@ -1788,10 +1788,55 @@ body.light #mobile-bottom-nav{
     width:100% !important;
     flex:1 1 100% !important;
   }
-  /* Toolbar wrap proprement, boutons un peu plus gros pour le tactile */
-  #atelier-toolbar{ padding:6px 8px !important; gap:4px !important }
+
+  /* Toolbar row (Nouveau / Article / Imprimer / PDF / Fermer / etc.) :
+     - On cache les boutons les moins utiles sur mobile (Imprimer, PDF, Dupliquer)
+     - On force un layout horizontal scrollable au lieu de wrap vertical
+     - On cache la search dropdown / autosave label pour gagner de la place */
+  #atelier-toolbar-row{
+    padding:6px 8px !important;
+    gap:4px !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  #atelier-toolbar-row::-webkit-scrollbar{ display:none }
+  #atelier-toolbar-row .at-btn{
+    flex:0 0 auto !important;
+    padding:6px 10px !important;
+    font-size:12px !important;
+    white-space:nowrap !important;
+  }
+  /* Cache les boutons moins utiles sur petit écran (gardés sur desktop) */
+  #atelier-toolbar-row .at-btn[onclick*="duplicate"],
+  #atelier-toolbar-row .at-btn[onclick*="printAtelier"],
+  #atelier-toolbar-row .at-btn[onclick*="exportAtelierPDF"],
+  #atelier-toolbar-row .at-btn[onclick*="injectArticleToCarte"]{
+    display:none !important;
+  }
+  /* Cache la search bar Atelier en mobile (peu utile sur petit écran) */
+  #atelier-toolbar-row #atelier-search-wrap,
+  #atelier-toolbar-row #atelier-wcount,
+  #atelier-toolbar-row #atelier-autosave .aas-label{ display:none !important }
+  #atelier-toolbar-row .at-spacer{ flex:0 1 4px !important }
+
+  /* Toolbar formatage : aussi en barre horizontale scrollable */
+  #atelier-toolbar{
+    padding:4px 6px !important;
+    gap:2px !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  #atelier-toolbar::-webkit-scrollbar{ display:none }
+  #atelier-toolbar .tb-group{
+    flex:0 0 auto !important;
+    padding:0 4px !important;
+  }
   #atelier-toolbar .tb-btn{ width:32px !important; height:32px !important }
-  #atelier-toolbar-row{ padding:8px 10px !important; gap:6px !important }
+
+  /* L'éditeur prend tout l'espace restant */
+  #atelier-editor{ padding:14px 16px !important; min-height:50vh }
 
   /* === TOPBAR : organiser proprement === */
   /* L'input de recherche prend la largeur restante mais sans déborder */
