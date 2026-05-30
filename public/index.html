@@ -1776,6 +1776,42 @@ body.light #mobile-bottom-nav{
   #jd-account .jd-acc-dot{ font-size:14px }   /* garde l'icône visible */
   #jd-account-label{ display:none !important }
 
+  /* Cache le tab vertical "CODES" — on a déjà le hamburger pour ouvrir le drawer */
+  #codes-expand-tab,
+  #studio-expand-tab{ display:none !important }
+
+  /* === ATELIER MODE MOBILE === */
+  /* L'overlay atelier prend tout l'écran ; sa sidebar 240px est trop grosse
+     pour un téléphone. On la cache par défaut, l'éditeur prend toute la place. */
+  body.atelier-mode #atelier-sidebar{ display:none !important }
+  body.atelier-mode #atelier-main{
+    width:100% !important;
+    flex:1 1 100% !important;
+  }
+  /* Toolbar wrap proprement, boutons un peu plus gros pour le tactile */
+  #atelier-toolbar{ padding:6px 8px !important; gap:4px !important }
+  #atelier-toolbar .tb-btn{ width:32px !important; height:32px !important }
+  #atelier-toolbar-row{ padding:8px 10px !important; gap:6px !important }
+
+  /* === TOPBAR : organiser proprement === */
+  /* L'input de recherche prend la largeur restante mais sans déborder */
+  #topbar{
+    flex-wrap:wrap;
+    min-height:54px;
+    align-items:center;
+  }
+  #topbar-search-wrap{
+    flex:1 1 100%;
+    order:5;            /* va en 2ème ligne sur très petit écran */
+    margin-top:6px;
+  }
+  /* À ≥ 420px, on remet la search inline avec le reste */
+  @media (min-width: 420px){
+    #topbar-search-wrap{ flex:1 1 0; order:0; margin-top:0 }
+  }
+  /* tb-right reste compact */
+  .tb-right{ gap:4px !important }
+
   /* Cards et boutons : touch-friendly */
   button, .ttab, .actu-action, .actu-close, .actu-side-item{
     min-height:40px;
