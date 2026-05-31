@@ -1838,6 +1838,31 @@ body.light #mobile-bottom-nav{
   /* L'éditeur prend tout l'espace restant */
   #atelier-editor{ padding:14px 16px !important; min-height:50vh }
 
+  /* === CARTE MODE MOBILE === */
+  /* La sidebar carte (cm-list + tabs) prend 220px fixe : trop large.
+     On la cache par défaut, le canvas prend toute la place. */
+  body.carte-mode #carte-sidebar{ display:none !important }
+  body.carte-mode #carte-main{
+    width:100% !important;
+    flex:1 1 100% !important;
+  }
+  /* Bouton hamburger reste accessible pour ouvrir le drawer Codes,
+     mais en carte-mode on n'a pas de drawer carte natif. Pour MVP,
+     on accepte que les cartes/notes soient gérées depuis le desktop. */
+
+  /* === ACTUALITÉS MOBILE : sidebar horizontale scrollable propre === */
+  /* Padding-right pour éviter que les chips débordent sans marge,
+     scroll latéral fluide avec inertia iOS. */
+  #actu-body{ padding:0 !important }
+  #actu-overlay #actu-body .actu-side-left .actu-side-section:first-child{
+    padding-left:14px !important;
+    padding-right:14px !important;
+  }
+  /* Le row horizontal des sources : on s'assure qu'il déborde proprement */
+  @media (max-width: 760px){
+    .actu-side-left{ padding:8px 0 !important }
+  }
+
   /* === TOPBAR : organiser proprement === */
   /* L'input de recherche prend la largeur restante mais sans déborder */
   #topbar{
