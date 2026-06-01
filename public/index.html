@@ -1841,14 +1841,48 @@ body.light #mobile-bottom-nav{
   /* === CARTE MODE MOBILE === */
   /* La sidebar carte (cm-list + tabs) prend 220px fixe : trop large.
      On la cache par défaut, le canvas prend toute la place. */
-  body.carte-mode #carte-sidebar{ display:none !important }
-  body.carte-mode #carte-main{
+  body.carte-mode #carte-sidebar,
+  body.carte-mode #carte-resizer{ display:none !important }
+  body.carte-mode #carte-main,
+  body.carte-mode #carte-canvas-wrap{
     width:100% !important;
     flex:1 1 100% !important;
   }
-  /* Bouton hamburger reste accessible pour ouvrir le drawer Codes,
-     mais en carte-mode on n'a pas de drawer carte natif. Pour MVP,
-     on accepte que les cartes/notes soient gérées depuis le desktop. */
+  /* Mini-map cachée sur mobile : 180×112 → écrase la bottom tab bar.
+     L'utilisateur peut naviguer en pinch-zoom directement. */
+  body.carte-mode #carte-minimap{ display:none !important }
+  /* Zoom-indicator déplacé vers le haut pour ne pas chevaucher le bottom nav */
+  body.carte-mode #carte-zoom-ind{
+    bottom:auto !important;
+    top:64px !important;
+    right:10px !important;
+    padding:4px 8px !important;
+    font-size:10px !important;
+  }
+  /* Toolbar carte mobile : input + icônes uniquement, fermer en danger */
+  #carte-toolbar{
+    padding:6px 8px !important;
+    gap:6px !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  #carte-toolbar::-webkit-scrollbar{ display:none }
+  #carte-title-in{
+    flex:1 1 auto !important;
+    min-width:80px !important;
+    font-size:14px !important;
+    padding:6px 8px !important;
+  }
+  #carte-toolbar .ct-btn{
+    flex:0 0 auto !important;
+    padding:6px 10px !important;
+    font-size:12px !important;
+    white-space:nowrap !important;
+  }
+  /* Topbar search : placeholder plus court via attribute selector si possible.
+     Sinon, font-size réduit pour que ça tienne dans la largeur. */
+  #topbar-search{ font-size:14px !important; padding-right:8px !important }
 
   /* === ACTUALITÉS MOBILE : sidebar horizontale scrollable propre === */
   /* Padding-right pour éviter que les chips débordent sans marge,
