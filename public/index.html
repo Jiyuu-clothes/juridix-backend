@@ -2013,6 +2013,48 @@ body.light #mobile-bottom-nav{
 
   /* Anti-zoom iOS sur tous les inputs */
   input, textarea, select{ font-size:16px !important }
+
+  /* === FICHES PAGE MOBILE === */
+  /* 1 colonne sur petit écran pour cartes plus lisibles */
+  .fiches-grid{ grid-template-columns:1fr !important; gap:10px }
+  .fiche-card{ padding:14px 16px }
+  .fc-title{ font-size:14px; padding-right:0 }
+  .fc-inject{ opacity:1; font-size:10px; padding:3px 7px } /* visible sans hover sur mobile */
+  #page-fiches .page-inner{ padding:12px 12px 24px }
+
+  /* === RECHERCHE PAGE MOBILE === */
+  .filter-bar{
+    padding:8px 12px 0 !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .filter-bar::-webkit-scrollbar{ display:none }
+  .fbtn{
+    flex:0 0 auto;
+    padding:6px 13px !important;
+    font-size:12px !important;
+    white-space:nowrap;
+  }
+  #results-list{ padding:12px 10px 24px !important }
+
+  /* === HOME en hub-mode mobile : logo + sub un peu plus grand pour respirer === */
+  body.hub-mode .home-logo{ font-size:36px !important }
+  body.hub-mode .home-sub{ font-size:13px !important }
+  .home-quick-grid{ padding:0 4px }
+  .home-quick-card{ padding:14px 14px }
+
+  /* === QUIZ PAGE MOBILE === */
+  .quiz-start-btn{
+    width:100% !important;
+    padding:14px !important;
+    font-size:14px !important;
+  }
+  .quiz-mats{ gap:6px !important }
+
+  /* === BULLE AUTO-CITATION : la placer au-dessus de la bottom nav === */
+  #cite-bubble{ bottom:88px !important }
 }
 
 /* Très petits écrans (≤ 380px) : encore plus serré */
