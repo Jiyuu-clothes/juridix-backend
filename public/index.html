@@ -2760,10 +2760,12 @@ function openActuReader(it){
 
   document.getElementById('actu-reader-content').innerHTML = content;
   document.getElementById('actu-reader').classList.add('on');
+  document.body.classList.add('actu-reader-open');
 }
 
 function closeActuReader(){
   document.getElementById('actu-reader').classList.remove('on');
+  document.body.classList.remove('actu-reader-open');
 }
 
 // Esc ferme le reader avant l'overlay
