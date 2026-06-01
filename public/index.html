@@ -2843,29 +2843,66 @@ document.addEventListener('keydown', function(e){
 <!-- Backdrop pour fermer le drawer en cliquant à côté -->
 <div id="mobile-drawer-backdrop" onclick="mobileCloseDrawer()"></div>
 
-<!-- Bottom tab bar mobile : nav principale sur petit écran -->
+<!-- Bottom tab bar mobile : nav principale sur petit écran.
+     Chaque bouton passe par mobileNavGo() qui ferme proprement les overlays
+     actifs (actu, atelier, carte) avant de naviguer vers la nouvelle vue. -->
 <nav id="mobile-bottom-nav" aria-label="Navigation principale">
-  <button class="mbn-tab" data-tab="home"    onclick="goHome()">
+  <button class="mbn-tab" data-tab="home"    onclick="mobileNavGo('home')">
     <span class="mbn-icon">🏠</span>
     <span class="mbn-label">Accueil</span>
   </button>
-  <button class="mbn-tab" data-tab="atelier" onclick="openAtelier()">
+  <button class="mbn-tab" data-tab="atelier" onclick="mobileNavGo('atelier')">
     <span class="mbn-icon">✍️</span>
     <span class="mbn-label">Atelier</span>
   </button>
-  <button class="mbn-tab" data-tab="carte"   onclick="openCarte()">
+  <button class="mbn-tab" data-tab="carte"   onclick="mobileNavGo('carte')">
     <span class="mbn-icon">🧠</span>
     <span class="mbn-label">Carte</span>
   </button>
-  <button class="mbn-tab" data-tab="fiches"  onclick="switchTab('fiches')">
+  <button class="mbn-tab" data-tab="fiches"  onclick="mobileNavGo('fiches')">
     <span class="mbn-icon">📝</span>
     <span class="mbn-label">Fiches</span>
   </button>
-  <button class="mbn-tab" data-tab="actus"   onclick="openActualites()">
+  <button class="mbn-tab" data-tab="actus"   onclick="mobileNavGo('actus')">
     <span class="mbn-icon">📰</span>
     <span class="mbn-label">Actu</span>
   </button>
 </nav>
+<script>
+/* Router unifié pour la bottom nav mobile :
+   - Ferme l'overlay actuel (actu / atelier / carte) avant de naviguer
+   - Marque l'onglet actif dans la bottom nav
+   - Délègue à la fonction d'ouverture appropriée */
+function mobileNavGo(target){
+  try{
+    if(target !== 'actus' && document.getElementById('actu-overlay').classList.contains('on')){
+      closeActualites();
+    }
+    if(target !== 'atelier' && document.body.classList.contains('atelier-mode') && typeof window.exitAtelier==='function'){
+      window.exitAtelier();
+    }
+    if(target !== 'carte' && document.body.classList.contains('carte-mode') && typeof window.closeCarte==='function'){
+      window.closeCarte();
+    }
+  }catch(e){ console.warn('[mobileNavGo] cleanup', e); }
+  // Ferme aussi le drawer Codes si ouvert
+  if(document.body.classList.contains('mobile-drawer-open')){
+    document.body.classList.remove('mobile-drawer-open');
+  }
+  // Marque l'onglet actif immédiatement (avant async)
+  document.querySelectorAll('#mobile-bottom-nav .mbn-tab').forEach(function(t){
+    t.classList.toggle('on', t.getAttribute('data-tab') === target);
+  });
+  switch(target){
+    case 'home':    if(typeof goHome==='function') goHome(); break;
+    case 'atelier': if(typeof window.openAtelier==='function') window.openAtelier(); break;
+    case 'carte':   if(typeof window.openCarte==='function') window.openCarte(); break;
+    case 'fiches':  if(typeof switchTab==='function') switchTab('fiches'); break;
+    case 'actus':   if(typeof openActualites==='function') openActualites(); break;
+  }
+}
+window.mobileNavGo = mobileNavGo;
+</script>
 
 <div id="topbar">
   <div class="logo" onclick="goHome()" style="display:flex;align-items:center;gap:8px">
