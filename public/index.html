@@ -3023,6 +3023,22 @@ function toggleAtelierDocs(){
   document.body.classList.toggle('atelier-docs-open');
 }
 window.toggleAtelierDocs = toggleAtelierDocs;
+/* Carte mobile : toggle de la sidebar cartes/notes/fiches (drawer) */
+function toggleCarteDocs(){
+  document.body.classList.toggle('carte-docs-open');
+}
+window.toggleCarteDocs = toggleCarteDocs;
+/* Ferme aussi le drawer carte si on clique sur un item */
+document.addEventListener('click', function(e){
+  if(!document.body.classList.contains('carte-docs-open')) return;
+  var inSidebar = e.target.closest && e.target.closest('#carte-sidebar');
+  if(inSidebar){
+    var item = e.target.closest && e.target.closest('[onclick*="loadCarte"], [onclick*="selectCarte"], #carte-list > *, #carte-notes-list > *, #carte-fiches-list > *');
+    if(item){
+      setTimeout(function(){ document.body.classList.remove('carte-docs-open'); }, 120);
+    }
+  }
+});
 /* Ferme le drawer si on clique sur un document dans la liste */
 document.addEventListener('click', function(e){
   if(!document.body.classList.contains('atelier-docs-open')) return;
