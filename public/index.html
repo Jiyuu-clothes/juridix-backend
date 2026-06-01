@@ -1720,18 +1720,40 @@ body.light #mobile-bottom-nav{
 
   /* Topbar : laisser de la place pour le hamburger + simplifier */
   #topbar{
-    padding-left:64px !important;
-    padding-right:14px !important;
+    padding-left:62px !important;
+    padding-right:10px !important;
     gap:8px !important;
+    height:54px !important;
+    min-height:54px !important;
   }
-  #topbar .logo{ font-size:16px }
+  #topbar .logo{ font-size:15px; flex-shrink:0 }
   #topbar .logo svg{ width:20px; height:20px }
   /* Cache les icônes secondaires de la topbar pour gagner de la place */
   #topbar .tb-right .btn-icon#notes-quick-btn,
   #topbar .tb-right .btn-icon#sound-btn{ display:none }
+  /* CRITIQUE : repasser la search wrap en flux normal (elle est en absolute centré en desktop) */
+  #topbar-search-wrap{
+    position:static !important;
+    transform:none !important;
+    left:auto !important;
+    top:auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    flex:1 1 0 !important;
+  }
+  body.hub-mode #topbar-search-wrap{
+    width:auto !important;
+    min-width:0 !important;
+  }
+  #topbar-search-wrap:focus-within{ width:auto !important }
   #topbar-search-wrap .tb-kbd{ display:none }
-  #topbar-search-wrap{ min-width:0; flex:1 }
-  #topbar-search{ font-size:16px !important; /* anti-zoom iOS */ }
+  #topbar-search{
+    font-size:16px !important; /* anti-zoom iOS */
+    height:38px !important;
+    padding:0 14px 0 34px !important;
+  }
+  #topbar-search-wrap .tb-icon{ left:12px }
 
   /* Main : laisser de la place en bas pour le bottom tab bar */
   #main{
