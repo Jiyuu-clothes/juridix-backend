@@ -2986,6 +2986,22 @@ function mobileNavGo(target){
   }
 }
 window.mobileNavGo = mobileNavGo;
+/* Atelier mobile : toggle de la sidebar documents (drawer) */
+function toggleAtelierDocs(){
+  document.body.classList.toggle('atelier-docs-open');
+}
+window.toggleAtelierDocs = toggleAtelierDocs;
+/* Ferme le drawer si on clique sur un document dans la liste */
+document.addEventListener('click', function(e){
+  if(!document.body.classList.contains('atelier-docs-open')) return;
+  var inSidebar = e.target.closest && e.target.closest('#atelier-sidebar');
+  if(inSidebar){
+    var docItem = e.target.closest && e.target.closest('[onclick*="loadAtelierDoc"], [onclick*="selectAtelierDoc"], #atelier-doc-list > *');
+    if(docItem){
+      setTimeout(function(){ document.body.classList.remove('atelier-docs-open'); }, 120);
+    }
+  }
+});
 </script>
 
 <div id="topbar">
