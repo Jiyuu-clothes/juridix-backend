@@ -1638,11 +1638,13 @@ body.light #actu-overlay{ background:rgba(248,250,255,0.97) }
   display:none;
 }
 
-/* Style du hamburger */
+/* Style du hamburger — z-index 9800 pour rester accessible au-dessus des overlays
+   plein écran (actu z:9000, atelier/carte z:5). Inférieur à la bottom nav (9700)
+   non — on le met juste au-dessus (9800) car le hamburger est en haut, pas en bas. */
 #mobile-menu-btn{
   position:fixed;
-  top:14px; left:14px;
-  z-index:1500;
+  top:9px; left:10px;
+  z-index:9800;
   width:42px; height:42px;
   border-radius:11px;
   background:rgba(13,13,28,0.85); backdrop-filter:blur(12px);
@@ -1652,6 +1654,8 @@ body.light #actu-overlay{ background:rgba(248,250,255,0.97) }
   cursor:pointer; padding:0;
   transition:all .15s ease;
 }
+/* Cache le hamburger quand le lecteur d'article actu est ouvert (mode focus) */
+body.actu-reader-open #mobile-menu-btn{ display:none !important }
 body.light #mobile-menu-btn{
   background:rgba(255,255,255,0.92);
   border-color:rgba(15,23,42,0.10);
@@ -2356,82 +2360,193 @@ body.light .actu-reader-image{ background:rgba(15,23,42,0.05) }
   .actu-side-right{ display:none }
 }
 @media (max-width:760px){
-  /* Header compact mobile : titre + close, refresh devient juste l'icône ↻ */
+  /* ═══ ACTU MOBILE — refonte v2 ═══
+     Objectif : feed lisible style X/Twitter, chips sources colorées et claires,
+     scroll fluide, séparation visuelle nette entre chaque article. */
   #actu-overlay{
     padding-top:0 !important;
     padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important;
   }
+  /* ── HEADER ── */
   #actu-header{
-    padding:12px 12px 12px 64px !important; /* 64px à gauche pour le hamburger */
-    flex-wrap:nowrap !important; gap:8px;
+    padding:10px 10px 10px 60px !important; /* place pour le hamburger ☰ */
+    flex-wrap:nowrap !important; gap:6px;
     position:sticky; top:0; z-index:5;
     background:rgba(13,13,28,0.96); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--gb);
+    min-height:54px;
   }
   body.light #actu-header{ background:rgba(255,255,255,0.95) }
-  #actu-title{ font-size:16px !important; flex:1; min-width:0 }
+  #actu-title{ font-size:15px !important; font-weight:700; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  #actu-title .actu-tag{ margin-right:4px }
   #actu-last-update{ display:none !important }
+  /* Refresh : juste l'icône, rond */
   #actu-refresh-btn{
-    padding:7px 9px !important; font-size:12px !important;
-    flex:0 0 auto;
+    padding:0 !important; font-size:0 !important;
+    width:36px !important; height:36px !important;
+    border-radius:50% !important;
+    display:flex !important; align-items:center; justify-content:center;
+    flex:0 0 36px; margin:0 !important;
   }
+  #actu-refresh-btn #actu-refresh-icon{ font-size:16px }
   #actu-refresh-btn span:not(#actu-refresh-icon){ display:none }
-  /* Bouton "✕ Fermer" → garder visible mais condensé */
+  /* Fermer : rond aussi pour rester cohérent */
   #actu-overlay .actu-close:not(#actu-refresh-btn){
-    padding:7px 12px !important; font-size:12px !important;
-    flex:0 0 auto;
+    padding:0 !important; font-size:0 !important;
+    width:36px !important; height:36px !important;
+    border-radius:50% !important;
+    display:flex !important; align-items:center; justify-content:center;
+    flex:0 0 36px;
   }
-  /* Banner "X nouveaux articles" placé sous le header sticky */
-  #actu-new-banner{ top:64px !important; font-size:12px; padding:6px 14px }
-  /* Mobile : tout en colonne, sidebar gauche au-dessus du feed */
+  #actu-overlay .actu-close:not(#actu-refresh-btn)::before{
+    content:"✕"; font-size:14px; color:var(--t1);
+  }
+  /* Banner "X nouveaux articles" */
+  #actu-new-banner{ top:60px !important; font-size:12px; padding:6px 14px }
+
+  /* ── BODY scroll ── */
   #actu-body{
     grid-template-columns: 1fr !important;
     overflow-y:auto !important;
     -webkit-overflow-scrolling:touch;
   }
   .actu-side, .actu-feed-wrap{ overflow:visible !important; padding:0 }
+
+  /* ── SOURCES (chips sticky sous header) ── */
   .actu-side-left{
     border-right:none; border-bottom:1px solid var(--gb);
-    padding:8px 12px !important;
+    padding:10px 0 !important;
     position:sticky; top:54px; z-index:4;
-    background:rgba(13,13,28,0.92); backdrop-filter:blur(10px);
+    background:rgba(13,13,28,0.96); backdrop-filter:blur(14px);
+    display:flex !important; flex-direction:column; gap:0 !important;
   }
-  body.light .actu-side-left{ background:rgba(255,255,255,0.92) }
-  .actu-side-section{ padding:8px 4px }
+  body.light .actu-side-left{ background:rgba(255,255,255,0.96) }
+  .actu-side-section{ padding:0 !important; background:transparent !important; border:none !important }
   .actu-side-section h3{ display:none }
-  /* Sources : ligne horizontale scrollable au lieu de liste verticale */
   .actu-side-left .actu-side-section:first-child{
-    display:flex; gap:6px; overflow-x:auto;
-    background:transparent; border:none; padding:0;
+    display:flex !important; gap:8px; overflow-x:auto;
+    padding:0 12px !important;
     -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
   }
   .actu-side-left .actu-side-section:first-child::-webkit-scrollbar{ display:none }
+  /* CHIP : icône colorée + label, contraste fort, bordure visible */
   .actu-side-left .actu-side-item{
-    flex:0 0 auto; flex-direction:row; gap:6px;
-    padding:7px 11px; font-size:12px; white-space:nowrap;
-    border-radius:18px;
-    background:rgba(255,255,255,0.04);
+    flex:0 0 auto; flex-direction:row; align-items:center; gap:7px;
+    padding:8px 14px 8px 8px;
+    font-size:12.5px; font-weight:600; white-space:nowrap;
+    border-radius:999px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.10);
+    color:var(--t1);
+    transition:transform .12s ease, background .12s ease;
   }
-  body.light .actu-side-left .actu-side-item{ background:rgba(15,23,42,0.04) }
-  .actu-side-left .actu-side-item-icon{ width:20px; height:20px; flex:0 0 20px; font-size:11px }
+  .actu-side-left .actu-side-item:active{ transform:scale(.96) }
+  body.light .actu-side-left .actu-side-item{
+    background:rgba(15,23,42,0.05);
+    border-color:rgba(15,23,42,0.10);
+  }
+  /* ICÔNE DE SOURCE : cercle coloré net (pas un emoji isolé) */
+  .actu-side-left .actu-side-item-icon{
+    width:24px !important; height:24px !important; flex:0 0 24px !important;
+    border-radius:50%; font-size:12px !important;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,0.25);
+  }
+  /* État actif : remplissage couleur d'accent + texte blanc */
+  .actu-side-left .actu-side-item.on{
+    background:var(--acc2) !important;
+    border-color:var(--acc2);
+    color:#fff !important;
+  }
+  .actu-side-left .actu-side-item.on .actu-side-item-icon{
+    background:rgba(255,255,255,0.25) !important;
+    color:#fff !important;
+  }
   .actu-side-left .actu-side-item-count{ display:none }
-  /* On masque le bloc Matières + section "À propos" sur mobile */
+  /* Masque les blocs Matières + À propos sur mobile */
   #matiere-section, .actu-side-section:last-child{ display:none }
-  .actu-feed{ border:none }
-  .actu-card{ padding:14px 14px }
-  .actu-avatar{ flex:0 0 40px; width:40px; height:40px; font-size:20px }
-  .actu-card-title{ font-size:15px; line-height:1.3 }
-  .actu-card-excerpt{ font-size:13px; -webkit-line-clamp:3 }
-  .actu-card-title, .actu-source{ max-width:none }
-  /* Banner & preview : ratio plus haut sur mobile pour mieux occuper */
-  .actu-banner{ max-height:160px; padding:0 16px; gap:12px }
-  .actu-banner-icon{ font-size:40px }
-  .actu-banner-number{ font-size:16px }
-  .actu-preview{ max-height:200px }
-  /* Actions Twitter : icônes plus serrées */
-  .actu-actions{ max-width:none; margin-top:8px }
-  .actu-action{ padding:6px }
-  .actu-action span{ font-size:12px }
+
+  /* ── FEED CARDS ── */
+  .actu-feed{ border:none; display:flex; flex-direction:column }
+  .actu-card{
+    padding:16px 14px !important;
+    gap:11px !important;
+    border-bottom:8px solid rgba(255,255,255,0.025) !important; /* séparation marquée façon timeline */
+    position:relative;
+  }
+  body.light .actu-card{
+    border-bottom-color:rgba(15,23,42,0.04) !important;
+  }
+  .actu-card:active{ background:rgba(124,107,255,0.06) }
+  /* Avatar : un poil plus petit pour gagner de la largeur texte */
+  .actu-avatar{
+    flex:0 0 42px !important; width:42px !important; height:42px !important;
+    font-size:20px !important;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+  }
+  .actu-content{ gap:3px !important }
+  /* Meta : source + handle + date sur une ligne, tronqué si overflow */
+  .actu-meta{
+    font-size:13px !important; gap:4px !important;
+    align-items:baseline;
+  }
+  .actu-source{
+    font-size:14px !important; font-weight:700;
+    max-width:none !important;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .actu-source-handle{ font-size:12px; opacity:.55 }
+  .actu-date{ font-size:12px; margin-left:auto; flex-shrink:0; opacity:.6 }
+  .actu-card-title{
+    font-size:15px !important; font-weight:700;
+    line-height:1.32 !important;
+    margin:4px 0 3px !important;
+    max-width:none !important;
+  }
+  .actu-card-excerpt{
+    font-size:14px !important; line-height:1.45 !important;
+    -webkit-line-clamp:3 !important;
+    opacity:.82;
+  }
+  /* Tags matière/ref : plus visibles */
+  .actu-tags{ margin-top:8px !important; gap:5px !important }
+  .actu-matiere, .actu-ref-tag{
+    font-size:11px !important; padding:3px 10px !important;
+    font-weight:700;
+  }
+  /* Banner (Cass/CE/CC arrêts sans image) : ratio mobile + lisibilité */
+  .actu-banner{
+    margin-top:11px !important;
+    max-height:140px; min-height:90px;
+    padding:0 14px !important; gap:12px !important;
+    border-radius:14px;
+  }
+  .actu-banner-icon{ font-size:36px !important }
+  .actu-banner-label{ font-size:10px !important }
+  .actu-banner-number{ font-size:14px !important; margin-top:2px }
+  .actu-banner-pattern{ font-size:110px !important; right:-20px; bottom:-20px }
+  /* Preview image : ratio 16/9 garanti */
+  .actu-preview{
+    margin-top:11px !important;
+    max-height:none; aspect-ratio:16/9;
+    border-radius:14px;
+  }
+  /* Actions row : icônes pleine largeur, espacées */
+  .actu-actions{
+    max-width:none !important; margin-top:12px !important;
+    padding-top:8px; border-top:1px solid rgba(255,255,255,0.04);
+    justify-content:space-around !important;
+  }
+  body.light .actu-actions{ border-top-color:rgba(15,23,42,0.05) }
+  .actu-action{
+    padding:8px 14px !important; gap:5px;
+    border-radius:20px;
+  }
+  .actu-action svg{ width:15px !important; height:15px !important }
+  .actu-action span{ font-size:12px !important; font-weight:500 }
+  /* Loading/empty states */
+  .actu-loading, .actu-empty{ padding:40px 20px !important; font-size:13px }
 }
 </style>
 
