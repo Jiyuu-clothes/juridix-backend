@@ -6890,8 +6890,16 @@ function tbHighlight(idx){
     var tb=document.getElementById('topbar-search');
     if(!tb)return;
 
-    // Placeholder rotatif
-    var phs=[
+    // Placeholder rotatif — version courte sur mobile pour éviter la troncature
+    var isMobile = window.matchMedia('(max-width: 768px)').matches;
+    var phs = isMobile ? [
+      "Art. 1103 Civil…",
+      "Responsabilité…",
+      "Meurtre — Pénal…",
+      "Art. 1240 Civil…",
+      "Arrêt Blieck…",
+      "« 1382 » → art. exact…"
+    ] : [
       "Rechercher Art. 1103 Civil…",
       "Responsabilité délictuelle…",
       "Chercher Meurtre dans Pénal…",
@@ -6899,6 +6907,7 @@ function tbHighlight(idx){
       "Chercher l'arrêt Blieck…",
       "Tape « 1382 » → art. exact en 1ʳᵉ position…"
     ];
+    tb.placeholder = phs[0];
     var pi=0;
     setInterval(function(){
       if(document.activeElement===tb || tb.value) return;
