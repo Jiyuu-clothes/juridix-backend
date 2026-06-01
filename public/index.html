@@ -1664,11 +1664,12 @@ body.light #mobile-menu-btn{
   background:var(--acc2); color:#fff; border-color:var(--acc2);
 }
 
-/* Backdrop semi-transparent quand drawer ouvert */
+/* Backdrop semi-transparent quand drawer ouvert.
+   z:9650 = au-dessus de l'actu overlay (9000) pour rester cliquable. */
 #mobile-drawer-backdrop{
   position:fixed; inset:0;
   background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);
-  z-index:1400;
+  z-index:9650;
   animation:mobileFade .2s ease;
 }
 @keyframes mobileFade { from{opacity:0} to{opacity:1} }
