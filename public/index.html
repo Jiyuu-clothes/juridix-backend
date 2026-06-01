@@ -2197,32 +2197,82 @@ body.light .actu-reader-image{ background:rgba(15,23,42,0.05) }
   .actu-side-right{ display:none }
 }
 @media (max-width:760px){
-  #actu-header{ padding:14px 12px; flex-wrap:wrap }
-  #actu-title{ font-size:18px }
+  /* Header compact mobile : titre + close, refresh devient juste l'icône ↻ */
+  #actu-overlay{
+    padding-top:0 !important;
+    padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+  #actu-header{
+    padding:12px 12px 12px 64px !important; /* 64px à gauche pour le hamburger */
+    flex-wrap:nowrap !important; gap:8px;
+    position:sticky; top:0; z-index:5;
+    background:rgba(13,13,28,0.96); backdrop-filter:blur(14px);
+  }
+  body.light #actu-header{ background:rgba(255,255,255,0.95) }
+  #actu-title{ font-size:16px !important; flex:1; min-width:0 }
+  #actu-last-update{ display:none !important }
+  #actu-refresh-btn{
+    padding:7px 9px !important; font-size:12px !important;
+    flex:0 0 auto;
+  }
+  #actu-refresh-btn span:not(#actu-refresh-icon){ display:none }
+  /* Bouton "✕ Fermer" → garder visible mais condensé */
+  #actu-overlay .actu-close:not(#actu-refresh-btn){
+    padding:7px 12px !important; font-size:12px !important;
+    flex:0 0 auto;
+  }
+  /* Banner "X nouveaux articles" placé sous le header sticky */
+  #actu-new-banner{ top:64px !important; font-size:12px; padding:6px 14px }
   /* Mobile : tout en colonne, sidebar gauche au-dessus du feed */
-  #actu-body{ grid-template-columns: 1fr; overflow-y:auto }
-  .actu-side, .actu-feed-wrap{ overflow:visible }
-  .actu-side-left{ border-right:none; border-bottom:1px solid var(--gb); padding:10px }
+  #actu-body{
+    grid-template-columns: 1fr !important;
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .actu-side, .actu-feed-wrap{ overflow:visible !important; padding:0 }
+  .actu-side-left{
+    border-right:none; border-bottom:1px solid var(--gb);
+    padding:8px 12px !important;
+    position:sticky; top:54px; z-index:4;
+    background:rgba(13,13,28,0.92); backdrop-filter:blur(10px);
+  }
+  body.light .actu-side-left{ background:rgba(255,255,255,0.92) }
   .actu-side-section{ padding:8px 4px }
   .actu-side-section h3{ display:none }
   /* Sources : ligne horizontale scrollable au lieu de liste verticale */
   .actu-side-left .actu-side-section:first-child{
     display:flex; gap:6px; overflow-x:auto;
     background:transparent; border:none; padding:0;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
+  .actu-side-left .actu-side-section:first-child::-webkit-scrollbar{ display:none }
   .actu-side-left .actu-side-item{
-    flex:0 0 auto; flex-direction:column; gap:4px;
-    padding:6px 10px; font-size:11px; white-space:nowrap;
+    flex:0 0 auto; flex-direction:row; gap:6px;
+    padding:7px 11px; font-size:12px; white-space:nowrap;
+    border-radius:18px;
+    background:rgba(255,255,255,0.04);
   }
-  .actu-side-left .actu-side-item-icon{ width:24px; height:24px; flex:0 0 24px; font-size:12px }
+  body.light .actu-side-left .actu-side-item{ background:rgba(15,23,42,0.04) }
+  .actu-side-left .actu-side-item-icon{ width:20px; height:20px; flex:0 0 20px; font-size:11px }
   .actu-side-left .actu-side-item-count{ display:none }
   /* On masque le bloc Matières + section "À propos" sur mobile */
   #matiere-section, .actu-side-section:last-child{ display:none }
   .actu-feed{ border:none }
-  .actu-card{ padding:12px 14px }
+  .actu-card{ padding:14px 14px }
   .actu-avatar{ flex:0 0 40px; width:40px; height:40px; font-size:20px }
-  .actu-card-title{ font-size:14px }
+  .actu-card-title{ font-size:15px; line-height:1.3 }
   .actu-card-excerpt{ font-size:13px; -webkit-line-clamp:3 }
+  .actu-card-title, .actu-source{ max-width:none }
+  /* Banner & preview : ratio plus haut sur mobile pour mieux occuper */
+  .actu-banner{ max-height:160px; padding:0 16px; gap:12px }
+  .actu-banner-icon{ font-size:40px }
+  .actu-banner-number{ font-size:16px }
+  .actu-preview{ max-height:200px }
+  /* Actions Twitter : icônes plus serrées */
+  .actu-actions{ max-width:none; margin-top:8px }
+  .actu-action{ padding:6px }
+  .actu-action span{ font-size:12px }
 }
 </style>
 
