@@ -1771,12 +1771,14 @@ body.light #mobile-bottom-nav{
     padding-bottom:72px !important;
   }
 
-  /* Panel-l (Codes) devient un drawer overlay sur mobile */
+  /* Panel-l (Codes) devient un drawer overlay sur mobile.
+     z:9700 = au-dessus du backdrop (9650) et de l'actu overlay (9000),
+     même niveau que la bottom nav (9700) qui reste visible. */
   #panel-l{
     position:fixed !important;
-    top:0; left:0; bottom:0;
+    top:0; left:0; bottom:72px;
     width:88vw !important; max-width:340px;
-    z-index:1450;
+    z-index:9700;
     transform:translateX(-100%);
     transition:transform .25s cubic-bezier(.2,.8,.3,1);
     box-shadow:8px 0 32px rgba(0,0,0,0.4);
