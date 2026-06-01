@@ -1920,23 +1920,13 @@ body.light #mobile-bottom-nav{
   }
 
   /* === TOPBAR : organiser proprement === */
-  /* L'input de recherche prend la largeur restante mais sans déborder */
+  /* Layout en une seule ligne : [hamburger fixe] [logo] [search flex:1] [☀️] */
   #topbar{
-    flex-wrap:wrap;
-    min-height:54px;
+    flex-wrap:nowrap;
     align-items:center;
   }
-  #topbar-search-wrap{
-    flex:1 1 100%;
-    order:5;            /* va en 2ème ligne sur très petit écran */
-    margin-top:6px;
-  }
-  /* À ≥ 420px, on remet la search inline avec le reste */
-  @media (min-width: 420px){
-    #topbar-search-wrap{ flex:1 1 0; order:0; margin-top:0 }
-  }
   /* tb-right reste compact */
-  .tb-right{ gap:4px !important }
+  .tb-right{ gap:4px !important; flex-shrink:0 }
 
   /* Cards et boutons : touch-friendly */
   button, .ttab, .actu-action, .actu-close, .actu-side-item{
