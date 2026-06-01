@@ -3319,6 +3319,172 @@ document.addEventListener('click', function(e){
     }
   }
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   CARTE MENTALE — TOUCH SUPPORT POUR MOBILE
+   Le module carte.js utilise uniquement les événements mousedown/move/up.
+   Sur mobile, on convertit les événements tactiles en événements souris
+   synthétiques pour que tout marche (drag node, resize, pan, pinch-zoom).
+   ═══════════════════════════════════════════════════════════════ */
+(function carteTouchBridge(){
+  var ACTIVE_CANVAS = null;        // le #carte-canvas une fois visible
+  var activeTouch = null;          // id du touch principal (drag/pan)
+  var pinchState = null;           // { d0, scale0, mx, my } pour pinch-zoom
+  var lastTarget = null;           // élément ciblé par le touchstart
+
+  function fire(type, t, target){
+    var ev;
+    try{
+      ev = new MouseEvent(type, {
+        bubbles:true, cancelable:true, view:window,
+        clientX:t.clientX, clientY:t.clientY,
+        button:0, buttons: type==='mouseup' ? 0 : 1
+      });
+    }catch(e){
+      ev = document.createEvent('MouseEvents');
+      ev.initMouseEvent(type, true, true, window, 0, 0,0, t.clientX, t.clientY, false,false,false,false, 0, null);
+    }
+    (target || document).dispatchEvent(ev);
+  }
+
+  function fireWheel(target, deltaY, clientX, clientY){
+    var ev;
+    try{
+      ev = new WheelEvent('wheel', {
+        bubbles:true, cancelable:true,
+        deltaY: deltaY, deltaMode: 0,
+        ctrlKey: true,
+        clientX: clientX, clientY: clientY
+      });
+    }catch(e){
+      ev = document.createEvent('Event');
+      ev.initEvent('wheel', true, true);
+      ev.deltaY = deltaY; ev.ctrlKey = true;
+      ev.clientX = clientX; ev.clientY = clientY;
+    }
+    target.dispatchEvent(ev);
+  }
+
+  function getDist(t1, t2){
+    var dx = t1.clientX - t2.clientX;
+    var dy = t1.clientY - t2.clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  function onTouchStart(e){
+    var canvas = document.getElementById('carte-canvas');
+    if(!canvas) return;
+    ACTIVE_CANVAS = canvas;
+
+    // Pinch (2 doigts) → zoom via fakewheel + ctrlKey
+    if(e.touches.length === 2){
+      pinchState = {
+        d0: getDist(e.touches[0], e.touches[1]),
+        mx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        my: (e.touches[0].clientY + e.touches[1].clientY) / 2
+      };
+      // Annule un drag en cours
+      if(activeTouch !== null){
+        fire('mouseup', { clientX: 0, clientY: 0 }, document);
+        activeTouch = null;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // 1 doigt → mousedown sur la cible
+    var t = e.touches[0];
+    activeTouch = t.identifier;
+    lastTarget = document.elementFromPoint(t.clientX, t.clientY);
+    fire('mousedown', t, lastTarget);
+    // Empêche le scroll du body uniquement si on touche un node ou le canvas vide
+    if(lastTarget && (lastTarget.closest('.cm-node') || lastTarget.closest('#carte-canvas') || lastTarget.closest('#carte-edges') || lastTarget.closest('#carte-empty'))){
+      e.preventDefault();
+    }
+  }
+
+  function onTouchMove(e){
+    // Pinch en cours
+    if(pinchState && e.touches.length === 2){
+      var d = getDist(e.touches[0], e.touches[1]);
+      var ratio = d / pinchState.d0;
+      // Convertit le ratio en deltaY pour le wheel (inverse car -dy = zoom in)
+      // factor = exp(-dy * 0.0035). Pour atteindre `ratio`, dy = -log(ratio)/0.0035
+      var dy = -Math.log(ratio) / 0.0035;
+      // Limite par frame pour rester fluide
+      dy = Math.max(-30, Math.min(30, dy));
+      var mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      var my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      fireWheel(ACTIVE_CANVAS, dy, mx, my);
+      // Réinitialise d0 pour ne pas accumuler
+      pinchState.d0 = d;
+      e.preventDefault();
+      return;
+    }
+
+    if(activeTouch === null) return;
+    var t = null;
+    for(var i=0; i<e.changedTouches.length; i++){
+      if(e.changedTouches[i].identifier === activeTouch){ t = e.changedTouches[i]; break; }
+    }
+    if(!t) return;
+    fire('mousemove', t, document);
+    e.preventDefault();
+  }
+
+  function onTouchEnd(e){
+    // Fin de pinch
+    if(pinchState && e.touches.length < 2){
+      pinchState = null;
+    }
+    if(activeTouch === null){
+      // Au cas où le mousedown n'a jamais été émis, rien à faire
+      return;
+    }
+    // On vérifie si le doigt actif est dans changedTouches
+    var ended = false;
+    for(var i=0; i<e.changedTouches.length; i++){
+      if(e.changedTouches[i].identifier === activeTouch){
+        var t = e.changedTouches[i];
+        fire('mouseup', t, document);
+        ended = true;
+        break;
+      }
+    }
+    if(ended) activeTouch = null;
+  }
+
+  // On bind les listeners en mode capture pour intercepter avant que le navigateur
+  // ne fasse du scroll/pinch natif sur la zone. passive:false pour pouvoir preventDefault.
+  function bind(canvas){
+    canvas.addEventListener('touchstart', onTouchStart, { passive:false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive:false });
+    canvas.addEventListener('touchend', onTouchEnd, { passive:false });
+    canvas.addEventListener('touchcancel', onTouchEnd, { passive:false });
+  }
+
+  // Le canvas est créé statiquement dans le DOM, mais le module carte.js peut
+  // initialiser ses propres listeners au moment où openCarte() est appelé.
+  // On bind dès que le canvas existe.
+  function tryBind(){
+    var c = document.getElementById('carte-canvas');
+    if(c && !c.__touchBridgeBound){
+      c.__touchBridgeBound = true;
+      bind(c);
+    }
+  }
+  // Tente direct + observe les changements de body class (carte-mode)
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', tryBind);
+  } else {
+    tryBind();
+  }
+  // Re-tente quand la carte s'ouvre (au cas où le canvas est remplacé)
+  var mo = new MutationObserver(function(){
+    if(document.body.classList.contains('carte-mode')) tryBind();
+  });
+  mo.observe(document.body, { attributes:true, attributeFilter:['class'] });
+})();
 </script>
 
 <div id="topbar">
