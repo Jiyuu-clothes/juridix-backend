@@ -1670,17 +1670,22 @@ body.light #mobile-menu-btn{
 @keyframes mobileFade { from{opacity:0} to{opacity:1} }
 @keyframes mobileSlideIn { from{transform:translateX(-100%)} to{transform:translateX(0)} }
 
-/* Bottom tab bar */
+/* Bottom tab bar — z-index 9700 pour rester au-dessus des overlays plein écran
+   (actu-overlay z:9000, atelier-overlay z:5, carte-overlay z:5) mais en dessous
+   du lecteur d'article actu (z:9500 → on cache le nav volontairement pendant
+   la lecture pour un mode focus). */
 #mobile-bottom-nav{
   position:fixed;
   bottom:0; left:0; right:0;
-  z-index:1300;
+  z-index:9700;
   background:rgba(13,13,28,0.96); backdrop-filter:blur(20px);
   border-top:1px solid var(--gb);
   padding:6px 0 calc(6px + env(safe-area-inset-bottom));
   justify-content:space-around;
   align-items:center;
 }
+/* Cache le nav quand le lecteur actu est ouvert (focus lecture) */
+body.actu-reader-open #mobile-bottom-nav{ display:none !important }
 body.light #mobile-bottom-nav{
   background:rgba(255,255,255,0.97);
   border-top-color:rgba(15,23,42,0.08);
