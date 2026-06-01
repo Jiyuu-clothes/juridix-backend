@@ -2410,27 +2410,34 @@ body.light .actu-reader-image{ background:rgba(15,23,42,0.05) }
   /* Banner "X nouveaux articles" sous le header */
   #actu-new-banner{ top:56px !important; font-size:12px; padding:6px 14px }
 
-  /* ── BODY = scroll container unique ── */
+  /* ── BODY = scroll container unique.
+     On passe de grid à flex column pour que sticky soit prédictible. ── */
   #actu-body{
-    grid-template-columns: 1fr !important;
+    display:flex !important; flex-direction:column !important;
+    grid-template-columns:none !important;
     overflow-y:auto !important;
     overflow-x:hidden !important;
     -webkit-overflow-scrolling:touch;
     padding:0 !important;
     width:100% !important; max-width:100% !important;
+    flex:1 1 auto;
   }
   .actu-side, .actu-feed-wrap{
     overflow:visible !important; padding:0 !important;
     width:100% !important; max-width:100% !important; min-width:0;
   }
 
-  /* ── SOURCES = TABS underline façon X ── */
+  /* ── SOURCES = TABS underline façon X, sticky tout en haut du scroll container.
+     L'actu-header est en-dehors d'#actu-body donc top:0 colle bien au sommet
+     de la zone scrollable, juste sous le header. ── */
   .actu-side-left{
     border-right:none; border-bottom:1px solid var(--gb);
     padding:0 !important;
-    position:sticky; top:50px; z-index:4;
-    background:rgba(13,13,28,0.92); backdrop-filter:blur(14px);
+    position:sticky !important; top:0 !important; z-index:10;
+    background:#0d0d1c !important;
     display:block !important;
+    flex:0 0 auto;
+    order:0;
   }
   body.light .actu-side-left{ background:rgba(255,255,255,0.92) }
   .actu-side-section{ padding:0 !important; background:transparent !important; border:none !important }
