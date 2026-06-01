@@ -2055,6 +2055,55 @@ body.light #mobile-bottom-nav{
 
   /* === BULLE AUTO-CITATION : la placer au-dessus de la bottom nav === */
   #cite-bubble{ bottom:88px !important }
+
+  /* === READER PANE (article view) MOBILE === */
+  /* Le hub-mode reader-pane a padding:32px 28px → trop sur mobile.
+     L'art-header sticky top:-32px → on remet à 0 sur mobile pour éviter
+     le bug où la barre Précédent/Suivant disparaît sous le topbar. */
+  body.hub-mode #reader-pane{
+    padding:0 !important;
+  }
+  body.hub-mode #reader-pane #art-content{
+    padding:14px 14px 24px !important;
+    max-width:100% !important;
+  }
+  body.hub-mode .art-header,
+  .art-header{
+    top:0 !important;
+    padding-top:8px !important;
+    padding-bottom:14px !important;
+    margin-bottom:18px !important;
+  }
+  /* La rangée Précédent / Suivant / Légifrance : sur 3 cols qui wrap si besoin */
+  .art-header > div:first-child{
+    flex-wrap:wrap;
+    gap:6px !important;
+  }
+  .art-header .btn.btn-outline{
+    font-size:11px !important;
+    padding:6px 10px !important;
+  }
+  /* Actions du bas (Citer, Carte, Légifrance) : full width sur mobile */
+  .art-actions-v4{
+    display:flex; flex-direction:column; gap:8px;
+    padding:0 4px;
+  }
+  .art-actions-v4 .btn{
+    width:100%;
+    justify-content:center;
+    font-size:13px !important;
+    padding:11px 14px !important;
+  }
+  /* Bouton Atelier/inject vers la carte plus discret sur mobile */
+  .art-actions-v4 .btn-carte{
+    background:rgba(124,107,255,0.10) !important;
+  }
+  /* Article header texte : tailles ajustées */
+  .art-code{ font-size:11px !important }
+  .art-ref{ font-size:26px !important; margin-top:4px }
+  .art-title{ font-size:14px !important; margin-top:2px }
+  .art-meta{ font-size:11px !important; gap:10px; flex-wrap:wrap }
+  .art-texte{ font-size:15px !important; line-height:1.65 }
 }
 
 /* Très petits écrans (≤ 380px) : encore plus serré */
