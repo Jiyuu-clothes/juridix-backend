@@ -3516,43 +3516,172 @@ document.addEventListener('click', function(e){
     return m ? parseFloat(m[1]) : 1;
   }
 
+  // ─── Sélection node + FAB ───
+  function selectNode(nodeEl){
+    if(!nodeEl) return;
+    document.querySelectorAll('.cm-node.selected').forEach(function(n){
+      if(n !== nodeEl) n.classList.remove('selected');
+    });
+    nodeEl.classList.add('selected');
+    selectedNodeId = nodeEl.getAttribute('data-id');
+    document.body.classList.add('carte-node-selected');
+  }
+  function deselectNode(){
+    document.querySelectorAll('.cm-node.selected').forEach(function(n){ n.classList.remove('selected'); });
+    selectedNodeId = null;
+    document.body.classList.remove('carte-node-selected');
+    exitLinkMode();
+    exitResizeMode();
+  }
+  function getSelectedNodeEl(){
+    if(!selectedNodeId) return null;
+    return document.querySelector('.cm-node[data-id="'+selectedNodeId+'"]');
+  }
+
+  // ─── Mode liaison : tap source → tap cible → crée edge ───
+  function enterLinkMode(){
+    if(!selectedNodeId) return;
+    linkMode = true;
+    document.body.classList.add('carte-link-mode');
+    var banner = document.getElementById('carte-link-banner');
+    if(banner) banner.hidden = false;
+  }
+  function exitLinkMode(){
+    linkMode = false;
+    document.body.classList.remove('carte-link-mode');
+    var banner = document.getElementById('carte-link-banner');
+    if(banner) banner.hidden = true;
+  }
+  window.carteCancelLink = exitLinkMode;
+
+  // Crée une liaison entre selectedNodeId et targetNodeEl, en simulant
+  // mousedown sur un faux handle "right" + mouseup au centre de la cible.
+  function createLink(targetNodeEl){
+    var sourceEl = getSelectedNodeEl();
+    if(!sourceEl || !targetNodeEl || sourceEl === targetNodeEl){ exitLinkMode(); return; }
+    // Crée temporairement un handle visible pour dispatch
+    var tempHandle = sourceEl.querySelector('.cm-handle[data-side="right"]');
+    if(!tempHandle){ exitLinkMode(); return; }
+    // Position de départ : bord droit du source node
+    var sourceRect = sourceEl.getBoundingClientRect();
+    var startX = sourceRect.right;
+    var startY = sourceRect.top + sourceRect.height/2;
+    // Position d'arrivée : centre du target node
+    var targetRect = targetNodeEl.getBoundingClientRect();
+    var endX = targetRect.left + targetRect.width/2;
+    var endY = targetRect.top + targetRect.height/2;
+    // Sequence : mousedown sur tempHandle → mousemove vers cible → mouseup sur cible
+    fire('mousedown', { clientX: startX, clientY: startY }, tempHandle);
+    setTimeout(function(){
+      fire('mousemove', { clientX: endX, clientY: endY }, document);
+      setTimeout(function(){
+        fire('mouseup', { clientX: endX, clientY: endY }, targetNodeEl);
+        exitLinkMode();
+      }, 10);
+    }, 10);
+  }
+
+  // ─── Mode resize : pad +/- ───
+  function enterResizeMode(){
+    if(!selectedNodeId) return;
+    resizeMode = true;
+    document.body.classList.add('carte-resize-mode');
+  }
+  function exitResizeMode(){
+    resizeMode = false;
+    document.body.classList.remove('carte-resize-mode');
+    if(resizeRepeat){ clearInterval(resizeRepeat); resizeRepeat = null; }
+  }
+  window.carteExitResize = exitResizeMode;
+
+  function applyResizeDelta(dx, dy){
+    var nodeEl = getSelectedNodeEl();
+    if(!nodeEl) return;
+    var resizeHandle = nodeEl.querySelector('.cm-resize');
+    if(!resizeHandle) return;
+    // Position fictive du handle (carte.js calcule par delta clientX/Y, donc on
+    // peut envoyer n'importe quel point de départ tant que le delta est cohérent)
+    var nodeRect = nodeEl.getBoundingClientRect();
+    var startX = nodeRect.right;
+    var startY = nodeRect.bottom;
+    fire('mousedown', { clientX: startX, clientY: startY }, resizeHandle);
+    setTimeout(function(){
+      fire('mousemove', { clientX: startX + dx, clientY: startY + dy }, document);
+      setTimeout(function(){
+        fire('mouseup', { clientX: startX + dx, clientY: startY + dy }, document);
+      }, 5);
+    }, 5);
+  }
+
+  // ─── Hook FAB buttons ───
+  function initFAB(){
+    var fab = document.getElementById('carte-fab');
+    if(fab && !fab.__bound){
+      fab.__bound = true;
+      fab.addEventListener('click', function(ev){
+        var btn = ev.target.closest('.cfab-btn');
+        if(!btn || !selectedNodeId) return;
+        var act = btn.getAttribute('data-cact');
+        var nodeEl = getSelectedNodeEl();
+        if(!nodeEl) return;
+        if(act === 'edit'){
+          // Dispatch mousedown sur le bouton edit-title natif (caché mais existant)
+          var editBtn = nodeEl.querySelector('[data-act="edit-title"]');
+          if(editBtn){ fire('mousedown', { clientX:0, clientY:0 }, editBtn); }
+        } else if(act === 'resize'){
+          enterResizeMode();
+        } else if(act === 'link'){
+          enterLinkMode();
+        } else if(act === 'color'){
+          var colorBtn = nodeEl.querySelector('[data-act="color"]');
+          if(colorBtn){ fire('mousedown', { clientX:0, clientY:0 }, colorBtn); }
+        } else if(act === 'delete'){
+          if(confirm('Supprimer ce node ?')){
+            var delBtn = nodeEl.querySelector('[data-act="delete"]');
+            if(delBtn){ fire('mousedown', { clientX:0, clientY:0 }, delBtn); }
+            deselectNode();
+          }
+        }
+      });
+    }
+    var pad = document.getElementById('carte-resize-pad');
+    if(pad && !pad.__bound){
+      pad.__bound = true;
+      // Repeat sur appui long pour grandir progressivement
+      function startRepeat(action){
+        if(resizeRepeat) clearInterval(resizeRepeat);
+        action();
+        resizeRepeat = setInterval(action, 80);
+      }
+      function stopRepeat(){
+        if(resizeRepeat){ clearInterval(resizeRepeat); resizeRepeat = null; }
+      }
+      pad.querySelectorAll('button[data-rs]').forEach(function(btn){
+        var rs = btn.getAttribute('data-rs');
+        var action;
+        if(rs === 'w+') action = function(){ applyResizeDelta(20, 0); };
+        else if(rs === 'w-') action = function(){ applyResizeDelta(-20, 0); };
+        else if(rs === 'h+') action = function(){ applyResizeDelta(0, 20); };
+        else if(rs === 'h-') action = function(){ applyResizeDelta(0, -20); };
+        btn.addEventListener('touchstart', function(e){ e.preventDefault(); startRepeat(action); }, { passive:false });
+        btn.addEventListener('touchend',   function(e){ e.preventDefault(); stopRepeat(); }, { passive:false });
+        btn.addEventListener('touchcancel', stopRepeat);
+        btn.addEventListener('mousedown',  function(e){ e.preventDefault(); startRepeat(action); });
+        btn.addEventListener('mouseup',    stopRepeat);
+        btn.addEventListener('mouseleave', stopRepeat);
+      });
+    }
+  }
+
   function onTouchStart(e){
     var canvas = document.getElementById('carte-canvas');
     if(!canvas) return;
     ACTIVE_CANVAS = canvas;
+    initFAB();
 
+    // 2 doigts → toujours pinch-zoom canvas (plus de pinch-resize tordu)
     if(e.touches.length === 2){
       var t1 = e.touches[0], t2 = e.touches[1];
-      // Si les 2 doigts sont sur le MÊME node → resize tactile
-      // On simule un drag du handle de resize via mousedown/move/up synthétiques.
-      var n1 = findNodeAt(t1.clientX, t1.clientY);
-      var n2 = findNodeAt(t2.clientX, t2.clientY);
-      if(n1 && n1 === n2){
-        var handle = n1.querySelector('.cm-resize');
-        if(handle){
-          n1.classList.add('selected');
-          // Position de départ : le coin bas-droit actuel du node
-          var rect0 = handle.getBoundingClientRect();
-          nodeResize = {
-            el: n1, handle: handle,
-            startX: (t1.clientX + t2.clientX) / 2,
-            startY: (t1.clientY + t2.clientY) / 2,
-            handleStartX: rect0.left + rect0.width / 2,
-            handleStartY: rect0.top  + rect0.height / 2,
-            d0: getDist(t1, t2)
-          };
-          // Démarre la séquence resize : mousedown sur le handle au point central des 2 doigts
-          fire('mousedown', { clientX: nodeResize.handleStartX, clientY: nodeResize.handleStartY }, handle);
-          // Annule tout drag 1-doigt en cours
-          if(activeTouch !== null){
-            fire('mouseup', { clientX:0, clientY:0 }, document);
-            activeTouch = null;
-          }
-          e.preventDefault();
-          return;
-        }
-      }
-      // Sinon → pinch-zoom canvas
       pinchState = {
         d0: getDist(t1, t2),
         mx: (t1.clientX + t2.clientX) / 2,
@@ -3566,39 +3695,33 @@ document.addEventListener('click', function(e){
       return;
     }
 
-    // 1 doigt → mousedown synthétique sur la cible
+    // 1 doigt
     var t = e.touches[0];
     activeTouch = t.identifier;
+    tapStartTime = Date.now();
+    tapStartXY = { x: t.clientX, y: t.clientY };
+    hasMoved = false;
     lastTarget = document.elementFromPoint(t.clientX, t.clientY);
-    // Sélectionne le node touché pour afficher resize+handles
-    var node = lastTarget && lastTarget.closest ? lastTarget.closest('.cm-node') : null;
-    if(node){
-      document.querySelectorAll('.cm-node.selected').forEach(function(n){
-        if(n !== node) n.classList.remove('selected');
-      });
-      node.classList.add('selected');
+    var nodeEl = lastTarget && lastTarget.closest ? lastTarget.closest('.cm-node') : null;
+
+    // Mode liaison : si on tap sur un AUTRE node, on crée l'edge
+    if(linkMode && nodeEl){
+      var sourceEl = getSelectedNodeEl();
+      if(nodeEl !== sourceEl){
+        createLink(nodeEl);
+        e.preventDefault();
+        return;
+      }
     }
+
+    // Fire mousedown synthétique pour permettre le drag du node
     fire('mousedown', t, lastTarget);
-    if(lastTarget && (lastTarget.closest('.cm-node') || lastTarget.closest('#carte-canvas') || lastTarget.closest('#carte-edges') || lastTarget.closest('#carte-empty'))){
+    if(lastTarget && (nodeEl || lastTarget.closest('#carte-canvas') || lastTarget.closest('#carte-edges') || lastTarget.closest('#carte-empty'))){
       e.preventDefault();
     }
   }
 
   function onTouchMove(e){
-    // Resize tactile d'un node (pinch sur le node) → on simule un drag du handle
-    // basé sur l'écart pinch initial. dist↑ = grossit, dist↓ = rétrécit.
-    if(nodeResize && e.touches.length === 2){
-      var t1 = e.touches[0], t2 = e.touches[1];
-      var dNow = getDist(t1, t2);
-      var delta = dNow - nodeResize.d0; // pixels d'écart (positif = écartement)
-      // On déplace le "handle" virtuel diagonalement de `delta/√2` dans chaque axe
-      var diag = delta / Math.SQRT2;
-      var simX = nodeResize.handleStartX + diag;
-      var simY = nodeResize.handleStartY + diag;
-      fire('mousemove', { clientX: simX, clientY: simY }, document);
-      e.preventDefault();
-      return;
-    }
     // Pinch-zoom canvas
     if(pinchState && e.touches.length === 2){
       var d = getDist(e.touches[0], e.touches[1]);
@@ -3612,25 +3735,23 @@ document.addEventListener('click', function(e){
       e.preventDefault();
       return;
     }
-    // Drag classique 1 doigt
     if(activeTouch === null) return;
     var t = null;
     for(var i=0; i<e.changedTouches.length; i++){
       if(e.changedTouches[i].identifier === activeTouch){ t = e.changedTouches[i]; break; }
     }
     if(!t) return;
+    // Marque comme bougé si déplacement significatif
+    if(tapStartXY){
+      var dx = t.clientX - tapStartXY.x;
+      var dyT = t.clientY - tapStartXY.y;
+      if(Math.hypot(dx, dyT) > 8) hasMoved = true;
+    }
     fire('mousemove', t, document);
     e.preventDefault();
   }
 
   function onTouchEnd(e){
-    // Fin de resize node : on fire mouseup pour clôturer le drag du handle.
-    // carte.js a déjà mis à jour n.w/n.h via les mousemove successifs et
-    // touchMap() est appelé par la logique de drag du handle.
-    if(nodeResize && e.touches.length < 2){
-      fire('mouseup', { clientX:0, clientY:0 }, document);
-      nodeResize = null;
-    }
     if(pinchState && e.touches.length < 2){
       pinchState = null;
     }
@@ -3639,7 +3760,21 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
+        // Détection tap : sans mouvement ET sans drag long
+        var elapsed = Date.now() - tapStartTime;
+        if(!hasMoved && elapsed < 350){
+          var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
+          var nodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
+          if(nodeEl){
+            if(!linkMode) selectNode(nodeEl);
+          } else if(!linkMode && !resizeMode){
+            // Tap sur canvas vide → deselect
+            deselectNode();
+          }
+        }
         activeTouch = null;
+        tapStartXY = null;
+        hasMoved = false;
         break;
       }
     }
