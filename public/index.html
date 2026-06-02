@@ -1959,6 +1959,34 @@ body.light #mobile-bottom-nav{
     background:rgba(255,255,255,0.92);
     border-color:rgba(15,23,42,0.10);
   }
+
+  /* === HANDLES de node toujours visibles sur mobile (pas de hover) ===
+     Resize handle + edge handles agrandis pour être tappables (28-30px). */
+  body.carte-mode .cm-resize{
+    opacity:0.85 !important;
+    width:28px !important; height:28px !important;
+    background:linear-gradient(135deg,transparent 45%,var(--acc) 45%) !important;
+    border-radius:0 0 12px 0 !important;
+  }
+  body.carte-mode .cm-handle{
+    opacity:0.7 !important;
+    width:18px !important; height:18px !important;
+    border-width:2.5px !important;
+  }
+  body.carte-mode .cm-handle[data-side="top"]   { top:-10px; left:50%; margin-left:-9px }
+  body.carte-mode .cm-handle[data-side="bottom"]{ bottom:-10px; left:50%; margin-left:-9px }
+  body.carte-mode .cm-handle[data-side="left"]  { left:-10px; top:50%; margin-top:-9px }
+  body.carte-mode .cm-handle[data-side="right"] { right:-10px; top:50%; margin-top:-9px }
+  body.carte-mode .cm-node.selected .cm-resize,
+  body.carte-mode .cm-node.selected .cm-handle{ opacity:1 !important }
+  /* Empêche le scroll natif du canvas pour que le touch bridge gère */
+  body.carte-mode #carte-canvas{ touch-action:none }
+  /* Toolbar node : un poil plus grosse aussi pour les pouces */
+  body.carte-mode .cm-node-tb{ padding:4px 6px !important }
+  body.carte-mode .cm-tb-btn{
+    width:30px !important; height:30px !important;
+    font-size:14px !important;
+  }
   /* Toolbar carte mobile : input + icônes uniquement, fermer en danger */
   #carte-toolbar{
     padding:6px 8px !important;
