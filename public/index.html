@@ -3499,19 +3499,17 @@ document.addEventListener('click', function(e){
   }
 
   function onTouchMove(e){
-    // Resize tactile d'un node (pinch sur le node)
+    // Resize tactile d'un node (pinch sur le node) → on simule un drag du handle
+    // basé sur l'écart pinch initial. dist↑ = grossit, dist↓ = rétrécit.
     if(nodeResize && e.touches.length === 2){
       var t1 = e.touches[0], t2 = e.touches[1];
-      var scale = getViewScale() || 1;
-      // Resize indépendant horizontal/vertical pour rester intuitif
-      var dxNow = Math.abs(t1.clientX - t2.clientX);
-      var dyNow = Math.abs(t1.clientY - t2.clientY);
-      var dxRatio = nodeResize.dx0 > 5 ? dxNow / nodeResize.dx0 : 1;
-      var dyRatio = nodeResize.dy0 > 5 ? dyNow / nodeResize.dy0 : 1;
-      var newW = Math.max(140, Math.min(540, nodeResize.w0 * dxRatio));
-      var newH = Math.max(40,  Math.min(480, nodeResize.h0 * dyRatio));
-      nodeResize.el.style.width  = (newW|0) + 'px';
-      nodeResize.el.style.height = (newH|0) + 'px';
+      var dNow = getDist(t1, t2);
+      var delta = dNow - nodeResize.d0; // pixels d'écart (positif = écartement)
+      // On déplace le "handle" virtuel diagonalement de `delta/√2` dans chaque axe
+      var diag = delta / Math.SQRT2;
+      var simX = nodeResize.handleStartX + diag;
+      var simY = nodeResize.handleStartY + diag;
+      fire('mousemove', { clientX: simX, clientY: simY }, document);
       e.preventDefault();
       return;
     }
