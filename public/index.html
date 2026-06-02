@@ -3538,21 +3538,13 @@ document.addEventListener('click', function(e){
   }
 
   function onTouchEnd(e){
-    // Fin de resize node : persister la nouvelle taille dans le modèle si possible
+    // Fin de resize node : on fire mouseup pour clôturer le drag du handle.
+    // carte.js a déjà mis à jour n.w/n.h via les mousemove successifs et
+    // touchMap() est appelé par la logique de drag du handle.
     if(nodeResize && e.touches.length < 2){
-      try{
-        var id = nodeResize.id;
-        var w = parseInt(nodeResize.el.style.width, 10);
-        var h = parseInt(nodeResize.el.style.height, 10);
-        // Hook vers le modèle carte.js si exposé (touchMap + map.nodes)
-        if(window._carteModel && Array.isArray(window._carteModel.nodes)){
-          var n = window._carteModel.nodes.find(function(x){ return x.id === id; });
-          if(n){ n.w = w; n.h = h; if(typeof window._carteTouchMap==='function') window._carteTouchMap(); }
-        }
-      }catch(err){}
+      fire('mouseup', { clientX:0, clientY:0 }, document);
       nodeResize = null;
     }
-    // Fin de pinch canvas
     if(pinchState && e.touches.length < 2){
       pinchState = null;
     }
