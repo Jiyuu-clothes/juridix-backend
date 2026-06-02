@@ -1969,36 +1969,112 @@ body.light #mobile-bottom-nav{
     border-radius:14px !important;
     box-shadow:0 4px 14px rgba(0,0,0,0.35) !important;
   }
+  body.carte-mode .cm-node.selected{
+    box-shadow:0 6px 24px rgba(124,107,255,0.5), 0 0 0 2px var(--acc2) !important;
+  }
   body.carte-mode .cm-node-title{ font-size:15px !important; line-height:1.35 !important }
   body.carte-mode .cm-node-snippet{ font-size:13px !important; line-height:1.45 !important; margin-top:6px !important }
   body.carte-mode .cm-node-eyebrow{ font-size:11px !important }
-
-  /* === HANDLES de node toujours visibles sur mobile (pas de hover) ===
-     Resize handle + edge handles agrandis pour être tappables (28-30px). */
-  body.carte-mode .cm-resize{
-    opacity:0.85 !important;
-    width:32px !important; height:32px !important;
-    background:linear-gradient(135deg,transparent 42%,var(--acc) 42%) !important;
-    border-radius:0 0 14px 0 !important;
-  }
-  body.carte-mode .cm-handle{
-    opacity:0.7 !important;
-    width:18px !important; height:18px !important;
-    border-width:2.5px !important;
-  }
-  body.carte-mode .cm-handle[data-side="top"]   { top:-10px; left:50%; margin-left:-9px }
-  body.carte-mode .cm-handle[data-side="bottom"]{ bottom:-10px; left:50%; margin-left:-9px }
-  body.carte-mode .cm-handle[data-side="left"]  { left:-10px; top:50%; margin-top:-9px }
-  body.carte-mode .cm-handle[data-side="right"] { right:-10px; top:50%; margin-top:-9px }
-  body.carte-mode .cm-node.selected .cm-resize,
-  body.carte-mode .cm-node.selected .cm-handle{ opacity:1 !important }
+  /* Cache la toolbar et les handles natifs sur mobile : on utilise la barre FAB en bas */
+  body.carte-mode .cm-node-toolbar,
+  body.carte-mode .cm-resize,
+  body.carte-mode .cm-handle{ display:none !important }
   /* Empêche le scroll natif du canvas pour que le touch bridge gère */
   body.carte-mode #carte-canvas{ touch-action:none }
-  /* Toolbar node : un poil plus grosse aussi pour les pouces */
-  body.carte-mode .cm-node-tb{ padding:4px 6px !important }
-  body.carte-mode .cm-tb-btn{
-    width:30px !important; height:30px !important;
-    font-size:14px !important;
+  /* Indicateur visuel "tap-to-link" en mode liaison : autres nodes pulsent */
+  body.carte-link-mode .cm-node:not(.selected){
+    animation:carteLinkPulse 1.2s ease-in-out infinite;
+    cursor:pointer !important;
+  }
+  @keyframes carteLinkPulse{
+    0%,100%{ box-shadow:0 4px 14px rgba(0,0,0,0.35) }
+    50%{ box-shadow:0 4px 24px rgba(56,189,248,0.6), 0 0 0 2px rgba(56,189,248,0.7) }
+  }
+  body.carte-link-mode .cm-node.selected{
+    opacity:0.5;
+  }
+
+  /* === BARRE D'ACTIONS FLOTTANTE (FAB) === */
+  #carte-fab{
+    display:none;
+    position:fixed; left:8px; right:8px;
+    bottom:calc(80px + env(safe-area-inset-bottom)); /* au-dessus de la bottom nav */
+    z-index:9750;
+    padding:8px;
+    background:rgba(13,13,28,0.96);
+    border:1px solid var(--gb);
+    border-radius:16px;
+    backdrop-filter:blur(16px);
+    box-shadow:0 8px 28px rgba(0,0,0,0.5);
+    justify-content:space-around;
+    gap:4px;
+    animation:cfabIn .18s cubic-bezier(.2,.8,.3,1);
+  }
+  body.carte-mode.carte-node-selected #carte-fab{ display:flex }
+  body.light #carte-fab{ background:rgba(255,255,255,0.96); border-color:rgba(15,23,42,0.08) }
+  @keyframes cfabIn{ from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
+  .cfab-btn{
+    flex:1 1 0;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:9px 4px;
+    background:transparent; border:none; border-radius:12px;
+    color:var(--t1); font-family:var(--font-ui);
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:background .12s ease;
+  }
+  .cfab-btn:active{ background:rgba(124,107,255,0.15); transform:scale(.96) }
+  .cfab-btn.danger{ color:#f87171 }
+  .cfab-btn.danger:active{ background:rgba(248,113,113,0.15) }
+  .cfab-ico{ font-size:20px; line-height:1 }
+  .cfab-lbl{ font-size:11px; font-weight:600; opacity:.85 }
+
+  /* === BANNER mode liaison === */
+  #carte-link-banner{
+    position:fixed; left:50%; transform:translateX(-50%);
+    top:64px; z-index:9750;
+    background:var(--acc); color:#fff;
+    padding:10px 16px; border-radius:24px;
+    display:flex; align-items:center; gap:10px;
+    font-size:13px; font-weight:600;
+    box-shadow:0 8px 24px rgba(56,189,248,0.4);
+    animation:cfabIn .2s ease;
+  }
+  #carte-link-banner button{
+    background:rgba(255,255,255,0.2); border:none; color:#fff;
+    width:24px; height:24px; border-radius:50%;
+    font-size:12px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* === PAD de resize (4 boutons +/- + OK) === */
+  #carte-resize-pad{
+    position:fixed; left:8px; right:8px;
+    bottom:calc(80px + env(safe-area-inset-bottom));
+    z-index:9750;
+    padding:10px; gap:6px;
+    background:rgba(13,13,28,0.96); border:1px solid var(--gb);
+    border-radius:16px;
+    backdrop-filter:blur(16px);
+    box-shadow:0 8px 28px rgba(0,0,0,0.5);
+    display:none;
+    grid-template-columns:1fr 1fr 1fr 1fr 1.4fr;
+    align-items:center;
+    animation:cfabIn .18s ease;
+  }
+  body.light #carte-resize-pad{ background:rgba(255,255,255,0.96); border-color:rgba(15,23,42,0.08) }
+  body.carte-mode.carte-resize-mode #carte-resize-pad{ display:grid }
+  body.carte-mode.carte-resize-mode #carte-fab{ display:none !important }
+  #carte-resize-pad button{
+    padding:12px 0;
+    background:rgba(255,255,255,0.06); border:1px solid var(--gb);
+    color:var(--t1); border-radius:10px;
+    font-size:14px; font-weight:700; font-family:var(--font-ui);
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:background .12s;
+  }
+  #carte-resize-pad button:active{ background:rgba(124,107,255,0.2); transform:scale(.96) }
+  #carte-resize-pad button:last-child{
+    background:var(--acc2); border-color:var(--acc2); color:#fff;
   }
   /* Toolbar carte mobile : input + icônes uniquement, fermer en danger */
   #carte-toolbar{
