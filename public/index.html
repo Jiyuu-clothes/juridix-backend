@@ -3437,31 +3437,34 @@ document.addEventListener('click', function(e){
 
     if(e.touches.length === 2){
       var t1 = e.touches[0], t2 = e.touches[1];
-      // Si les 2 doigts sont sur le MÊME node → resize tactile de ce node
+      // Si les 2 doigts sont sur le MÊME node → resize tactile
+      // On simule un drag du handle de resize via mousedown/move/up synthétiques.
       var n1 = findNodeAt(t1.clientX, t1.clientY);
       var n2 = findNodeAt(t2.clientX, t2.clientY);
       if(n1 && n1 === n2){
-        var id = n1.getAttribute('data-id');
-        // Sélectionne le node pour afficher les handles
-        n1.classList.add('selected');
-        var rect = n1.getBoundingClientRect();
-        var scale = getViewScale() || 1;
-        nodeResize = {
-          id: id, el: n1,
-          w0: rect.width / scale,
-          h0: rect.height / scale,
-          d0: getDist(t1, t2),
-          // Distance horizontale / verticale initiale (pour scaler indépendamment)
-          dx0: Math.abs(t1.clientX - t2.clientX),
-          dy0: Math.abs(t1.clientY - t2.clientY)
-        };
-        // Annule un drag en cours
-        if(activeTouch !== null){
-          fire('mouseup', { clientX:0, clientY:0 }, document);
-          activeTouch = null;
+        var handle = n1.querySelector('.cm-resize');
+        if(handle){
+          n1.classList.add('selected');
+          // Position de départ : le coin bas-droit actuel du node
+          var rect0 = handle.getBoundingClientRect();
+          nodeResize = {
+            el: n1, handle: handle,
+            startX: (t1.clientX + t2.clientX) / 2,
+            startY: (t1.clientY + t2.clientY) / 2,
+            handleStartX: rect0.left + rect0.width / 2,
+            handleStartY: rect0.top  + rect0.height / 2,
+            d0: getDist(t1, t2)
+          };
+          // Démarre la séquence resize : mousedown sur le handle au point central des 2 doigts
+          fire('mousedown', { clientX: nodeResize.handleStartX, clientY: nodeResize.handleStartY }, handle);
+          // Annule tout drag 1-doigt en cours
+          if(activeTouch !== null){
+            fire('mouseup', { clientX:0, clientY:0 }, document);
+            activeTouch = null;
+          }
+          e.preventDefault();
+          return;
         }
-        e.preventDefault();
-        return;
       }
       // Sinon → pinch-zoom canvas
       pinchState = {
