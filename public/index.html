@@ -3454,9 +3454,15 @@ document.addEventListener('click', function(e){
 (function carteTouchBridge(){
   var ACTIVE_CANVAS = null;
   var activeTouch = null;
-  var pinchState = null;           // pinch-zoom canvas : { d0, mx, my }
-  var nodeResize = null;           // resize tactile node : { id, el, w0, h0, d0 }
+  var pinchState = null;
   var lastTarget = null;
+  var selectedNodeId = null;
+  var linkMode = false;
+  var resizeMode = false;
+  var resizeRepeat = null;
+  var tapStartTime = 0;
+  var tapStartXY = null;
+  var hasMoved = false;
 
   function fire(type, t, target){
     var ev;
