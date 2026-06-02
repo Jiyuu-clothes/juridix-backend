@@ -3438,14 +3438,18 @@ document.addEventListener('click', function(e){
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   CARTE MENTALE — TOUCH SUPPORT POUR MOBILE
-   Le module carte.js utilise uniquement les événements mousedown/move/up.
-   Sur mobile :
-   - 1 doigt sur node → drag du node
+   CARTE MENTALE — UX TACTILE SIMPLIFIÉE
+   Sur mobile, on cache les handles natifs et on remplace par une barre
+   d'actions flottante (FAB) qui apparaît quand un node est sélectionné :
+   - Tap sur node → sélection + FAB en bas
+   - Tap sur ✏️ Éditer → édite le titre du node
+   - Tap sur ↔️ Taille → mode resize avec pad +/- bien gros
+   - Tap sur 🔗 Lier → mode liaison, prochain tap sur un autre node = edge
+   - Tap sur 🎨 Couleur → ouvre la palette
+   - Tap sur 🗑 Suppr → supprime le node
+   - 1 doigt sur node (drag) → déplace
    - 1 doigt sur canvas → pan
-   - 1 doigt sur resize handle → resize (via le handle existant)
-   - 2 doigts sur le MÊME node → resize tactile du node (pinch to resize)
-   - 2 doigts ailleurs → zoom du canvas (pinch to zoom)
+   - 2 doigts → zoom canvas
    ═══════════════════════════════════════════════════════════════ */
 (function carteTouchBridge(){
   var ACTIVE_CANVAS = null;
