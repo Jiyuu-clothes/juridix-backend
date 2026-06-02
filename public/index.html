@@ -4151,6 +4151,27 @@ document.addEventListener('click', function(e){
   <!-- CARTE MENTALE — overlay full-screen (active via body.carte-mode) -->
   <!-- Bouton flottant mobile : ouvre/ferme la liste des cartes -->
   <button id="carte-docs-btn" type="button" onclick="toggleCarteDocs()" aria-label="Mes cartes" title="Mes cartes">🧠</button>
+  <!-- Barre d'actions tactiles : apparaît quand un node est sélectionné (mobile uniquement) -->
+  <div id="carte-fab" role="toolbar" aria-label="Actions sur le node sélectionné">
+    <button class="cfab-btn" data-cact="edit" type="button"><span class="cfab-ico">✏️</span><span class="cfab-lbl">Éditer</span></button>
+    <button class="cfab-btn" data-cact="resize" type="button"><span class="cfab-ico">↔️</span><span class="cfab-lbl">Taille</span></button>
+    <button class="cfab-btn" data-cact="link" type="button"><span class="cfab-ico">🔗</span><span class="cfab-lbl">Lier</span></button>
+    <button class="cfab-btn" data-cact="color" type="button"><span class="cfab-ico">🎨</span><span class="cfab-lbl">Couleur</span></button>
+    <button class="cfab-btn danger" data-cact="delete" type="button"><span class="cfab-ico">🗑</span><span class="cfab-lbl">Suppr</span></button>
+  </div>
+  <!-- Banner mode liaison : "Touche un autre node pour le lier" -->
+  <div id="carte-link-banner" hidden>
+    <span>🔗 Touche un autre node pour le lier</span>
+    <button type="button" onclick="window.carteCancelLink && window.carteCancelLink()">✕</button>
+  </div>
+  <!-- Banner mode resize : 4 boutons +H -H +V -V -->
+  <div id="carte-resize-pad" hidden>
+    <button type="button" data-rs="w-">−L</button>
+    <button type="button" data-rs="w+">+L</button>
+    <button type="button" data-rs="h-">−H</button>
+    <button type="button" data-rs="h+">+H</button>
+    <button type="button" onclick="window.carteExitResize && window.carteExitResize()">✓ OK</button>
+  </div>
   <div id="carte-overlay" hidden>
     <div id="carte-sidebar">
       <div id="carte-sidebar-hdr">
