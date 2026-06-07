@@ -1631,10 +1631,16 @@ body.light #actu-overlay{ background:rgba(248,250,255,0.97) }
    que via les @media query ci-dessous.
    ═══════════════════════════════════════════════════════════════ */
 
-/* États par défaut : cachés (desktop) */
+/* États par défaut : tous les éléments mobile-only sont cachés sur desktop.
+   Ils ne sont affichés que via les @media query mobile + les body classes correspondantes. */
 #mobile-menu-btn,
 #mobile-drawer-backdrop,
-#mobile-bottom-nav{
+#mobile-bottom-nav,
+#atelier-docs-btn,
+#carte-docs-btn,
+#carte-fab,
+#carte-link-banner,
+#carte-resize-pad{
   display:none;
 }
 
