@@ -2030,15 +2030,17 @@ body.light #mobile-bottom-nav{
 
   /* === BANNER mode liaison === */
   #carte-link-banner{
+    display:none; /* caché par défaut, montré via body.carte-link-mode */
     position:fixed; left:50%; transform:translateX(-50%);
     top:64px; z-index:9750;
     background:var(--acc); color:#fff;
     padding:10px 16px; border-radius:24px;
-    display:flex; align-items:center; gap:10px;
+    align-items:center; gap:10px;
     font-size:13px; font-weight:600;
     box-shadow:0 8px 24px rgba(56,189,248,0.4);
     animation:cfabIn .2s ease;
   }
+  body.carte-mode.carte-link-mode #carte-link-banner{ display:flex }
   #carte-link-banner button{
     background:rgba(255,255,255,0.2); border:none; color:#fff;
     width:24px; height:24px; border-radius:50%;
