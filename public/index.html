@@ -1797,6 +1797,15 @@ body.light #mobile-bottom-nav{
     border-right:1px solid var(--gb);
     background:var(--bg) !important;
   }
+  /* Mode plein écran : utilisé pour Fiches et Accueil sur mobile
+     → le drawer prend toute la largeur (sauf 72px en bas pour la bottom nav) */
+  body.mobile-fullscreen-drawer #panel-l{
+    width:100vw !important;
+    max-width:none !important;
+    box-shadow:none !important;
+    border-right:none !important;
+  }
+  body.mobile-fullscreen-drawer #mobile-drawer-backdrop{ display:none !important }
   body.mobile-drawer-open #panel-l{
     transform:translateX(0);
   }
@@ -1995,10 +2004,16 @@ body.light #mobile-bottom-nav{
   body.carte-mode .cm-node-title{ font-size:15px !important; line-height:1.35 !important }
   body.carte-mode .cm-node-snippet{ font-size:13px !important; line-height:1.45 !important; margin-top:6px !important }
   body.carte-mode .cm-node-eyebrow{ font-size:11px !important }
-  /* Cache la toolbar et les handles natifs sur mobile : on utilise la barre FAB en bas */
-  body.carte-mode .cm-node-toolbar,
-  body.carte-mode .cm-resize,
-  body.carte-mode .cm-handle{ display:none !important }
+  /* Cache la toolbar native (remplacée par la FAB). On garde cm-resize visible
+     (poignée de coin) et cm-handle invisible mais ciblable par events (pour la
+     simulation du drag de liaison via la FAB 🔗 Lier). */
+  body.carte-mode .cm-node-toolbar{ display:none !important }
+  body.carte-mode .cm-handle{
+    visibility:hidden !important;
+    pointer-events:none !important;
+    /* On garde leur taille pour que getBoundingClientRect retourne des coords valides */
+  }
+  /* cm-resize reste visible (override plus loin avec 32×32) */
   /* Empêche le scroll natif du canvas pour que le touch bridge gère */
   body.carte-mode #carte-canvas{ touch-action:none }
   /* Indicateur visuel "tap-to-link" en mode liaison : autres nodes pulsent */
@@ -3424,9 +3439,10 @@ function mobileNavGo(target){
       window.closeCarte();
     }
   }catch(e){ console.warn('[mobileNavGo] cleanup', e); }
-  // Ferme aussi le drawer Codes si ouvert
-  if(document.body.classList.contains('mobile-drawer-open')){
+  // Ferme aussi le drawer Codes si ouvert (sauf pour home/fiches qui le rouvrent)
+  if(target !== 'home' && target !== 'fiches'){
     document.body.classList.remove('mobile-drawer-open');
+    document.body.classList.remove('mobile-fullscreen-drawer');
   }
   // Marque l'onglet actif immédiatement (avant async)
   document.querySelectorAll('#mobile-bottom-nav .mbn-tab').forEach(function(t){
@@ -3434,31 +3450,23 @@ function mobileNavGo(target){
   });
   switch(target){
     case 'home':
-      // Accueil mobile = écran d'accueil JuriDix dans le reader (logo + raccourcis),
-      // PAS le drawer Codes. Le drawer reste fermé.
+      // Accueil mobile = drawer plein écran sur la Bibliothèque des Codes (= accueil de l'app)
+      // + on montre #art-empty (logo + raccourcis) en arrière si jamais l'article était ouvert
       try{
-        // Cache l'article s'il y en avait un, montre #art-empty
         var artContent = document.getElementById('art-content');
         var artEmpty = document.getElementById('art-empty');
         if(artContent) artContent.style.display = 'none';
         if(artEmpty) artEmpty.style.display = 'flex';
-        // Désactive le tab actif sur les onglets latéraux
-        document.querySelectorAll('#page-search,#page-codes,#page-redac,#page-fiches,#page-quiz').forEach(function(p){
-          p.classList.remove('active');
-        });
-        // Marque "home" comme actif visuellement dans le ttab du drawer (au cas où il s'ouvre)
-        document.querySelectorAll('.ttab').forEach(function(t){
-          t.classList.toggle('on', t.getAttribute('data-tab') === 'home');
-        });
+        if(typeof switchTab==='function') switchTab('codes');
       }catch(e){ console.warn('[mobileNavGo home]', e); }
+      document.body.classList.add('mobile-drawer-open', 'mobile-fullscreen-drawer');
       break;
     case 'atelier': if(typeof window.openAtelier==='function') window.openAtelier(); break;
     case 'carte':   if(typeof window.openCarte==='function') window.openCarte(); break;
     case 'fiches':
-      // Fiches mobile = ouvre le drawer avec la liste des fiches
+      // Fiches mobile = drawer plein écran avec la grille des fiches
       if(typeof switchTab==='function') switchTab('fiches');
-      // Force l'ouverture du drawer (le panel-l est en transform:translateX(-100%) par défaut)
-      document.body.classList.add('mobile-drawer-open');
+      document.body.classList.add('mobile-drawer-open', 'mobile-fullscreen-drawer');
       break;
     case 'actus':   if(typeof openActualites==='function') openActualites(); break;
   }
