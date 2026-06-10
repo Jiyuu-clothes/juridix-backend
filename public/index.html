@@ -2055,12 +2055,13 @@ body.light #mobile-bottom-nav{
   body.light #carte-fab{ background:rgba(255,255,255,0.96); border-color:rgba(15,23,42,0.08) }
   /* Hint en haut quand aucun node sélectionné */
   body.carte-mode:not(.carte-node-selected) #carte-fab::before{
-    content:"👆 Touche un node d'abord";
-    position:absolute; left:0; right:0; top:-28px;
-    text-align:center; font-size:11px; color:var(--t2);
+    content:"👆 Touche un node • Drag = bouger • 2 doigts = redimensionner • Double-tap = éditer";
+    position:absolute; left:0; right:0; top:-32px;
+    text-align:center; font-size:10.5px; color:var(--t2);
     background:rgba(13,13,28,0.85); border-radius:12px;
-    padding:4px 12px; width:fit-content; margin:0 auto;
-    pointer-events:none;
+    padding:5px 10px; max-width:calc(100% - 8px); margin:0 auto;
+    pointer-events:none; line-height:1.3;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   @keyframes cfabIn{ from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
   .cfab-btn{
@@ -3531,6 +3532,10 @@ document.addEventListener('click', function(e){
   var tapStartTime = 0;
   var tapStartXY = null;
   var hasMoved = false;
+  // Double-tap detection
+  var lastTapTime = 0;
+  var lastTapNodeId = null;
+  var DOUBLE_TAP_MS = 320;
 
   function fire(type, t, target){
     var ev;
@@ -3894,6 +3899,38 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
+        // Détection double-tap pour entrer en édition
+        var elapsed = Date.now() - tapStartTime;
+        if(!hasMoved && elapsed < 250 && !linkMode){
+          var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
+          var nodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
+          if(nodeEl){
+            var nodeId = nodeEl.getAttribute('data-id');
+            var now = Date.now();
+            if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === nodeId){
+              // DOUBLE-TAP → édition du titre via le bouton edit-title natif (caché)
+              var editBtn = nodeEl.querySelector('[data-act="edit-title"]');
+              if(editBtn){
+                fire('mousedown', { clientX:0, clientY:0 }, editBtn);
+              } else {
+                // Fallback : dispatch un dblclick natif (carte.js a un handler)
+                var dblev;
+                try{
+                  dblev = new MouseEvent('dblclick', { bubbles:true, cancelable:true, view:window, clientX: t.clientX, clientY: t.clientY });
+                }catch(_){
+                  dblev = document.createEvent('MouseEvents');
+                  dblev.initMouseEvent('dblclick', true, true, window, 0, 0,0, t.clientX, t.clientY, false,false,false,false, 0, null);
+                }
+                nodeEl.dispatchEvent(dblev);
+              }
+              lastTapTime = 0;
+              lastTapNodeId = null;
+            } else {
+              lastTapTime = now;
+              lastTapNodeId = nodeId;
+            }
+          }
+        }
         activeTouch = null;
         tapStartXY = null;
         hasMoved = false;
