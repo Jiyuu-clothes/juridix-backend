@@ -3749,9 +3749,8 @@ document.addEventListener('click', function(e){
   }
 
   function onTouchStart(e){
-    window._lastTouchStart = { branch: 'entry', touchesLen: e.touches.length, t0clientX: e.touches[0] ? e.touches[0].clientX : null, t0clientY: e.touches[0] ? e.touches[0].clientY : null, t0id: e.touches[0] ? e.touches[0].identifier : null };
     var canvas = document.getElementById('carte-canvas');
-    if(!canvas){ window._lastTouchStart.branch = 'NO_CANVAS_EARLY_RETURN'; return; }
+    if(!canvas) return;
     ACTIVE_CANVAS = canvas;
     initFAB();
 
@@ -3782,11 +3781,20 @@ document.addEventListener('click', function(e){
             startHY = nrect.bottom;
           }
           fire('mousedown', { clientX: startHX, clientY: startHY }, handle);
+          // Récupère la position actuelle du node pour pouvoir le translater
+          // simultanément pendant la pinch (midpoint des 2 doigts → mouvement)
+          var nodeStyleLeft = parseFloat(resizeTarget.style.left) || 0;
+          var nodeStyleTop  = parseFloat(resizeTarget.style.top) || 0;
           nodeResize = {
+            el: resizeTarget,
             handleStartX: startHX,
             handleStartY: startHY,
             startDx: Math.abs(t1.clientX - t2.clientX),
-            startDy: Math.abs(t1.clientY - t2.clientY)
+            startDy: Math.abs(t1.clientY - t2.clientY),
+            startMidX: (t1.clientX + t2.clientX) / 2,
+            startMidY: (t1.clientY + t2.clientY) / 2,
+            startLeft: nodeStyleLeft,
+            startTop: nodeStyleTop
           };
           e.preventDefault();
           return;
@@ -3807,14 +3815,11 @@ document.addEventListener('click', function(e){
     }
 
     // 1 doigt
-    window._lastTouchStart.branch = '1_FINGER';
     var t = e.touches[0];
     activeTouch = t.identifier;
     tapStartTime = Date.now();
     tapStartXY = { x: t.clientX, y: t.clientY };
     hasMoved = false;
-    window._lastTouchStart.tapStartTime = tapStartTime;
-    window._lastTouchStart.activeTouch = activeTouch;
     lastTarget = document.elementFromPoint(t.clientX, t.clientY);
     var nodeEl = lastTarget && lastTarget.closest ? lastTarget.closest('.cm-node') : null;
 
@@ -3848,6 +3853,7 @@ document.addEventListener('click', function(e){
     // → carte.js's onMouseMove fait le calcul de new w/h et update le node.
     if(nodeResize && e.touches.length === 2){
       var t1 = e.touches[0], t2 = e.touches[1];
+      // 1) Resize via simulation de drag du handle (delta d'écartement des doigts)
       var dxNow = Math.abs(t1.clientX - t2.clientX);
       var dyNow = Math.abs(t1.clientY - t2.clientY);
       var deltaX = dxNow - nodeResize.startDx;
@@ -3856,6 +3862,17 @@ document.addEventListener('click', function(e){
         clientX: nodeResize.handleStartX + deltaX,
         clientY: nodeResize.handleStartY + deltaY
       }, document);
+      // 2) Translate le node selon le déplacement du midpoint des 2 doigts.
+      // On lit la scale courante du viewport pour convertir écran→world coords.
+      var midNowX = (t1.clientX + t2.clientX) / 2;
+      var midNowY = (t1.clientY + t2.clientY) / 2;
+      var midDx = midNowX - nodeResize.startMidX;
+      var midDy = midNowY - nodeResize.startMidY;
+      var sc = getViewScale() || 1;
+      if(nodeResize.el){
+        nodeResize.el.style.left = (nodeResize.startLeft + midDx / sc) + 'px';
+        nodeResize.el.style.top  = (nodeResize.startTop  + midDy / sc) + 'px';
+      }
       e.preventDefault();
       return;
     }
@@ -3889,10 +3906,37 @@ document.addEventListener('click', function(e){
 
   function onTouchEnd(e){
     // Fin de pinch-resize : on tire un mouseup pour clôturer la séquence
-    // côté carte.js (qui persiste via touchMap dans son onMouseUp)
+    // côté carte.js (qui persiste w/h via touchMap dans son onMouseUp).
+    // Ensuite, si la position a aussi bougé, on simule un drag pour persister x/y.
     if(nodeResize && e.touches.length < 2){
       fire('mouseup', { clientX:0, clientY:0 }, document);
+      var nr = nodeResize;
       nodeResize = null;
+      // Persister la translation : on lit la nouvelle position du node et
+      // si elle diffère du start, on fire mousedown→mousemove→mouseup pour
+      // que carte.js (nodeDrag → touchMap) sauvegarde n.x et n.y.
+      try{
+        var el = nr.el;
+        if(el){
+          var newLeft = parseFloat(el.style.left) || 0;
+          var newTop  = parseFloat(el.style.top) || 0;
+          var dxWorld = newLeft - nr.startLeft;
+          var dyWorld = newTop  - nr.startTop;
+          if(Math.abs(dxWorld) > 0.5 || Math.abs(dyWorld) > 0.5){
+            var sc = getViewScale() || 1;
+            var rect = el.getBoundingClientRect();
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+            // Reset visuel à l'ancienne position pour partir de start
+            el.style.left = nr.startLeft + 'px';
+            el.style.top  = nr.startTop + 'px';
+            // mousedown au centre actuel (en world ce serait la position de start)
+            fire('mousedown', { clientX: cx - dxWorld * sc, clientY: cy - dyWorld * sc }, el);
+            fire('mousemove', { clientX: cx, clientY: cy }, document);
+            fire('mouseup',   { clientX: cx, clientY: cy }, document);
+          }
+        }
+      }catch(_){}
     }
     if(pinchState && e.touches.length < 2){
       pinchState = null;
@@ -3902,26 +3946,17 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
-        // Détection tap / double-tap. Conditions plus tolérantes : 12px de mouvement,
-        // 400ms d'élapsed, 400ms entre 2 taps pour détecter un double-tap.
+        // Détection tap / double-tap.
         var elapsed = Date.now() - tapStartTime;
-        // Diagnostic exposé sur window pour debugging
-        window._lastTapEnd = { elapsed: elapsed, hasMoved: hasMoved, linkMode: linkMode, x: t.clientX, y: t.clientY };
         if(!hasMoved && elapsed < 400 && !linkMode){
           var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
           var tappedNodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
           var now = Date.now();
-          window._lastTapEnd.tappedNodeId = tappedNodeEl ? tappedNodeEl.getAttribute('data-id') : null;
-          window._lastTapEnd.lastTapTime = lastTapTime;
-          window._lastTapEnd.lastTapNodeId = lastTapNodeId;
-          window._lastTapEnd.now = now;
-          window._lastTapEnd.dtToLast = now - lastTapTime;
           if(tappedNodeEl){
             // ─── TAP SUR UN NODE ───
             var nodeId = tappedNodeEl.getAttribute('data-id');
             if(now - lastTapTime < 400 && lastTapNodeId === nodeId){
               // DOUBLE-TAP NODE → édition du titre
-              window._lastTapEnd.action = 'EDIT_NODE';
               var editBtn = tappedNodeEl.querySelector('[data-act="edit-title"]');
               if(editBtn){
                 fire('mousedown', { clientX:0, clientY:0 }, editBtn);
@@ -3938,7 +3973,6 @@ document.addEventListener('click', function(e){
               lastTapTime = 0;
               lastTapNodeId = null;
             } else {
-              window._lastTapEnd.action = 'SET_LAST_TAP_NODE';
               lastTapTime = now;
               lastTapNodeId = nodeId;
             }
@@ -3946,7 +3980,6 @@ document.addEventListener('click', function(e){
             // ─── TAP SUR CANVAS VIDE ───
             if(now - lastTapTime < 400 && lastTapNodeId === '__empty__'){
               // DOUBLE-TAP VIDE → créer une nouvelle bulle à cet endroit
-              window._lastTapEnd.action = 'CREATE_NODE';
               var canvasEl = document.getElementById('carte-canvas');
               if(canvasEl){
                 var newdb;
@@ -3961,15 +3994,12 @@ document.addEventListener('click', function(e){
               lastTapTime = 0;
               lastTapNodeId = null;
             } else {
-              window._lastTapEnd.action = 'SET_LAST_TAP_EMPTY';
               lastTapTime = now;
               lastTapNodeId = '__empty__';
               // Désélectionne après un single-tap sur canvas (visuel)
               deselectNode();
             }
           }
-        } else {
-          window._lastTapEnd.action = 'SKIP_TAP_DETECTION';
         }
         activeTouch = null;
         tapStartXY = null;
