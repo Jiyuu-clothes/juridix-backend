@@ -1734,20 +1734,25 @@ body.light #mobile-bottom-nav{
   #top-tabs{ display:none !important }
   #icon-sidebar{ display:none !important }
 
-  /* Topbar : laisser de la place pour le hamburger + simplifier */
+  /* Topbar : laisser de la place pour le hamburger + simplifier.
+     Layout : [☰ fixed] [logo SVG seul] [search centré flex:1] [☀️] */
   #topbar{
-    padding-left:62px !important;
-    padding-right:10px !important;
-    gap:8px !important;
+    padding-left:54px !important;
+    padding-right:8px !important;
+    gap:6px !important;
     height:54px !important;
     min-height:54px !important;
+    justify-content:center !important;
   }
   #topbar .logo{ font-size:15px; flex-shrink:0 }
-  #topbar .logo svg{ width:20px; height:20px }
+  #topbar .logo svg{ width:22px; height:22px }
+  /* Cache le texte "JuriDix" sur mobile pour gagner de la place et centrer la search */
+  #topbar .logo span{ display:none !important }
   /* Cache les icônes secondaires de la topbar pour gagner de la place */
   #topbar .tb-right .btn-icon#notes-quick-btn,
   #topbar .tb-right .btn-icon#sound-btn{ display:none }
-  /* CRITIQUE : repasser la search wrap en flux normal (elle est en absolute centré en desktop) */
+  /* CRITIQUE : repasser la search wrap en flux normal (elle est en absolute centré en desktop)
+     + on lui donne max-width et margin auto pour qu'elle reste centrée dans le topbar */
   #topbar-search-wrap{
     position:static !important;
     transform:none !important;
@@ -1755,8 +1760,9 @@ body.light #mobile-bottom-nav{
     top:auto !important;
     width:auto !important;
     min-width:0 !important;
-    max-width:none !important;
-    flex:1 1 0 !important;
+    max-width:300px !important;
+    flex:1 1 auto !important;
+    margin:0 auto !important;
   }
   body.hub-mode #topbar-search-wrap{
     width:auto !important;
@@ -3427,10 +3433,33 @@ function mobileNavGo(target){
     t.classList.toggle('on', t.getAttribute('data-tab') === target);
   });
   switch(target){
-    case 'home':    if(typeof goHome==='function') goHome(); break;
+    case 'home':
+      // Accueil mobile = écran d'accueil JuriDix dans le reader (logo + raccourcis),
+      // PAS le drawer Codes. Le drawer reste fermé.
+      try{
+        // Cache l'article s'il y en avait un, montre #art-empty
+        var artContent = document.getElementById('art-content');
+        var artEmpty = document.getElementById('art-empty');
+        if(artContent) artContent.style.display = 'none';
+        if(artEmpty) artEmpty.style.display = 'flex';
+        // Désactive le tab actif sur les onglets latéraux
+        document.querySelectorAll('#page-search,#page-codes,#page-redac,#page-fiches,#page-quiz').forEach(function(p){
+          p.classList.remove('active');
+        });
+        // Marque "home" comme actif visuellement dans le ttab du drawer (au cas où il s'ouvre)
+        document.querySelectorAll('.ttab').forEach(function(t){
+          t.classList.toggle('on', t.getAttribute('data-tab') === 'home');
+        });
+      }catch(e){ console.warn('[mobileNavGo home]', e); }
+      break;
     case 'atelier': if(typeof window.openAtelier==='function') window.openAtelier(); break;
     case 'carte':   if(typeof window.openCarte==='function') window.openCarte(); break;
-    case 'fiches':  if(typeof switchTab==='function') switchTab('fiches'); break;
+    case 'fiches':
+      // Fiches mobile = ouvre le drawer avec la liste des fiches
+      if(typeof switchTab==='function') switchTab('fiches');
+      // Force l'ouverture du drawer (le panel-l est en transform:translateX(-100%) par défaut)
+      document.body.classList.add('mobile-drawer-open');
+      break;
     case 'actus':   if(typeof openActualites==='function') openActualites(); break;
   }
 }
