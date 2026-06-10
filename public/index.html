@@ -3426,10 +3426,18 @@ document.addEventListener('keydown', function(e){
 </nav>
 <script>
 /* Router unifié pour la bottom nav mobile :
+   - Ferme le spotlight zen s'il est encore visible (sinon il intercepte tous les touches)
    - Ferme l'overlay actuel (actu / atelier / carte) avant de naviguer
    - Marque l'onglet actif dans la bottom nav
    - Délègue à la fonction d'ouverture appropriée */
 function mobileNavGo(target){
+  // CRITIQUE : dismiss le spotlight zen avant tout, sinon il a z-index 1500
+  // et capture tous les touches même si la carte/atelier est "ouvert" derrière.
+  try{
+    if(typeof window.exitZenMode === 'function' && window._zenActive){
+      window.exitZenMode('codes');
+    }
+  }catch(e){}
   try{
     if(target !== 'actus' && document.getElementById('actu-overlay').classList.contains('on')){
       closeActualites();
