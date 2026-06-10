@@ -2000,11 +2000,13 @@ body.light #mobile-bottom-nav{
     opacity:0.5;
   }
 
-  /* === BARRE D'ACTIONS FLOTTANTE (FAB) === */
+  /* === BARRE D'ACTIONS FLOTTANTE (FAB) ===
+     Visible en permanence dès qu'on entre dans la carte sur mobile.
+     Les boutons sont gris/disabled tant qu'aucun node n'est sélectionné. */
   #carte-fab{
     display:none;
     position:fixed; left:8px; right:8px;
-    bottom:calc(80px + env(safe-area-inset-bottom)); /* au-dessus de la bottom nav */
+    bottom:calc(80px + env(safe-area-inset-bottom));
     z-index:9750;
     padding:8px;
     background:rgba(13,13,28,0.96);
@@ -2016,8 +2018,21 @@ body.light #mobile-bottom-nav{
     gap:4px;
     animation:cfabIn .18s cubic-bezier(.2,.8,.3,1);
   }
-  body.carte-mode.carte-node-selected #carte-fab{ display:flex }
+  body.carte-mode #carte-fab{ display:flex }
+  /* Boutons grisés tant qu'aucun node n'est sélectionné */
+  body.carte-mode:not(.carte-node-selected) .cfab-btn{
+    opacity:.35; pointer-events:none;
+  }
   body.light #carte-fab{ background:rgba(255,255,255,0.96); border-color:rgba(15,23,42,0.08) }
+  /* Hint en haut quand aucun node sélectionné */
+  body.carte-mode:not(.carte-node-selected) #carte-fab::before{
+    content:"👆 Touche un node d'abord";
+    position:absolute; left:0; right:0; top:-28px;
+    text-align:center; font-size:11px; color:var(--t2);
+    background:rgba(13,13,28,0.85); border-radius:12px;
+    padding:4px 12px; width:fit-content; margin:0 auto;
+    pointer-events:none;
+  }
   @keyframes cfabIn{ from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
   .cfab-btn{
     flex:1 1 0;
@@ -3722,6 +3737,15 @@ document.addEventListener('click', function(e){
       }
     }
 
+    // Sélectionne le node IMMÉDIATEMENT au touchstart (plus de tap detection brittle)
+    // → la FAB devient active dès que l'utilisateur touche un node
+    if(nodeEl && !linkMode){
+      selectNode(nodeEl);
+    } else if(!nodeEl && !linkMode && !resizeMode){
+      // Tap sur canvas vide → désélectionne
+      deselectNode();
+    }
+
     // Fire mousedown synthétique pour permettre le drag du node
     fire('mousedown', t, lastTarget);
     if(lastTarget && (nodeEl || lastTarget.closest('#carte-canvas') || lastTarget.closest('#carte-edges') || lastTarget.closest('#carte-empty'))){
@@ -3768,18 +3792,6 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
-        // Détection tap : sans mouvement ET sans drag long
-        var elapsed = Date.now() - tapStartTime;
-        if(!hasMoved && elapsed < 350){
-          var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
-          var nodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
-          if(nodeEl){
-            if(!linkMode) selectNode(nodeEl);
-          } else if(!linkMode && !resizeMode){
-            // Tap sur canvas vide → deselect
-            deselectNode();
-          }
-        }
         activeTouch = null;
         tapStartXY = null;
         hasMoved = false;
