@@ -3898,17 +3898,26 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
-        // Détection tap / double-tap
+        // Détection tap / double-tap. Conditions plus tolérantes : 12px de mouvement,
+        // 400ms d'élapsed, 400ms entre 2 taps pour détecter un double-tap.
         var elapsed = Date.now() - tapStartTime;
-        if(!hasMoved && elapsed < 280 && !linkMode){
+        // Diagnostic exposé sur window pour debugging
+        window._lastTapEnd = { elapsed: elapsed, hasMoved: hasMoved, linkMode: linkMode, x: t.clientX, y: t.clientY };
+        if(!hasMoved && elapsed < 400 && !linkMode){
           var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
           var tappedNodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
           var now = Date.now();
+          window._lastTapEnd.tappedNodeId = tappedNodeEl ? tappedNodeEl.getAttribute('data-id') : null;
+          window._lastTapEnd.lastTapTime = lastTapTime;
+          window._lastTapEnd.lastTapNodeId = lastTapNodeId;
+          window._lastTapEnd.now = now;
+          window._lastTapEnd.dtToLast = now - lastTapTime;
           if(tappedNodeEl){
             // ─── TAP SUR UN NODE ───
             var nodeId = tappedNodeEl.getAttribute('data-id');
-            if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === nodeId){
+            if(now - lastTapTime < 400 && lastTapNodeId === nodeId){
               // DOUBLE-TAP NODE → édition du titre
+              window._lastTapEnd.action = 'EDIT_NODE';
               var editBtn = tappedNodeEl.querySelector('[data-act="edit-title"]');
               if(editBtn){
                 fire('mousedown', { clientX:0, clientY:0 }, editBtn);
@@ -3925,15 +3934,15 @@ document.addEventListener('click', function(e){
               lastTapTime = 0;
               lastTapNodeId = null;
             } else {
+              window._lastTapEnd.action = 'SET_LAST_TAP_NODE';
               lastTapTime = now;
               lastTapNodeId = nodeId;
             }
           } else {
             // ─── TAP SUR CANVAS VIDE ───
-            if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === '__empty__'){
+            if(now - lastTapTime < 400 && lastTapNodeId === '__empty__'){
               // DOUBLE-TAP VIDE → créer une nouvelle bulle à cet endroit
-              // On dispatche un dblclick sur le canvas que carte.js gère déjà
-              // pour appeler addNodeAt(x, y, 'Nouveau node').
+              window._lastTapEnd.action = 'CREATE_NODE';
               var canvasEl = document.getElementById('carte-canvas');
               if(canvasEl){
                 var newdb;
@@ -3948,12 +3957,15 @@ document.addEventListener('click', function(e){
               lastTapTime = 0;
               lastTapNodeId = null;
             } else {
+              window._lastTapEnd.action = 'SET_LAST_TAP_EMPTY';
               lastTapTime = now;
               lastTapNodeId = '__empty__';
               // Désélectionne après un single-tap sur canvas (visuel)
               deselectNode();
             }
           }
+        } else {
+          window._lastTapEnd.action = 'SKIP_TAP_DETECTION';
         }
         activeTouch = null;
         tapStartXY = null;
