@@ -2004,16 +2004,19 @@ body.light #mobile-bottom-nav{
   body.carte-mode .cm-node-title{ font-size:15px !important; line-height:1.35 !important }
   body.carte-mode .cm-node-snippet{ font-size:13px !important; line-height:1.45 !important; margin-top:6px !important }
   body.carte-mode .cm-node-eyebrow{ font-size:11px !important }
-  /* Cache la toolbar native (remplacée par la FAB). On garde cm-resize visible
-     (poignée de coin) et cm-handle invisible mais ciblable par events (pour la
-     simulation du drag de liaison via la FAB 🔗 Lier). */
-  body.carte-mode .cm-node-toolbar{ display:none !important }
+  /* Cache la toolbar native (remplacée par la FAB).
+     On cache aussi cm-resize sur mobile : il interceptait les drags 1-doigt.
+     Le resize se fait au pinch 2-doigts qui dispatche sur le handle invisible.
+     cm-handle reste invisible mais ciblable par events (pour la création de liens). */
+  body.carte-mode .cm-node-toolbar,
+  body.carte-mode .cm-resize{
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
   body.carte-mode .cm-handle{
     visibility:hidden !important;
     pointer-events:none !important;
-    /* On garde leur taille pour que getBoundingClientRect retourne des coords valides */
   }
-  /* cm-resize reste visible (override plus loin avec 32×32) */
   /* Empêche le scroll natif du canvas pour que le touch bridge gère */
   body.carte-mode #carte-canvas{ touch-action:none }
   /* Indicateur visuel "tap-to-link" en mode liaison : autres nodes pulsent */
@@ -3551,10 +3554,12 @@ document.addEventListener('click', function(e){
   var tapStartTime = 0;
   var tapStartXY = null;
   var hasMoved = false;
-  // Double-tap detection
+  // Double-tap detection — seuils tolérants pour le tap mobile
   var lastTapTime = 0;
   var lastTapNodeId = null;
-  var DOUBLE_TAP_MS = 320;
+  var DOUBLE_TAP_MS = 500;     // 500ms entre 2 taps (plus large pour les doigts moyens)
+  var TAP_MAX_DURATION = 500;  // élapsed max pour qu'un touch soit considéré tap
+  var TAP_MAX_MOVE = 15;       // pixels de mouvement max pour rester un tap
 
   function fire(type, t, target){
     var ev;
@@ -3915,7 +3920,7 @@ document.addEventListener('click', function(e){
     if(tapStartXY){
       var tdx = t.clientX - tapStartXY.x;
       var tdy = t.clientY - tapStartXY.y;
-      if(Math.hypot(tdx, tdy) > 8) hasMoved = true;
+      if(Math.hypot(tdx, tdy) > TAP_MAX_MOVE) hasMoved = true;
     }
     fire('mousemove', t, document);
     e.preventDefault();
@@ -3960,16 +3965,16 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
-        // Détection tap / double-tap.
+        // Détection tap / double-tap. Seuils tolérants.
         var elapsed = Date.now() - tapStartTime;
-        if(!hasMoved && elapsed < 400 && !linkMode){
+        if(!hasMoved && elapsed < TAP_MAX_DURATION && !linkMode){
           var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
           var tappedNodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
           var now = Date.now();
           if(tappedNodeEl){
             // ─── TAP SUR UN NODE ───
             var nodeId = tappedNodeEl.getAttribute('data-id');
-            if(now - lastTapTime < 400 && lastTapNodeId === nodeId){
+            if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === nodeId){
               // DOUBLE-TAP NODE → édition du titre
               var editBtn = tappedNodeEl.querySelector('[data-act="edit-title"]');
               if(editBtn){
@@ -3984,6 +3989,13 @@ document.addEventListener('click', function(e){
                 }
                 tappedNodeEl.dispatchEvent(dblev);
               }
+              // iOS Safari peut ne pas montrer le clavier sur focus depuis event
+              // synthétique → on re-focus le textarea avec un léger délai pour
+              // s'assurer que le clavier remonte bien.
+              setTimeout(function(){
+                var ta = document.querySelector('textarea.cm-node-edit, textarea.cm-node-edit-body');
+                if(ta){ ta.focus(); ta.select && ta.select(); }
+              }, 60);
               lastTapTime = 0;
               lastTapNodeId = null;
             } else {
@@ -3992,7 +4004,7 @@ document.addEventListener('click', function(e){
             }
           } else {
             // ─── TAP SUR CANVAS VIDE ───
-            if(now - lastTapTime < 400 && lastTapNodeId === '__empty__'){
+            if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === '__empty__'){
               // DOUBLE-TAP VIDE → créer une nouvelle bulle à cet endroit
               var canvasEl = document.getElementById('carte-canvas');
               if(canvasEl){
