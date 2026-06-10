@@ -1978,6 +1978,14 @@ body.light #mobile-bottom-nav{
   body.carte-mode .cm-node.selected{
     box-shadow:0 6px 24px rgba(124,107,255,0.5), 0 0 0 2px var(--acc2) !important;
   }
+  /* Pendant le drag : node soulevé pour un retour visuel clair */
+  body.carte-mode .cm-node.dragging{
+    box-shadow:0 12px 32px rgba(124,107,255,0.7), 0 0 0 2.5px var(--acc2) !important;
+    transform:scale(1.04);
+    transition:transform .08s ease-out;
+    z-index:100 !important;
+    opacity:0.95;
+  }
   body.carte-mode .cm-node-title{ font-size:15px !important; line-height:1.35 !important }
   body.carte-mode .cm-node-snippet{ font-size:13px !important; line-height:1.45 !important; margin-top:6px !important }
   body.carte-mode .cm-node-eyebrow{ font-size:11px !important }
@@ -3702,9 +3710,45 @@ document.addEventListener('click', function(e){
     ACTIVE_CANVAS = canvas;
     initFAB();
 
-    // 2 doigts → toujours pinch-zoom canvas (plus de pinch-resize tordu)
+    // 2 doigts
     if(e.touches.length === 2){
       var t1 = e.touches[0], t2 = e.touches[1];
+      // Si les 2 doigts sont sur le MÊME node → pinch-to-resize de ce node
+      // (le mobile-natural gesture pour agrandir/réduire une bulle)
+      var n1 = findNodeAt(t1.clientX, t1.clientY);
+      var n2 = findNodeAt(t2.clientX, t2.clientY);
+      if(n1 && n1 === n2){
+        // Annule tout drag 1-doigt en cours
+        if(activeTouch !== null){
+          fire('mouseup', { clientX:0, clientY:0 }, document);
+          activeTouch = null;
+        }
+        selectNode(n1);
+        var handle = n1.querySelector('.cm-resize');
+        if(handle){
+          // Position de "départ" du handle (utilisée comme référence pour les deltas)
+          var handleRect = handle.getBoundingClientRect();
+          var startHX = handleRect.left + handleRect.width / 2;
+          var startHY = handleRect.top + handleRect.height / 2;
+          // Si le handle est display:none sur mobile, sa rect est 0×0 — on fall back
+          // sur le coin bas-droit du node
+          if(handleRect.width === 0){
+            var nrect = n1.getBoundingClientRect();
+            startHX = nrect.right;
+            startHY = nrect.bottom;
+          }
+          fire('mousedown', { clientX: startHX, clientY: startHY }, handle);
+          nodeResize = {
+            handleStartX: startHX,
+            handleStartY: startHY,
+            startDx: Math.abs(t1.clientX - t2.clientX),
+            startDy: Math.abs(t1.clientY - t2.clientY)
+          };
+          e.preventDefault();
+          return;
+        }
+      }
+      // Sinon → pinch-zoom canvas
       pinchState = {
         d0: getDist(t1, t2),
         mx: (t1.clientX + t2.clientX) / 2,
@@ -3754,6 +3798,22 @@ document.addEventListener('click', function(e){
   }
 
   function onTouchMove(e){
+    // Pinch-to-resize d'un node : on dispatche un mousemove sur le handle
+    // dont la position est ajustée par le delta d'écartement X/Y des doigts.
+    // → carte.js's onMouseMove fait le calcul de new w/h et update le node.
+    if(nodeResize && e.touches.length === 2){
+      var t1 = e.touches[0], t2 = e.touches[1];
+      var dxNow = Math.abs(t1.clientX - t2.clientX);
+      var dyNow = Math.abs(t1.clientY - t2.clientY);
+      var deltaX = dxNow - nodeResize.startDx;
+      var deltaY = dyNow - nodeResize.startDy;
+      fire('mousemove', {
+        clientX: nodeResize.handleStartX + deltaX,
+        clientY: nodeResize.handleStartY + deltaY
+      }, document);
+      e.preventDefault();
+      return;
+    }
     // Pinch-zoom canvas
     if(pinchState && e.touches.length === 2){
       var d = getDist(e.touches[0], e.touches[1]);
@@ -3773,17 +3833,22 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){ t = e.changedTouches[i]; break; }
     }
     if(!t) return;
-    // Marque comme bougé si déplacement significatif
     if(tapStartXY){
-      var dx = t.clientX - tapStartXY.x;
-      var dyT = t.clientY - tapStartXY.y;
-      if(Math.hypot(dx, dyT) > 8) hasMoved = true;
+      var tdx = t.clientX - tapStartXY.x;
+      var tdy = t.clientY - tapStartXY.y;
+      if(Math.hypot(tdx, tdy) > 8) hasMoved = true;
     }
     fire('mousemove', t, document);
     e.preventDefault();
   }
 
   function onTouchEnd(e){
+    // Fin de pinch-resize : on tire un mouseup pour clôturer la séquence
+    // côté carte.js (qui persiste via touchMap dans son onMouseUp)
+    if(nodeResize && e.touches.length < 2){
+      fire('mouseup', { clientX:0, clientY:0 }, document);
+      nodeResize = null;
+    }
     if(pinchState && e.touches.length < 2){
       pinchState = null;
     }
