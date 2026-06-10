@@ -2053,15 +2053,16 @@ body.light #mobile-bottom-nav{
     opacity:.35; pointer-events:none;
   }
   body.light #carte-fab{ background:rgba(255,255,255,0.96); border-color:rgba(15,23,42,0.08) }
-  /* Hint en haut quand aucun node sélectionné */
+  /* Hint en haut : explique les gestes (s'affiche tant qu'aucun node n'est sélectionné) */
   body.carte-mode:not(.carte-node-selected) #carte-fab::before{
-    content:"👆 Touche un node • Drag = bouger • 2 doigts = redimensionner • Double-tap = éditer";
-    position:absolute; left:0; right:0; top:-32px;
-    text-align:center; font-size:10.5px; color:var(--t2);
-    background:rgba(13,13,28,0.85); border-radius:12px;
-    padding:5px 10px; max-width:calc(100% - 8px); margin:0 auto;
+    content:"Double-tap vide = nouvelle bulle • Drag = bouger • Pinch = taille • Double-tap = éditer";
+    position:absolute; left:8px; right:8px; top:-34px;
+    text-align:center; font-size:10px; color:var(--t1);
+    background:rgba(13,13,28,0.92); border-radius:10px;
+    padding:6px 8px;
     pointer-events:none; line-height:1.3;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    box-shadow:0 2px 8px rgba(0,0,0,0.3);
   }
   @keyframes cfabIn{ from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
   .cfab-btn{
@@ -3755,27 +3756,26 @@ document.addEventListener('click', function(e){
     // 2 doigts
     if(e.touches.length === 2){
       var t1 = e.touches[0], t2 = e.touches[1];
-      // Si les 2 doigts sont sur le MÊME node → pinch-to-resize de ce node
-      // (le mobile-natural gesture pour agrandir/réduire une bulle)
       var n1 = findNodeAt(t1.clientX, t1.clientY);
       var n2 = findNodeAt(t2.clientX, t2.clientY);
-      if(n1 && n1 === n2){
-        // Annule tout drag 1-doigt en cours
+      // Resize si au moins 1 doigt touche un node (et l'autre soit le même soit le canvas)
+      var resizeTarget = null;
+      if(n1 && (n1 === n2 || !n2)) resizeTarget = n1;
+      else if(n2 && !n1) resizeTarget = n2;
+
+      if(resizeTarget){
         if(activeTouch !== null){
           fire('mouseup', { clientX:0, clientY:0 }, document);
           activeTouch = null;
         }
-        selectNode(n1);
-        var handle = n1.querySelector('.cm-resize');
+        selectNode(resizeTarget);
+        var handle = resizeTarget.querySelector('.cm-resize');
         if(handle){
-          // Position de "départ" du handle (utilisée comme référence pour les deltas)
           var handleRect = handle.getBoundingClientRect();
           var startHX = handleRect.left + handleRect.width / 2;
           var startHY = handleRect.top + handleRect.height / 2;
-          // Si le handle est display:none sur mobile, sa rect est 0×0 — on fall back
-          // sur le coin bas-droit du node
           if(handleRect.width === 0){
-            var nrect = n1.getBoundingClientRect();
+            var nrect = resizeTarget.getBoundingClientRect();
             startHX = nrect.right;
             startHY = nrect.bottom;
           }
@@ -3823,13 +3823,11 @@ document.addEventListener('click', function(e){
       }
     }
 
-    // Sélectionne le node IMMÉDIATEMENT au touchstart (plus de tap detection brittle)
-    // → la FAB devient active dès que l'utilisateur touche un node
+    // Sélectionne le node IMMÉDIATEMENT au touchstart pour activer la FAB.
+    // La désélection sur canvas vide est délayée au touchend (pour permettre
+    // la détection de double-tap-on-empty qui crée une nouvelle bulle).
     if(nodeEl && !linkMode){
       selectNode(nodeEl);
-    } else if(!nodeEl && !linkMode && !resizeMode){
-      // Tap sur canvas vide → désélectionne
-      deselectNode();
     }
 
     // Fire mousedown synthétique pour permettre le drag du node
@@ -3899,21 +3897,21 @@ document.addEventListener('click', function(e){
       if(e.changedTouches[i].identifier === activeTouch){
         var t = e.changedTouches[i];
         fire('mouseup', t, document);
-        // Détection double-tap pour entrer en édition
+        // Détection tap / double-tap
         var elapsed = Date.now() - tapStartTime;
-        if(!hasMoved && elapsed < 250 && !linkMode){
+        if(!hasMoved && elapsed < 280 && !linkMode){
           var tappedEl = document.elementFromPoint(t.clientX, t.clientY);
-          var nodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
-          if(nodeEl){
-            var nodeId = nodeEl.getAttribute('data-id');
-            var now = Date.now();
+          var tappedNodeEl = tappedEl && tappedEl.closest ? tappedEl.closest('.cm-node') : null;
+          var now = Date.now();
+          if(tappedNodeEl){
+            // ─── TAP SUR UN NODE ───
+            var nodeId = tappedNodeEl.getAttribute('data-id');
             if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === nodeId){
-              // DOUBLE-TAP → édition du titre via le bouton edit-title natif (caché)
-              var editBtn = nodeEl.querySelector('[data-act="edit-title"]');
+              // DOUBLE-TAP NODE → édition du titre
+              var editBtn = tappedNodeEl.querySelector('[data-act="edit-title"]');
               if(editBtn){
                 fire('mousedown', { clientX:0, clientY:0 }, editBtn);
               } else {
-                // Fallback : dispatch un dblclick natif (carte.js a un handler)
                 var dblev;
                 try{
                   dblev = new MouseEvent('dblclick', { bubbles:true, cancelable:true, view:window, clientX: t.clientX, clientY: t.clientY });
@@ -3921,13 +3919,38 @@ document.addEventListener('click', function(e){
                   dblev = document.createEvent('MouseEvents');
                   dblev.initMouseEvent('dblclick', true, true, window, 0, 0,0, t.clientX, t.clientY, false,false,false,false, 0, null);
                 }
-                nodeEl.dispatchEvent(dblev);
+                tappedNodeEl.dispatchEvent(dblev);
               }
               lastTapTime = 0;
               lastTapNodeId = null;
             } else {
               lastTapTime = now;
               lastTapNodeId = nodeId;
+            }
+          } else {
+            // ─── TAP SUR CANVAS VIDE ───
+            if(now - lastTapTime < DOUBLE_TAP_MS && lastTapNodeId === '__empty__'){
+              // DOUBLE-TAP VIDE → créer une nouvelle bulle à cet endroit
+              // On dispatche un dblclick sur le canvas que carte.js gère déjà
+              // pour appeler addNodeAt(x, y, 'Nouveau node').
+              var canvasEl = document.getElementById('carte-canvas');
+              if(canvasEl){
+                var newdb;
+                try{
+                  newdb = new MouseEvent('dblclick', { bubbles:true, cancelable:true, view:window, clientX: t.clientX, clientY: t.clientY });
+                }catch(_){
+                  newdb = document.createEvent('MouseEvents');
+                  newdb.initMouseEvent('dblclick', true, true, window, 0, 0,0, t.clientX, t.clientY, false,false,false,false, 0, null);
+                }
+                canvasEl.dispatchEvent(newdb);
+              }
+              lastTapTime = 0;
+              lastTapNodeId = null;
+            } else {
+              lastTapTime = now;
+              lastTapNodeId = '__empty__';
+              // Désélectionne après un single-tap sur canvas (visuel)
+              deselectNode();
             }
           }
         }
