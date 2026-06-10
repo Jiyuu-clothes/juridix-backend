@@ -1605,6 +1605,16 @@
   window.zoomCarteOut = zoomOut;
   window.injectFicheIntoCarte = injectFicheIntoCarte;
   window.injectIntoCarte      = injectIntoCarte;
+  // API minimale exposée pour la couche tactile (touch bridge dans index.html)
+  // pour pouvoir mettre à jour directement la position/taille d'un node et
+  // déclencher la persistance.
+  window._carteAPI = {
+    findNode: findNode,
+    touchMap: touchMap,
+    getView: function(){ return view; },
+    renderNodes: renderNodes,
+    renderEdges: renderEdges
+  };
 
   // Patch switchTab so any other nav-icon click exits carte-mode
   if (document.readyState === 'loading'){

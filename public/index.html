@@ -3907,33 +3907,30 @@ document.addEventListener('click', function(e){
   function onTouchEnd(e){
     // Fin de pinch-resize : on tire un mouseup pour clôturer la séquence
     // côté carte.js (qui persiste w/h via touchMap dans son onMouseUp).
-    // Ensuite, si la position a aussi bougé, on simule un drag pour persister x/y.
+    // Ensuite on met à jour directement le modèle pour la nouvelle position
+    // (via l'API _carteAPI exposée par carte.js) — pas de flicker.
     if(nodeResize && e.touches.length < 2){
       fire('mouseup', { clientX:0, clientY:0 }, document);
       var nr = nodeResize;
       nodeResize = null;
-      // Persister la translation : on lit la nouvelle position du node et
-      // si elle diffère du start, on fire mousedown→mousemove→mouseup pour
-      // que carte.js (nodeDrag → touchMap) sauvegarde n.x et n.y.
       try{
         var el = nr.el;
-        if(el){
+        if(el && window._carteAPI && typeof window._carteAPI.findNode === 'function'){
           var newLeft = parseFloat(el.style.left) || 0;
           var newTop  = parseFloat(el.style.top) || 0;
-          var dxWorld = newLeft - nr.startLeft;
-          var dyWorld = newTop  - nr.startTop;
-          if(Math.abs(dxWorld) > 0.5 || Math.abs(dyWorld) > 0.5){
-            var sc = getViewScale() || 1;
-            var rect = el.getBoundingClientRect();
-            var cx = rect.left + rect.width / 2;
-            var cy = rect.top + rect.height / 2;
-            // Reset visuel à l'ancienne position pour partir de start
-            el.style.left = nr.startLeft + 'px';
-            el.style.top  = nr.startTop + 'px';
-            // mousedown au centre actuel (en world ce serait la position de start)
-            fire('mousedown', { clientX: cx - dxWorld * sc, clientY: cy - dyWorld * sc }, el);
-            fire('mousemove', { clientX: cx, clientY: cy }, document);
-            fire('mouseup',   { clientX: cx, clientY: cy }, document);
+          var dx = newLeft - nr.startLeft;
+          var dy = newTop  - nr.startTop;
+          if(Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5){
+            var id = el.getAttribute('data-id');
+            var n = window._carteAPI.findNode(id);
+            if(n){
+              n.x = newLeft;
+              n.y = newTop;
+              window._carteAPI.touchMap();
+              if(typeof window._carteAPI.renderEdges === 'function'){
+                window._carteAPI.renderEdges();
+              }
+            }
           }
         }
       }catch(_){}
