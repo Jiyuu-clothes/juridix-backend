@@ -3433,9 +3433,18 @@ document.addEventListener('keydown', function(e){
 function mobileNavGo(target){
   // CRITIQUE : dismiss le spotlight zen avant tout, sinon il a z-index 1500
   // et capture tous les touches même si la carte/atelier est "ouvert" derrière.
+  // On ne peut pas utiliser exitZenMode() qui schedule un switchTab('codes') à
+  // T+250ms et qui FERME ensuite le mode qu'on vient d'ouvrir.
+  // À la place on dismiss le spotlight inline + init hub mode sans switchTab.
   try{
-    if(typeof window.exitZenMode === 'function' && window._zenActive){
-      window.exitZenMode('codes');
+    if(typeof window._zenActive !== 'undefined' && window._zenActive){
+      window._zenActive = false;
+      var sp = document.getElementById('spotlight');
+      if(sp){
+        sp.classList.add('fade-out');
+        sp.classList.add('gone');
+      }
+      if(typeof initHubMode === 'function') initHubMode();
     }
   }catch(e){}
   try{
