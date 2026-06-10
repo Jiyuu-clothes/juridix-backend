@@ -3651,31 +3651,18 @@ document.addEventListener('click', function(e){
   }
   window.carteCancelLink = exitLinkMode;
 
-  // Crée une liaison entre selectedNodeId et targetNodeEl, en simulant
-  // mousedown sur un faux handle "right" + mouseup au centre de la cible.
+  // Crée une liaison entre selectedNodeId et targetNodeEl en appelant
+  // directement window._carteAPI.createEdge — pas de simulation d'événements
+  // donc pas de risque de re-déclencher startNodeDrag par erreur.
   function createLink(targetNodeEl){
     var sourceEl = getSelectedNodeEl();
     if(!sourceEl || !targetNodeEl || sourceEl === targetNodeEl){ exitLinkMode(); return; }
-    // Crée temporairement un handle visible pour dispatch
-    var tempHandle = sourceEl.querySelector('.cm-handle[data-side="right"]');
-    if(!tempHandle){ exitLinkMode(); return; }
-    // Position de départ : bord droit du source node
-    var sourceRect = sourceEl.getBoundingClientRect();
-    var startX = sourceRect.right;
-    var startY = sourceRect.top + sourceRect.height/2;
-    // Position d'arrivée : centre du target node
-    var targetRect = targetNodeEl.getBoundingClientRect();
-    var endX = targetRect.left + targetRect.width/2;
-    var endY = targetRect.top + targetRect.height/2;
-    // Sequence : mousedown sur tempHandle → mousemove vers cible → mouseup sur cible
-    fire('mousedown', { clientX: startX, clientY: startY }, tempHandle);
-    setTimeout(function(){
-      fire('mousemove', { clientX: endX, clientY: endY }, document);
-      setTimeout(function(){
-        fire('mouseup', { clientX: endX, clientY: endY }, targetNodeEl);
-        exitLinkMode();
-      }, 10);
-    }, 10);
+    var fromId = sourceEl.getAttribute('data-id');
+    var toId = targetNodeEl.getAttribute('data-id');
+    if(window._carteAPI && typeof window._carteAPI.createEdge === 'function'){
+      window._carteAPI.createEdge(fromId, toId, 'right');
+    }
+    exitLinkMode();
   }
 
   // ─── Mode resize : pad +/- ───

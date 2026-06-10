@@ -1613,7 +1613,34 @@
     touchMap: touchMap,
     getView: function(){ return view; },
     renderNodes: renderNodes,
-    renderEdges: renderEdges
+    renderEdges: renderEdges,
+    // Crée un lien entre 2 nodes (sans passer par la simulation d'événements)
+    createEdge: function(fromId, toId, fromSide, toSide){
+      if(!fromId || !toId || fromId === toId) return false;
+      var m = activeMap();
+      if(!m) return false;
+      var fromN = findNode(fromId);
+      var toN = findNode(toId);
+      if(!fromN || !toN) return false;
+      var side = fromSide || 'right';
+      var fromAnchor = nodeAnchor(fromN, side);
+      var smartToSide = toSide || (fromAnchor ? pickClosestSide(fromAnchor, toN) : 'left');
+      m.edges.push({
+        id: uid(),
+        from: fromId,
+        fromSide: side,
+        to: toId,
+        toSide: smartToSide,
+        label: ''
+      });
+      touchMap();
+      renderEdges();
+      return true;
+    },
+    // Démarre une édition de champ (title ou body) sur un node
+    startEdit: function(id, field){
+      return startEditField(id, field || 'title');
+    }
   };
 
   // Patch switchTab so any other nav-icon click exits carte-mode
