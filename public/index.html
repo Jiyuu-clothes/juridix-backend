@@ -3749,8 +3749,9 @@ document.addEventListener('click', function(e){
   }
 
   function onTouchStart(e){
+    window._lastTouchStart = { branch: 'entry', touchesLen: e.touches.length, t0clientX: e.touches[0] ? e.touches[0].clientX : null, t0clientY: e.touches[0] ? e.touches[0].clientY : null, t0id: e.touches[0] ? e.touches[0].identifier : null };
     var canvas = document.getElementById('carte-canvas');
-    if(!canvas) return;
+    if(!canvas){ window._lastTouchStart.branch = 'NO_CANVAS_EARLY_RETURN'; return; }
     ACTIVE_CANVAS = canvas;
     initFAB();
 
@@ -3806,11 +3807,14 @@ document.addEventListener('click', function(e){
     }
 
     // 1 doigt
+    window._lastTouchStart.branch = '1_FINGER';
     var t = e.touches[0];
     activeTouch = t.identifier;
     tapStartTime = Date.now();
     tapStartXY = { x: t.clientX, y: t.clientY };
     hasMoved = false;
+    window._lastTouchStart.tapStartTime = tapStartTime;
+    window._lastTouchStart.activeTouch = activeTouch;
     lastTarget = document.elementFromPoint(t.clientX, t.clientY);
     var nodeEl = lastTarget && lastTarget.closest ? lastTarget.closest('.cm-node') : null;
 
