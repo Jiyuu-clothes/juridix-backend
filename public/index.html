@@ -2004,18 +2004,17 @@ body.light #mobile-bottom-nav{
   body.carte-mode .cm-node-title{ font-size:15px !important; line-height:1.35 !important }
   body.carte-mode .cm-node-snippet{ font-size:13px !important; line-height:1.45 !important; margin-top:6px !important }
   body.carte-mode .cm-node-eyebrow{ font-size:11px !important }
-  /* Cache la toolbar native (remplacée par la FAB).
-     On cache aussi cm-resize sur mobile : il interceptait les drags 1-doigt.
-     Le resize se fait au pinch 2-doigts qui dispatche sur le handle invisible.
-     cm-handle reste invisible mais ciblable par events (pour la création de liens). */
+  /* Cache complètement la toolbar, cm-resize ET cm-handle sur mobile.
+     IMPORTANT : display:none (pas visibility:hidden) pour cm-handle, sinon
+     les handles s'étendent hors des bords du node (top:-6px, right:-6px, …)
+     et interceptent les touches au bord du node → le bridge croit que
+     l'utilisateur touche le canvas et démarre un pan au lieu d'un drag.
+     Pour les liens, on appelle window._carteAPI.createEdge directement,
+     plus besoin du DOM des handles. */
   body.carte-mode .cm-node-toolbar,
-  body.carte-mode .cm-resize{
-    visibility:hidden !important;
-    pointer-events:none !important;
-  }
+  body.carte-mode .cm-resize,
   body.carte-mode .cm-handle{
-    visibility:hidden !important;
-    pointer-events:none !important;
+    display:none !important;
   }
   /* Empêche le scroll natif du canvas pour que le touch bridge gère */
   body.carte-mode #carte-canvas{ touch-action:none }
