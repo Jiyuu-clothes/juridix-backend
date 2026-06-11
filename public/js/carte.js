@@ -1640,6 +1640,14 @@
     // Démarre une édition de champ (title ou body) sur un node
     startEdit: function(id, field){
       return startEditField(id, field || 'title');
+    },
+    // Crée un nouveau node à la position world (x, y)
+    addNodeAt: function(x, y, title){
+      return addNodeAt(x, y, title);
+    },
+    // Supprime un node par id
+    deleteNode: function(id){
+      return deleteNode(id);
     }
   };
 
